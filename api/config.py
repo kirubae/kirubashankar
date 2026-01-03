@@ -28,6 +28,13 @@ class Settings(BaseSettings):
     # API Keys
     perplexity_api_key: str = ""
 
+    # R2 Storage (S3-compatible)
+    r2_account_id: str = "eeb01e3413d58a8b987623ee7e39a2b7"
+    r2_access_key_id: str = ""
+    r2_secret_access_key: str = ""
+    r2_bucket_name: str = "data-merge-uploads"
+    r2_endpoint: str = "https://eeb01e3413d58a8b987623ee7e39a2b7.r2.cloudflarestorage.com"
+
     # GCS Cache (optional)
     gcs_cache_bucket: str = "deep-search-cache-20251229"
     google_application_credentials: Optional[str] = None

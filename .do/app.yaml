@@ -27,6 +27,14 @@ services:
         value: "https://kirubashankar.com,http://localhost:4321"
       - key: PERPLEXITY_API_KEY
         type: SECRET
+      - key: R2_ACCESS_KEY_ID
+        type: SECRET
+      - key: R2_SECRET_ACCESS_KEY
+        type: SECRET
+      - key: R2_BUCKET_NAME
+        value: "data-merge-uploads"
+      - key: R2_ENDPOINT
+        value: "https://eeb01e3413d58a8b987623ee7e39a2b7.r2.cloudflarestorage.com"
 
     health_check:
       http_path: /health

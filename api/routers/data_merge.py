@@ -1,6 +1,6 @@
 """
 Data Merge Router - FastAPI endpoints for merge operations
-Replaces the Flask data-merge backend
+Supports both local file uploads and R2 cloud storage
 """
 
 import uuid
@@ -9,6 +9,8 @@ from pathlib import Path
 from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse, StreamingResponse
 from io import BytesIO
+from typing import Optional
+import pandas as pd
 
 from config import settings
 from models.data_merge import (
@@ -18,7 +20,9 @@ from models.data_merge import (
     MergeRequest,
     MergeJobResponse,
     JobStatusResponse,
-    ErrorResponse
+    ErrorResponse,
+    R2MergeRequest,
+    R2PreviewRequest
 )
 from services.file_service import (
     save_upload,
@@ -27,7 +31,8 @@ from services.file_service import (
     find_file_path,
     df_to_excel_bytes
 )
-from services.merge_service import preview_match, run_merge_async
+from services.merge_service import preview_match, run_merge_async, run_merge_r2_async
+from services.r2_service import get_r2_service
 from jobs.job_manager import job_manager
 
 logger = logging.getLogger(__name__)
@@ -186,3 +191,109 @@ async def download_result_excel(result_id: str):
     except Exception as e:
         logger.error(f"Excel export error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# R2 Cloud Storage Endpoints (for large files)
+# ============================================
+
+@router.post("/r2/preview")
+async def preview_r2_files(request: R2PreviewRequest):
+    """Preview files from R2 storage (concatenates multiple files)"""
+    r2 = get_r2_service()
+
+    if not r2.is_available:
+        raise HTTPException(status_code=503, detail="R2 storage not available")
+
+    try:
+        # Download and concatenate all files
+        dfs = []
+        for key in request.keys:
+            data = r2.download_file(key)
+            if not data:
+                raise HTTPException(status_code=404, detail=f"File not found: {key}")
+
+            if key.endswith('.xlsx') or key.endswith('.xls'):
+                df = pd.read_excel(data)
+            else:
+                df = pd.read_csv(data)
+            dfs.append(df)
+
+        # Concatenate if multiple files
+        combined_df = pd.concat(dfs, ignore_index=True) if len(dfs) > 1 else dfs[0]
+
+        # Get preview
+        preview = get_file_preview(combined_df)
+        unique_counts = {col: int(combined_df[col].nunique()) for col in combined_df.columns}
+
+        return {
+            "success": True,
+            "columns": preview["columns"],
+            "dtypes": preview["dtypes"],
+            "rowCount": preview["rowCount"],
+            "preview": preview["preview"],
+            "uniqueCounts": unique_counts,
+            "fileCount": len(request.keys)
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"R2 preview error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/r2/jobs", response_model=MergeJobResponse)
+async def create_r2_merge_job(
+    request: R2MergeRequest,
+    background_tasks: BackgroundTasks
+):
+    """Start a merge job using files from R2 (supports multiple files per side)"""
+    r2 = get_r2_service()
+
+    if not r2.is_available:
+        raise HTTPException(status_code=503, detail="R2 storage not available")
+
+    # Verify at least one file on each side
+    if not request.primary_keys or not request.secondary_keys:
+        raise HTTPException(status_code=400, detail="Need at least one file on each side")
+
+    # Verify first file of each side exists (quick check)
+    if not r2.download_file(request.primary_keys[0]):
+        raise HTTPException(status_code=404, detail="Primary file not found in R2")
+    if not r2.download_file(request.secondary_keys[0]):
+        raise HTTPException(status_code=404, detail="Secondary file not found in R2")
+
+    # Create job
+    job_id = str(uuid.uuid4())
+    job_manager.create_job(job_id, job_type="merge")
+
+    # Run merge in background
+    background_tasks.add_task(
+        run_merge_r2_async,
+        job_id,
+        request.primary_keys,
+        request.secondary_keys,
+        request.join_type,
+        request.left_key,
+        request.right_key,
+        request.selected_columns
+    )
+
+    return MergeJobResponse(jobId=job_id)
+
+
+@router.get("/r2/results/{result_key:path}")
+async def download_r2_result(result_key: str):
+    """Get presigned URL for downloading result from R2"""
+    r2 = get_r2_service()
+
+    if not r2.is_available:
+        raise HTTPException(status_code=503, detail="R2 storage not available")
+
+    url = r2.generate_presigned_url(result_key, expires_in=3600)
+
+    if not url:
+        raise HTTPException(status_code=404, detail="Result not found")
+
+    return {"downloadUrl": url}

@@ -105,3 +105,24 @@ class JobStatusResponse(BaseModel):
 class ErrorResponse(BaseModel):
     """Standard error response"""
     error: str
+
+
+class R2MergeRequest(BaseModel):
+    """Request for R2-based merge operation (supports multiple files per side)"""
+    primary_keys: list[str] = Field(..., alias="primaryKeys")  # R2 keys for primary files
+    secondary_keys: list[str] = Field(..., alias="secondaryKeys")  # R2 keys for secondary files
+    join_type: str = Field("left", alias="joinType")
+    left_key: str = Field(..., alias="leftKey")
+    right_key: str = Field(..., alias="rightKey")
+    selected_columns: Optional[list[str]] = Field(None, alias="selectedColumns")
+
+    class Config:
+        populate_by_name = True
+
+
+class R2PreviewRequest(BaseModel):
+    """Request for R2 file preview"""
+    keys: list[str]  # R2 keys to preview
+
+    class Config:
+        populate_by_name = True

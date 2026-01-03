@@ -13,6 +13,10 @@
     {
       "binding": "FILE_SHARE_BUCKET",
       "bucket_name": "file-share"
+    },
+    {
+      "binding": "DATA_MERGE_BUCKET",
+      "bucket_name": "data-merge-uploads"
     }
   ],
   "d1_databases": [
