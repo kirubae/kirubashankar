@@ -2,6 +2,10 @@ name: kirubashankar-api
 
 region: nyc
 
+domains:
+  - domain: api.kirubashankar.com
+    type: PRIMARY
+
 services:
   - name: api
     github:
