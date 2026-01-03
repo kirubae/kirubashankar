@@ -8,24 +8,24 @@ import '@styles/tools.css';
 const breadcrumbs = [
   { name: 'Home', url: '/' },
   { name: 'Things', url: '/tools' },
-  { name: 'Data Merge', url: '/tools/data-merge' },
+  { name: 'VLOOKUP for Large Files', url: '/tools/data-merge' },
 ];
 
 const jsonLdSchema = [
   generateBreadcrumbSchema(breadcrumbs),
   generateWebApplicationSchema({
-    name: 'Data Merge',
-    description: 'Merge and join large datasets quickly. Replace VLOOKUP with powerful join operations.',
+    name: 'VLOOKUP for Large Files',
+    description: 'Merge and join large datasets quickly. Replace Excel VLOOKUP with powerful join operations for files up to 500MB.',
     slug: 'data-merge',
     category: 'UtilityApplication',
-    featureList: ['CSV and Excel support', 'Left, Right, Inner, Full joins', 'Handle 500k+ rows', 'Column selection and renaming'],
+    featureList: ['CSV and Excel support', 'Left, Right, Inner, Full joins', 'Handle 500MB+ files', 'Multiple files per side'],
   }),
 ];
 ---
 
 <BaseLayout
-  title="Data Merge - Join Large Datasets"
-  description="Merge and join large datasets quickly and reliably. Support for CSV and Excel files, multiple join types, and handles hundreds of thousands of rows."
+  title="VLOOKUP for Large Files - Merge Datasets Online"
+  description="Replace Excel VLOOKUP with powerful merge operations for large files. Support for CSV and Excel files up to 500MB, multiple join types, and handle multiple files at once."
   jsonLd={jsonLdSchema}
 >
   <div class="merge-container">
@@ -33,8 +33,8 @@ const jsonLdSchema = [
 
     <!-- Page Heading -->
     <header class="page-header">
-      <h1>Data Merge</h1>
-      <p class="page-subtitle">Join large datasets with powerful merge operations</p>
+      <h1>VLOOKUP for Large Files</h1>
+      <p class="page-subtitle">Merge and join large datasets with powerful operations</p>
     </header>
 
     <!-- Step 1: Upload Files -->
@@ -43,59 +43,61 @@ const jsonLdSchema = [
         <div class="step-badge">1</div>
         <div>
           <h2>Upload your files</h2>
-          <p class="step-subtitle">Two CSV or Excel files to merge</p>
+          <p class="step-subtitle">CSV or Excel files to merge (multiple files per side supported)</p>
         </div>
       </div>
 
       <div class="upload-grid">
-        <!-- File A -->
+        <!-- Primary Files (Left) -->
         <div class="upload-box">
-          <div class="upload-label">File A (Left)</div>
-          <div class="upload-area" id="upload-area-a" data-file="a">
+          <div class="upload-label">Primary Files (Left)</div>
+          <div class="upload-area" id="upload-area-a" data-side="primary">
             <div class="upload-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
               </svg>
             </div>
-            <p class="upload-text">Drop file or click to browse</p>
-            <input type="file" id="file-input-a" accept=".csv,.xlsx,.xls" />
+            <p class="upload-text">Drop files or click to browse</p>
+            <p class="upload-hint">Multiple files with matching columns will be combined</p>
+            <input type="file" id="file-input-a" accept=".csv,.xlsx,.xls" multiple />
           </div>
-          <div class="file-info" id="file-info-a" style="display: none;">
-            <span class="file-name" id="file-name-a"></span>
-            <span class="file-meta" id="file-meta-a"></span>
-            <button class="btn-remove" id="remove-a" title="Remove file">&times;</button>
+          <div class="files-list" id="files-list-a"></div>
+          <div class="files-summary" id="files-summary-a" style="display: none;">
+            <span class="summary-text" id="summary-text-a"></span>
+            <button class="btn-clear" id="clear-a">Clear All</button>
           </div>
         </div>
 
-        <!-- File B -->
+        <!-- Secondary Files (Right) -->
         <div class="upload-box">
-          <div class="upload-label">File B (Right)</div>
-          <div class="upload-area" id="upload-area-b" data-file="b">
+          <div class="upload-label">Secondary Files (Right)</div>
+          <div class="upload-area" id="upload-area-b" data-side="secondary">
             <div class="upload-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
               </svg>
             </div>
-            <p class="upload-text">Drop file or click to browse</p>
-            <input type="file" id="file-input-b" accept=".csv,.xlsx,.xls" />
+            <p class="upload-text">Drop files or click to browse</p>
+            <p class="upload-hint">Multiple files with matching columns will be combined</p>
+            <input type="file" id="file-input-b" accept=".csv,.xlsx,.xls" multiple />
           </div>
-          <div class="file-info" id="file-info-b" style="display: none;">
-            <span class="file-name" id="file-name-b"></span>
-            <span class="file-meta" id="file-meta-b"></span>
-            <button class="btn-remove" id="remove-b" title="Remove file">&times;</button>
+          <div class="files-list" id="files-list-b"></div>
+          <div class="files-summary" id="files-summary-b" style="display: none;">
+            <span class="summary-text" id="summary-text-b"></span>
+            <button class="btn-clear" id="clear-b">Clear All</button>
           </div>
         </div>
       </div>
 
       <p class="help-text">
-        Supports CSV and Excel files up to 500MB. For best results, ensure both files have header rows with column names.
+        Supports CSV and Excel files up to 500MB each. All files on the same side must have matching column headers.
       </p>
 
-      <div id="backend-notice" class="backend-notice" style="display: none;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-        </svg>
-        <span>Large files detected. Using server-side processing for better performance.</span>
+      <div class="upload-status" id="upload-status" style="display: none;">
+        <div class="upload-progress">
+          <div class="upload-progress-bar" id="upload-progress-bar"></div>
+        </div>
+        <span class="upload-status-text" id="upload-status-text">Uploading...</span>
       </div>
     </section>
 
@@ -372,14 +374,6 @@ const jsonLdSchema = [
       </div>
     </section>
 
-    <!-- Worker Loading Overlay -->
-    <div id="worker-loading" class="worker-loading" style="display: none;">
-      <div class="loading-content">
-        <div class="loading-spinner"></div>
-        <p>Loading Python runtime...</p>
-        <p class="loading-hint">This may take a few seconds on first use</p>
-      </div>
-    </div>
   </div>
 </BaseLayout>
 
@@ -457,38 +451,77 @@ const jsonLdSchema = [
     margin: 0;
   }
 
-  .file-info {
+  .upload-hint {
+    font-size: 12px;
+    color: var(--color-ink-light);
+    margin: 4px 0 0;
+  }
+
+  .files-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .file-item {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 16px;
+    padding: 12px 16px;
     background: var(--color-cream);
     border-radius: 8px;
   }
 
-  .file-name {
+  .file-item.uploading {
+    opacity: 0.7;
+  }
+
+  .file-item.error {
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+  }
+
+  .file-item .file-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--color-terracotta);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .file-item .file-details {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .file-item .file-name {
     font-weight: 500;
     color: var(--color-ink);
-    flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .file-meta {
-    font-size: 13px;
+  .file-item .file-meta {
+    font-size: 12px;
     color: var(--color-ink-light);
-    white-space: nowrap;
   }
 
-  .btn-remove {
-    width: 28px;
-    height: 28px;
+  .file-item .btn-remove {
+    width: 24px;
+    height: 24px;
     border: none;
-    background: var(--color-paper);
+    background: transparent;
     border-radius: 50%;
     cursor: pointer;
-    font-size: 18px;
+    font-size: 16px;
     color: var(--color-ink-light);
     display: flex;
     align-items: center;
@@ -496,9 +529,68 @@ const jsonLdSchema = [
     flex-shrink: 0;
   }
 
-  .btn-remove:hover {
+  .file-item .btn-remove:hover {
     background: #fef2f2;
     color: #dc2626;
+  }
+
+  .files-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding: 12px 16px;
+    background: #ecfdf5;
+    border-radius: 8px;
+    border: 1px solid #a7f3d0;
+  }
+
+  .files-summary .summary-text {
+    font-size: 13px;
+    color: #065f46;
+    font-weight: 500;
+  }
+
+  .btn-clear {
+    padding: 6px 12px;
+    font-size: 12px;
+    border: 1px solid #a7f3d0;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #065f46;
+  }
+
+  .btn-clear:hover {
+    background: #d1fae5;
+  }
+
+  .upload-status {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: #eff6ff;
+    border-radius: 8px;
+    border: 1px solid #bfdbfe;
+  }
+
+  .upload-progress {
+    height: 4px;
+    background: #dbeafe;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .upload-progress-bar {
+    height: 100%;
+    background: var(--color-terracotta);
+    width: 0%;
+    transition: width 0.3s;
+  }
+
+  .upload-status-text {
+    font-size: 13px;
+    color: #1e40af;
   }
 
   /* Excel-style Spreadsheet Tabs */
@@ -962,50 +1054,6 @@ const jsonLdSchema = [
     gap: 8px;
   }
 
-  /* Worker Loading Overlay */
-  .worker-loading {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.95);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  }
-
-  .loading-content {
-    text-align: center;
-  }
-
-  .loading-spinner {
-    width: 48px;
-    height: 48px;
-    border: 3px solid var(--color-border);
-    border-top-color: var(--color-terracotta);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 16px;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  .loading-content p {
-    margin: 0 0 4px;
-    color: var(--color-ink);
-    font-weight: 500;
-  }
-
-  .loading-hint {
-    font-size: 13px;
-    color: var(--color-ink-light) !important;
-    font-weight: 400 !important;
-  }
-
   /* Responsive */
   @media (max-width: 1200px) {
     .merge-container {
@@ -1055,21 +1103,20 @@ const jsonLdSchema = [
 <script is:inline src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 
 <script is:inline>
-  // State
-  let worker = null;
-  let workerReady = false;
-  let fileA = { file: null, content: null, columns: [], preview: [], rowCount: 0, keyValues: {}, fileId: null };
-  let fileB = { file: null, content: null, columns: [], preview: [], rowCount: 0, keyValues: {}, fileId: null };
+  // State - now supports multiple files per side
+  let primaryFiles = []; // Array of { file, r2Key, filename, size, status, columns, rowCount }
+  let secondaryFiles = [];
+  let primaryData = { columns: [], preview: [], rowCount: 0, uniqueCounts: {} };
+  let secondaryData = { columns: [], preview: [], rowCount: 0, uniqueCounts: {} };
   let mergeResult = null;
   let currentStep = 'upload';
-  let useBackend = false; // Whether to use server-side processing
-  let backendResultId = null; // Result ID from backend merge
+  let resultKey = null; // R2 key for result file
 
-  // File size limits (in bytes)
-  const FILE_SIZE_BROWSER_LIMIT = 50 * 1024 * 1024; // 50MB - use backend above this
-  const FILE_SIZE_HARD_LIMIT = 500 * 1024 * 1024; // 500MB - absolute max
+  // File size limit (500MB per file)
+  const FILE_SIZE_LIMIT = 500 * 1024 * 1024;
 
-  // Backend API URL
+  // API URLs
+  const R2_UPLOAD_URL = '/api/merge/upload'; // CF Pages API -> R2
   const BACKEND_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:8000/api/merge'
     : 'https://api.kirubashankar.com/api/merge';
@@ -1085,19 +1132,23 @@ const jsonLdSchema = [
     stepColumns: document.getElementById('step-columns'),
     stepProcessing: document.getElementById('step-processing'),
     stepResults: document.getElementById('step-results'),
-    workerLoading: document.getElementById('worker-loading'),
+    // Upload areas
     uploadAreaA: document.getElementById('upload-area-a'),
     uploadAreaB: document.getElementById('upload-area-b'),
     fileInputA: document.getElementById('file-input-a'),
     fileInputB: document.getElementById('file-input-b'),
-    fileInfoA: document.getElementById('file-info-a'),
-    fileInfoB: document.getElementById('file-info-b'),
-    fileNameA: document.getElementById('file-name-a'),
-    fileNameB: document.getElementById('file-name-b'),
-    fileMetaA: document.getElementById('file-meta-a'),
-    fileMetaB: document.getElementById('file-meta-b'),
-    removeA: document.getElementById('remove-a'),
-    removeB: document.getElementById('remove-b'),
+    filesListA: document.getElementById('files-list-a'),
+    filesListB: document.getElementById('files-list-b'),
+    filesSummaryA: document.getElementById('files-summary-a'),
+    filesSummaryB: document.getElementById('files-summary-b'),
+    summaryTextA: document.getElementById('summary-text-a'),
+    summaryTextB: document.getElementById('summary-text-b'),
+    clearA: document.getElementById('clear-a'),
+    clearB: document.getElementById('clear-b'),
+    uploadStatus: document.getElementById('upload-status'),
+    uploadProgressBar: document.getElementById('upload-progress-bar'),
+    uploadStatusText: document.getElementById('upload-status-text'),
+    // Preview tabs
     tabA: document.getElementById('tab-a'),
     tabB: document.getElementById('tab-b'),
     tabNameA: document.getElementById('tab-name-a'),
@@ -1110,6 +1161,7 @@ const jsonLdSchema = [
     previewHeaderB: document.getElementById('preview-header-b'),
     previewBodyA: document.getElementById('preview-body-a'),
     previewBodyB: document.getElementById('preview-body-b'),
+    // Config
     keyColumnA: document.getElementById('key-column-a'),
     keyColumnB: document.getElementById('key-column-b'),
     keyStatsA: document.getElementById('key-stats-a'),
@@ -1118,12 +1170,13 @@ const jsonLdSchema = [
     matchCount: document.getElementById('match-count'),
     matchDetails: document.getElementById('match-details'),
     columnsList: document.getElementById('columns-list'),
+    // Processing
     processingStatus: document.getElementById('processing-status'),
     progressFill: document.getElementById('progress-fill'),
     progressText: document.getElementById('progress-text'),
+    // Results
     resultsHeader: document.getElementById('results-header'),
     resultsBody: document.getElementById('results-body'),
-    backendNotice: document.getElementById('backend-notice'),
   };
 
   // URL-based navigation
@@ -1143,50 +1196,19 @@ const jsonLdSchema = [
     showStep(step, false);
   });
 
-  // Initialize worker
-  function initWorker() {
-    if (worker) return;
+  // Format file size
+  function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
 
-    elements.workerLoading.style.display = 'flex';
-
-    worker = new Worker('/workers/merge-worker.js');
-
-    worker.onmessage = function(e) {
-      const { type, payload } = e.data;
-
-      switch (type) {
-        case 'PROGRESS':
-          updateProgress(payload.percent, payload.message);
-          break;
-
-        case 'READY':
-          workerReady = true;
-          elements.workerLoading.style.display = 'none';
-          // Parse any pending files
-          if (fileA.content && !fileA.columns.length) {
-            worker.postMessage({ type: 'PARSE', payload: { content: fileA.content, fileId: 'a' } });
-          }
-          if (fileB.content && !fileB.columns.length) {
-            worker.postMessage({ type: 'PARSE', payload: { content: fileB.content, fileId: 'b' } });
-          }
-          break;
-
-        case 'PARSED':
-          handleFileParsed(payload);
-          break;
-
-        case 'MERGE_COMPLETE':
-          handleMergeComplete(payload);
-          break;
-
-        case 'ERROR':
-          alert('Error: ' + payload.message);
-          elements.workerLoading.style.display = 'none';
-          break;
-      }
-    };
-
-    worker.postMessage({ type: 'INIT' });
+  // Escape HTML
+  function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
   }
 
   // Update progress
@@ -1218,7 +1240,6 @@ const jsonLdSchema = [
       updateURL(step);
     }
 
-    // Scroll to top of step
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -1233,209 +1254,290 @@ const jsonLdSchema = [
   elements.tabA.addEventListener('click', () => switchTab('a'));
   elements.tabB.addEventListener('click', () => switchTab('b'));
 
-  // Parse file to CSV content
-  async function parseFileToCSV(file) {
-    const extension = file.name.split('.').pop().toLowerCase();
+  // =====================
+  // File Upload to R2
+  // =====================
 
-    if (extension === 'csv') {
-      return await file.text();
-    } else if (extension === 'xlsx' || extension === 'xls') {
-      const arrayBuffer = await file.arrayBuffer();
-      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      return XLSX.utils.sheet_to_csv(firstSheet);
-    }
-    return null;
-  }
-
-  // Format file size
-  function formatFileSize(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-  }
-
-  // Handle file upload
-  async function handleFileUpload(file, fileId) {
-    if (!file) return;
-
-    // Check file size
-    if (file.size > FILE_SIZE_HARD_LIMIT) {
-      alert(`File too large (${formatFileSize(file.size)}). Maximum size is ${formatFileSize(FILE_SIZE_HARD_LIMIT)}.`);
-      return;
-    }
-
-    // Determine if we should use backend (large files)
-    const shouldUseBackend = file.size > FILE_SIZE_BROWSER_LIMIT;
-
-    if (shouldUseBackend && !useBackend) {
-      useBackend = true;
-      console.log('Large file detected, switching to backend processing');
-      elements.backendNotice.style.display = 'flex';
-    }
-
-    const fileObj = fileId === 'a' ? fileA : fileB;
-    const uploadArea = fileId === 'a' ? elements.uploadAreaA : elements.uploadAreaB;
-    const fileInfo = fileId === 'a' ? elements.fileInfoA : elements.fileInfoB;
-    const fileName = fileId === 'a' ? elements.fileNameA : elements.fileNameB;
-    const fileMeta = fileId === 'a' ? elements.fileMetaA : elements.fileMetaB;
-
-    // Update UI immediately
-    uploadArea.classList.add('has-file');
-    fileInfo.style.display = 'flex';
-    fileName.textContent = file.name;
-    fileMeta.textContent = 'Uploading...';
-
-    try {
-      if (useBackend) {
-        // Use backend for large files
-        await handleFileUploadBackend(file, fileId, fileObj, fileMeta);
-      } else {
-        // Use browser-based processing for small files
-        await handleFileUploadBrowser(file, fileId, fileObj, fileMeta);
-      }
-    } catch (error) {
-      console.error('Error handling file:', error);
-      alert('Error reading file. Please try again.');
-      uploadArea.classList.remove('has-file');
-      fileInfo.style.display = 'none';
-    }
-  }
-
-  // Handle file upload with backend (for large files)
-  async function handleFileUploadBackend(file, fileId, fileObj, fileMeta) {
+  // Upload a single file to R2
+  async function uploadFileToR2(file) {
     const formData = new FormData();
     formData.append('file', file);
 
-    fileMeta.textContent = 'Uploading to server...';
-
-    const response = await fetch(`${BACKEND_URL}/upload`, {
+    const response = await fetch(R2_UPLOAD_URL, {
       method: 'POST',
       body: formData
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ error: 'Upload failed' }));
       throw new Error(error.error || 'Upload failed');
     }
 
-    const result = await response.json();
+    return await response.json();
+  }
 
-    if (!result.success) {
-      throw new Error(result.error || 'Upload failed');
+  // Handle multiple file uploads for a side
+  async function handleFilesUpload(files, side) {
+    const filesList = side === 'primary' ? primaryFiles : secondaryFiles;
+    const filesListEl = side === 'primary' ? elements.filesListA : elements.filesListB;
+    const uploadArea = side === 'primary' ? elements.uploadAreaA : elements.uploadAreaB;
+
+    for (const file of files) {
+      // Validate file size
+      if (file.size > FILE_SIZE_LIMIT) {
+        alert(`File "${file.name}" is too large (${formatFileSize(file.size)}). Maximum is 500MB per file.`);
+        continue;
+      }
+
+      // Validate file type
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!['csv', 'xlsx', 'xls'].includes(ext)) {
+        alert(`File "${file.name}" is not a supported format. Please use CSV or Excel files.`);
+        continue;
+      }
+
+      // Add file to list with "uploading" status
+      const fileEntry = {
+        file,
+        filename: file.name,
+        size: file.size,
+        status: 'uploading',
+        r2Key: null,
+        error: null
+      };
+      filesList.push(fileEntry);
+      renderFilesList(side);
+
+      // Hide upload area if we have files
+      uploadArea.classList.add('has-file');
+
+      try {
+        // Upload to R2
+        const result = await uploadFileToR2(file);
+        fileEntry.r2Key = result.key;
+        fileEntry.status = 'uploaded';
+        renderFilesList(side);
+      } catch (error) {
+        console.error('Upload error:', error);
+        fileEntry.status = 'error';
+        fileEntry.error = error.message;
+        renderFilesList(side);
+      }
     }
 
-    fileObj.file = file;
-    fileObj.fileId = result.fileId;
-    fileObj.columns = result.columns;
-    fileObj.rowCount = result.rowCount;
-    fileObj.preview = result.preview;
-    fileObj.dtypes = result.dtypes;
-    fileObj.uniqueCounts = result.uniqueCounts;
-
-    fileMeta.textContent = `${result.rowCount.toLocaleString()} rows, ${result.columns.length} cols`;
-
+    // Check if we can proceed to preview
     checkFilesReady();
   }
 
-  // Handle file upload with browser (for small files)
-  async function handleFileUploadBrowser(file, fileId, fileObj, fileMeta) {
-    fileMeta.textContent = 'Parsing...';
+  // Render file list for a side
+  function renderFilesList(side) {
+    const filesList = side === 'primary' ? primaryFiles : secondaryFiles;
+    const filesListEl = side === 'primary' ? elements.filesListA : elements.filesListB;
+    const summaryEl = side === 'primary' ? elements.filesSummaryA : elements.filesSummaryB;
+    const summaryTextEl = side === 'primary' ? elements.summaryTextA : elements.summaryTextB;
+    const uploadArea = side === 'primary' ? elements.uploadAreaA : elements.uploadAreaB;
 
-    // Parse file to CSV
-    const content = await parseFileToCSV(file);
-    if (!content) {
-      throw new Error('Could not parse file. Please use CSV or Excel format.');
-    }
-
-    fileObj.file = file;
-    fileObj.content = content;
-
-    // Initialize worker if needed
-    if (!worker) {
-      initWorker();
-    }
-
-    // Parse with worker if ready
-    if (workerReady) {
-      worker.postMessage({ type: 'PARSE', payload: { content, fileId } });
-    }
-  }
-
-  // Handle file parsed
-  function handleFileParsed(payload) {
-    const { fileId, success, error, columns, rowCount, preview, dtypes } = payload;
-
-    if (!success) {
-      alert('Error parsing file: ' + error);
+    if (filesList.length === 0) {
+      filesListEl.innerHTML = '';
+      summaryEl.style.display = 'none';
+      uploadArea.classList.remove('has-file');
       return;
     }
 
-    const fileObj = fileId === 'a' ? fileA : fileB;
-    const fileMeta = fileId === 'a' ? elements.fileMetaA : elements.fileMetaB;
+    // Render each file
+    filesListEl.innerHTML = filesList.map((f, idx) => {
+      const ext = f.filename.split('.').pop().toUpperCase();
+      const statusClass = f.status === 'uploading' ? 'uploading' : (f.status === 'error' ? 'error' : '');
+      const statusText = f.status === 'uploading' ? 'Uploading...' :
+                        (f.status === 'error' ? f.error : formatFileSize(f.size));
 
-    fileObj.columns = columns;
-    fileObj.rowCount = rowCount;
-    fileObj.preview = preview;
-    fileObj.dtypes = dtypes;
+      return `
+        <div class="file-item ${statusClass}" data-index="${idx}">
+          <div class="file-icon">${ext}</div>
+          <div class="file-details">
+            <div class="file-name">${escapeHtml(f.filename)}</div>
+            <div class="file-meta">${statusText}</div>
+          </div>
+          <button class="btn-remove" data-side="${side}" data-index="${idx}">&times;</button>
+        </div>
+      `;
+    }).join('');
 
-    // Extract key values for each column (for match preview)
-    // We'll extract from the full content for accurate matching
-    extractKeyValues(fileObj);
-
-    fileMeta.textContent = `${rowCount.toLocaleString()} rows, ${columns.length} cols`;
-
-    checkFilesReady();
-  }
-
-  // Extract unique values for each column (for match preview)
-  function extractKeyValues(fileObj) {
-    if (!fileObj.content) return;
-
-    const lines = fileObj.content.split('\n');
-    const headers = parseCSVLine(lines[0]);
-    fileObj.keyValues = {};
-
-    headers.forEach((col, colIdx) => {
-      const values = new Set();
-      for (let i = 1; i < lines.length && i <= 10000; i++) { // Limit to first 10k rows for performance
-        const row = parseCSVLine(lines[i]);
-        if (row[colIdx]) {
-          values.add(row[colIdx].trim().toLowerCase());
-        }
-      }
-      fileObj.keyValues[col] = values;
+    // Add remove button listeners
+    filesListEl.querySelectorAll('.btn-remove').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = parseInt(btn.dataset.index);
+        const s = btn.dataset.side;
+        removeFile(s, idx);
+      });
     });
 
-    fileObj.totalRowsForMatching = Math.min(lines.length - 1, 10000);
-  }
+    // Update summary
+    const uploadedFiles = filesList.filter(f => f.status === 'uploaded');
+    const totalSize = uploadedFiles.reduce((sum, f) => sum + f.size, 0);
 
-  // Simple CSV line parser
-  function parseCSVLine(line) {
-    if (!line) return [];
-    const cells = [];
-    let current = '';
-    let inQuotes = false;
-
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      if (char === '"' && line[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
-        cells.push(current);
-        current = '';
-      } else {
-        current += char;
-      }
+    if (uploadedFiles.length > 0) {
+      summaryEl.style.display = 'flex';
+      summaryTextEl.textContent = `${uploadedFiles.length} file${uploadedFiles.length > 1 ? 's' : ''} ready (${formatFileSize(totalSize)})`;
+    } else {
+      summaryEl.style.display = 'none';
     }
-    cells.push(current);
-    return cells;
   }
 
-  // Update match preview
+  // Remove a file from a side
+  function removeFile(side, index) {
+    const filesList = side === 'primary' ? primaryFiles : secondaryFiles;
+    filesList.splice(index, 1);
+    renderFilesList(side);
+
+    // Reset data if all files removed
+    if (side === 'primary' && primaryFiles.length === 0) {
+      primaryData = { columns: [], preview: [], rowCount: 0, uniqueCounts: {} };
+    } else if (side === 'secondary' && secondaryFiles.length === 0) {
+      secondaryData = { columns: [], preview: [], rowCount: 0, uniqueCounts: {} };
+    }
+  }
+
+  // Clear all files from a side
+  function clearFiles(side) {
+    if (side === 'primary') {
+      primaryFiles = [];
+      primaryData = { columns: [], preview: [], rowCount: 0, uniqueCounts: {} };
+      elements.fileInputA.value = '';
+    } else {
+      secondaryFiles = [];
+      secondaryData = { columns: [], preview: [], rowCount: 0, uniqueCounts: {} };
+      elements.fileInputB.value = '';
+    }
+    renderFilesList(side);
+  }
+
+  // Check if both sides have uploaded files and fetch previews
+  async function checkFilesReady() {
+    const primaryReady = primaryFiles.filter(f => f.status === 'uploaded');
+    const secondaryReady = secondaryFiles.filter(f => f.status === 'uploaded');
+
+    if (primaryReady.length === 0 || secondaryReady.length === 0) {
+      return;
+    }
+
+    // Show loading status
+    elements.uploadStatus.style.display = 'block';
+    elements.uploadStatusText.textContent = 'Validating files...';
+    elements.uploadProgressBar.style.width = '50%';
+
+    try {
+      // Fetch previews from DO API
+      const [primaryPreview, secondaryPreview] = await Promise.all([
+        fetchPreview(primaryReady.map(f => f.r2Key)),
+        fetchPreview(secondaryReady.map(f => f.r2Key))
+      ]);
+
+      primaryData = {
+        columns: primaryPreview.columns,
+        preview: primaryPreview.preview,
+        rowCount: primaryPreview.rowCount,
+        uniqueCounts: primaryPreview.uniqueCounts,
+        fileCount: primaryPreview.fileCount
+      };
+
+      secondaryData = {
+        columns: secondaryPreview.columns,
+        preview: secondaryPreview.preview,
+        rowCount: secondaryPreview.rowCount,
+        uniqueCounts: secondaryPreview.uniqueCounts,
+        fileCount: secondaryPreview.fileCount
+      };
+
+      elements.uploadStatus.style.display = 'none';
+
+      // Auto-proceed to preview
+      showPreview();
+
+    } catch (error) {
+      console.error('Preview error:', error);
+      elements.uploadStatus.style.display = 'none';
+      alert('Error validating files: ' + error.message);
+    }
+  }
+
+  // Fetch preview from DO API
+  async function fetchPreview(keys) {
+    const response = await fetch(`${BACKEND_URL}/r2/preview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keys })
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Preview failed' }));
+      throw new Error(error.detail || 'Preview failed');
+    }
+
+    return await response.json();
+  }
+
+  // =====================
+  // Preview Step
+  // =====================
+
+  function showPreview() {
+    // Update tab names
+    const primaryNames = primaryFiles.filter(f => f.status === 'uploaded').map(f => f.filename);
+    const secondaryNames = secondaryFiles.filter(f => f.status === 'uploaded').map(f => f.filename);
+
+    elements.tabNameA.textContent = primaryNames.length > 1
+      ? `${primaryNames.length} files combined`
+      : primaryNames[0] || 'Primary';
+    elements.tabNameB.textContent = secondaryNames.length > 1
+      ? `${secondaryNames.length} files combined`
+      : secondaryNames[0] || 'Secondary';
+
+    elements.tabMetaA.textContent = `${primaryData.rowCount.toLocaleString()} rows`;
+    elements.tabMetaB.textContent = `${secondaryData.rowCount.toLocaleString()} rows`;
+
+    // Render preview tables
+    renderSpreadsheet(primaryData, elements.previewHeaderA, elements.previewBodyA);
+    renderSpreadsheet(secondaryData, elements.previewHeaderB, elements.previewBodyB);
+
+    switchTab('a');
+    showStep('preview');
+  }
+
+  function renderSpreadsheet(data, headerEl, bodyEl) {
+    headerEl.innerHTML = '<tr><th class="row-num">#</th>' +
+      data.columns.map(c => `<th>${escapeHtml(c)}</th>`).join('') +
+      '</tr>';
+
+    bodyEl.innerHTML = data.preview.map((row, idx) =>
+      `<tr><td class="row-num">${idx + 1}</td>` +
+      data.columns.map(col => `<td>${escapeHtml(row[col])}</td>`).join('') +
+      '</tr>'
+    ).join('');
+  }
+
+  // =====================
+  // Config Step
+  // =====================
+
+  function showConfig() {
+    // Populate key column dropdowns
+    elements.keyColumnA.innerHTML = primaryData.columns.map(c =>
+      `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`
+    ).join('');
+
+    elements.keyColumnB.innerHTML = secondaryData.columns.map(c =>
+      `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`
+    ).join('');
+
+    elements.keyColumnA.onchange = updateMatchPreview;
+    elements.keyColumnB.onchange = updateMatchPreview;
+
+    updateMatchPreview();
+    showStep('config');
+  }
+
   async function updateMatchPreview() {
     const keyA = elements.keyColumnA.value;
     const keyB = elements.keyColumnB.value;
@@ -1445,189 +1547,38 @@ const jsonLdSchema = [
       return;
     }
 
-    if (useBackend) {
-      // Use backend API for match preview
-      await updateMatchPreviewBackend(keyA, keyB);
-    } else {
-      // Use browser-based match preview
-      updateMatchPreviewBrowser(keyA, keyB);
-    }
-  }
+    // Use unique counts from preview data
+    const uniqueA = primaryData.uniqueCounts[keyA] || 0;
+    const uniqueB = secondaryData.uniqueCounts[keyB] || 0;
 
-  // Match preview using backend
-  async function updateMatchPreviewBackend(keyA, keyB) {
-    if (!fileA.fileId || !fileB.fileId) {
-      elements.matchPreview.style.display = 'none';
-      return;
-    }
+    elements.keyStatsA.innerHTML = `<strong>${uniqueA.toLocaleString()}</strong> unique values`;
+    elements.keyStatsB.innerHTML = `<strong>${uniqueB.toLocaleString()}</strong> unique values`;
 
-    try {
-      const response = await fetch(`${BACKEND_URL}/preview-match`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fileAId: fileA.fileId,
-          fileBId: fileB.fileId,
-          keyA,
-          keyB
-        })
-      });
-
-      if (!response.ok) {
-        console.error('Match preview failed');
-        return;
-      }
-
-      const result = await response.json();
-
-      elements.keyStatsA.innerHTML = `<strong>${result.uniqueA.toLocaleString()}</strong> unique values`;
-      elements.keyStatsB.innerHTML = `<strong>${result.uniqueB.toLocaleString()}</strong> unique values`;
-
-      elements.matchPreview.style.display = 'block';
-      elements.matchCount.textContent = result.matchCount.toLocaleString();
-
-      elements.matchPreview.classList.remove('warning', 'error');
-
-      if (result.matchCount === 0) {
-        elements.matchPreview.classList.add('error');
-        elements.matchDetails.textContent = 'No matches found. Check if you selected the correct columns.';
-      } else if (result.matchPercent < 50) {
-        elements.matchPreview.classList.add('warning');
-        elements.matchDetails.textContent = `${result.matchPercent}% of File A keys have matches in File B`;
-      } else {
-        elements.matchDetails.textContent = `${result.matchPercent}% of File A keys have matches in File B`;
-      }
-    } catch (error) {
-      console.error('Match preview error:', error);
-    }
-  }
-
-  // Match preview using browser
-  function updateMatchPreviewBrowser(keyA, keyB) {
-    if (!fileA.keyValues[keyA] || !fileB.keyValues[keyB]) {
-      elements.matchPreview.style.display = 'none';
-      return;
-    }
-
-    // Get unique values from each file
-    const valuesA = fileA.keyValues[keyA];
-    const valuesB = fileB.keyValues[keyB];
-
-    // Count matches
-    let matchCount = 0;
-    valuesA.forEach(val => {
-      if (valuesB.has(val)) matchCount++;
-    });
-
-    // Update stats next to dropdowns
-    elements.keyStatsA.innerHTML = `<strong>${valuesA.size.toLocaleString()}</strong> unique values`;
-    elements.keyStatsB.innerHTML = `<strong>${valuesB.size.toLocaleString()}</strong> unique values`;
-
-    // Update match preview
+    // Simple estimate based on unique counts (actual match requires server processing)
     elements.matchPreview.style.display = 'block';
-    elements.matchCount.textContent = matchCount.toLocaleString();
-
-    const matchPercent = ((matchCount / valuesA.size) * 100).toFixed(1);
-
-    // Determine status and styling
     elements.matchPreview.classList.remove('warning', 'error');
-
-    if (matchCount === 0) {
-      elements.matchPreview.classList.add('error');
-      elements.matchDetails.textContent = 'No matches found. Check if you selected the correct columns.';
-    } else if (matchCount < valuesA.size * 0.5) {
-      elements.matchPreview.classList.add('warning');
-      elements.matchDetails.textContent = `${matchPercent}% of File A keys have matches in File B`;
-    } else {
-      elements.matchDetails.textContent = `${matchPercent}% of File A keys have matches in File B`;
-    }
+    elements.matchCount.textContent = '~';
+    elements.matchDetails.textContent = 'Exact match count will be calculated during merge';
   }
 
-  // Check if both files are ready
-  function checkFilesReady() {
-    // For backend mode, we don't need workerReady
-    if (useBackend) {
-      if (fileA.columns.length > 0 && fileB.columns.length > 0) {
-        showPreview();
-      }
-    } else {
-      if (fileA.columns.length > 0 && fileB.columns.length > 0 && workerReady) {
-        showPreview();
-      }
-    }
-  }
+  // =====================
+  // Columns Step
+  // =====================
 
-  // Show preview step
-  function showPreview() {
-    // Update tab names and metadata
-    elements.tabNameA.textContent = fileA.file.name;
-    elements.tabNameB.textContent = fileB.file.name;
-    elements.tabMetaA.textContent = `${fileA.rowCount.toLocaleString()} rows`;
-    elements.tabMetaB.textContent = `${fileB.rowCount.toLocaleString()} rows`;
-
-    // Render preview tables
-    renderSpreadsheet(fileA, elements.previewHeaderA, elements.previewBodyA);
-    renderSpreadsheet(fileB, elements.previewHeaderB, elements.previewBodyB);
-
-    // Default to tab A
-    switchTab('a');
-
-    showStep('preview');
-  }
-
-  // Render spreadsheet table
-  function renderSpreadsheet(fileObj, headerEl, bodyEl) {
-    // Header with row number column
-    headerEl.innerHTML = '<tr><th class="row-num">#</th>' +
-      fileObj.columns.map(c => `<th>${escapeHtml(c)}</th>`).join('') +
-      '</tr>';
-
-    // Body with row numbers
-    bodyEl.innerHTML = fileObj.preview.map((row, idx) =>
-      `<tr><td class="row-num">${idx + 1}</td>` +
-      fileObj.columns.map(col => `<td>${escapeHtml(row[col] || '')}</td>`).join('') +
-      '</tr>'
-    ).join('');
-  }
-
-  // Show config step
-  function showConfig() {
-    // Populate key column dropdowns
-    elements.keyColumnA.innerHTML = fileA.columns.map(c =>
-      `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`
-    ).join('');
-
-    elements.keyColumnB.innerHTML = fileB.columns.map(c =>
-      `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`
-    ).join('');
-
-    // Add event listeners for match preview
-    elements.keyColumnA.onchange = updateMatchPreview;
-    elements.keyColumnB.onchange = updateMatchPreview;
-
-    // Initial match preview
-    updateMatchPreview();
-
-    showStep('config');
-  }
-
-  // Show columns step
   function showColumns() {
-    // Combine columns from both files
     const allColumns = [];
 
-    fileA.columns.forEach(col => {
+    primaryData.columns.forEach(col => {
       allColumns.push({ name: col, source: 'A', checked: true });
     });
 
-    fileB.columns.forEach(col => {
-      // Skip if it's the key column (will be duplicated)
+    secondaryData.columns.forEach(col => {
       if (col !== elements.keyColumnB.value) {
         allColumns.push({ name: col, source: 'B', checked: true });
       }
     });
 
-    elements.columnsList.innerHTML = allColumns.map((col, i) => `
+    elements.columnsList.innerHTML = allColumns.map((col) => `
       <label class="column-item">
         <input type="checkbox" name="column" value="${escapeHtml(col.name)}" data-source="${col.source}" ${col.checked ? 'checked' : ''}>
         <span class="column-name">${escapeHtml(col.name)}</span>
@@ -1638,8 +1589,11 @@ const jsonLdSchema = [
     showStep('columns');
   }
 
-  // Start merge
-  function startMerge() {
+  // =====================
+  // Merge Execution
+  // =====================
+
+  async function startMerge() {
     showStep('processing');
     updateProgress(0, 'Starting merge...');
 
@@ -1647,64 +1601,39 @@ const jsonLdSchema = [
     const leftKey = elements.keyColumnA.value;
     const rightKey = elements.keyColumnB.value;
 
-    // Get selected columns
     const selectedColumns = [];
     document.querySelectorAll('input[name="column"]:checked').forEach(cb => {
       selectedColumns.push(cb.value);
     });
 
-    if (useBackend) {
-      startMergeBackend(joinType, leftKey, rightKey, selectedColumns);
-    } else {
-      startMergeBrowser(joinType, leftKey, rightKey, selectedColumns);
-    }
-  }
-
-  // Start merge using browser (web worker)
-  function startMergeBrowser(joinType, leftKey, rightKey, selectedColumns) {
-    worker.postMessage({
-      type: 'MERGE',
-      payload: {
-        leftContent: fileA.content,
-        rightContent: fileB.content,
-        config: {
-          joinType,
-          leftKey,
-          rightKey,
-          selectedColumns
-        }
-      }
-    });
-  }
-
-  // Start merge using backend API
-  async function startMergeBackend(joinType, leftKey, rightKey, selectedColumns) {
     try {
       updateProgress(5, 'Sending merge request...');
 
-      const response = await fetch(`${BACKEND_URL}/jobs`, {
+      // Get R2 keys for uploaded files
+      const primaryKeys = primaryFiles.filter(f => f.status === 'uploaded').map(f => f.r2Key);
+      const secondaryKeys = secondaryFiles.filter(f => f.status === 'uploaded').map(f => f.r2Key);
+
+      const response = await fetch(`${BACKEND_URL}/r2/jobs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fileAId: fileA.fileId,
-          fileBId: fileB.fileId,
+          primaryKeys,
+          secondaryKeys,
           joinType,
           leftKey,
           rightKey,
-          selectedColumns
+          selectedColumns: selectedColumns.length > 0 ? selectedColumns : null
         })
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Merge request failed');
+        const error = await response.json().catch(() => ({ detail: 'Merge request failed' }));
+        throw new Error(error.detail || 'Merge request failed');
       }
 
       const result = await response.json();
-      const jobId = result.jobId;
+      pollMergeJob(result.jobId);
 
-      // Poll for job status
-      pollMergeJob(jobId);
     } catch (error) {
       console.error('Merge error:', error);
       alert('Error starting merge: ' + error.message);
@@ -1712,7 +1641,6 @@ const jsonLdSchema = [
     }
   }
 
-  // Poll for merge job completion
   async function pollMergeJob(jobId) {
     try {
       const response = await fetch(`${BACKEND_URL}/jobs/${jobId}`);
@@ -1726,8 +1654,8 @@ const jsonLdSchema = [
         updateProgress(job.progress || 10, job.message || 'Processing...');
         setTimeout(() => pollMergeJob(jobId), 500);
       } else if (job.status === 'complete') {
-        backendResultId = job.resultId;
-        handleMergeCompleteBackend(job);
+        resultKey = job.resultId; // This is an R2 key like "results/uuid.csv"
+        handleMergeComplete(job);
       } else if (job.status === 'error') {
         throw new Error(job.message || 'Merge failed');
       }
@@ -1738,13 +1666,11 @@ const jsonLdSchema = [
     }
   }
 
-  // Handle merge complete from backend
-  function handleMergeCompleteBackend(job) {
+  function handleMergeComplete(job) {
     mergeResult = {
       stats: job.stats,
       columns: job.columns,
-      preview: job.preview,
-      csv: null // Not available in memory, will download from server
+      preview: job.preview
     };
 
     // Update summary stats
@@ -1762,7 +1688,7 @@ const jsonLdSchema = [
 
     elements.resultsBody.innerHTML = job.preview.map((row, idx) =>
       `<tr><td class="row-num">${idx + 1}</td>` +
-      job.columns.map(col => `<td>${escapeHtml(row[col] || '')}</td>`).join('') +
+      job.columns.map(col => `<td>${escapeHtml(row[col])}</td>`).join('') +
       '</tr>'
     ).join('');
 
@@ -1773,65 +1699,46 @@ const jsonLdSchema = [
     showStep('results');
   }
 
-  // Handle merge complete
-  function handleMergeComplete(result) {
-    mergeResult = result;
+  // =====================
+  // Download Functions
+  // =====================
 
-    // Update summary stats
-    document.getElementById('stat-left').textContent = result.stats.leftRows.toLocaleString();
-    document.getElementById('stat-right').textContent = result.stats.rightRows.toLocaleString();
-    document.getElementById('stat-output').textContent = result.stats.outputRows.toLocaleString();
-    document.getElementById('stat-matched').textContent = result.stats.matched.toLocaleString();
-    document.getElementById('stat-left-only').textContent = result.stats.leftOnly.toLocaleString();
-    document.getElementById('stat-right-only').textContent = result.stats.rightOnly.toLocaleString();
+  async function downloadCSV() {
+    if (!resultKey) return;
 
-    // Render results table
-    elements.resultsHeader.innerHTML = '<tr><th class="row-num">#</th>' +
-      result.columns.map(c => `<th>${escapeHtml(c)}</th>`).join('') +
-      '</tr>';
+    try {
+      // Get presigned URL from backend
+      const response = await fetch(`${BACKEND_URL}/r2/results/${encodeURIComponent(resultKey)}`);
+      if (!response.ok) {
+        throw new Error('Failed to get download URL');
+      }
 
-    elements.resultsBody.innerHTML = result.preview.map((row, idx) =>
-      `<tr><td class="row-num">${idx + 1}</td>` +
-      result.columns.map(col => `<td>${escapeHtml(row[col] || '')}</td>`).join('') +
-      '</tr>'
-    ).join('');
-
-    if (result.stats.outputRows > 100) {
-      elements.resultsBody.innerHTML += `<tr><td colspan="${result.columns.length + 1}" style="text-align: center; color: var(--color-ink-light); background: #f9fafb;">... and ${(result.stats.outputRows - 100).toLocaleString()} more rows</td></tr>`;
-    }
-
-    showStep('results');
-  }
-
-  // Download CSV
-  function downloadCSV() {
-    if (!mergeResult) return;
-
-    if (useBackend && backendResultId) {
-      // Download from backend
-      window.location.href = `${BACKEND_URL}/results/${backendResultId}`;
-    } else if (mergeResult.csv) {
-      // Download from browser memory
-      const blob = new Blob([mergeResult.csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'merged_data.csv';
-      a.click();
-      URL.revokeObjectURL(url);
+      const data = await response.json();
+      window.location.href = data.downloadUrl;
+    } catch (error) {
+      console.error('Download error:', error);
+      alert('Error downloading file: ' + error.message);
     }
   }
 
-  // Download Excel
-  function downloadExcel() {
-    if (!mergeResult) return;
+  async function downloadExcel() {
+    if (!mergeResult || !resultKey) return;
 
-    if (useBackend && backendResultId) {
-      // Download from backend
-      window.location.href = `${BACKEND_URL}/results/${backendResultId}/excel`;
-    } else if (mergeResult.csv) {
-      // Create Excel from browser memory
-      const rows = mergeResult.csv.split('\n').map(line => {
+    try {
+      // For Excel, we need to fetch the CSV and convert client-side
+      const response = await fetch(`${BACKEND_URL}/r2/results/${encodeURIComponent(resultKey)}`);
+      if (!response.ok) {
+        throw new Error('Failed to get download URL');
+      }
+
+      const data = await response.json();
+
+      // Fetch the CSV data
+      const csvResponse = await fetch(data.downloadUrl);
+      const csvText = await csvResponse.text();
+
+      // Parse CSV to array
+      const rows = csvText.split('\n').map(line => {
         const cells = [];
         let current = '';
         let inQuotes = false;
@@ -1854,6 +1761,7 @@ const jsonLdSchema = [
         return cells;
       });
 
+      // Create Excel workbook
       const ws = XLSX.utils.aoa_to_sheet(rows);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Merged Data');
@@ -1862,8 +1770,8 @@ const jsonLdSchema = [
       const summaryData = [
         ['Merge Summary'],
         [''],
-        ['File A Rows', mergeResult.stats.leftRows],
-        ['File B Rows', mergeResult.stats.rightRows],
+        ['Primary Files Rows', mergeResult.stats.leftRows],
+        ['Secondary Files Rows', mergeResult.stats.rightRows],
         ['Output Rows', mergeResult.stats.outputRows],
         ['Matched', mergeResult.stats.matched],
         ['Left Only', mergeResult.stats.leftOnly],
@@ -1875,51 +1783,41 @@ const jsonLdSchema = [
       XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
 
       XLSX.writeFile(wb, 'merged_data.xlsx');
+
+    } catch (error) {
+      console.error('Excel download error:', error);
+      alert('Error creating Excel file: ' + error.message);
     }
   }
 
-  // Remove file
-  function removeFile(fileId) {
-    const fileObj = fileId === 'a' ? fileA : fileB;
-    const uploadArea = fileId === 'a' ? elements.uploadAreaA : elements.uploadAreaB;
-    const fileInfo = fileId === 'a' ? elements.fileInfoA : elements.fileInfoB;
-    const fileInput = fileId === 'a' ? elements.fileInputA : elements.fileInputB;
-
-    fileObj.file = null;
-    fileObj.content = null;
-    fileObj.columns = [];
-    fileObj.preview = [];
-    fileObj.rowCount = 0;
-    fileObj.keyValues = {};
-    fileObj.fileId = null;
-
-    uploadArea.classList.remove('has-file');
-    fileInfo.style.display = 'none';
-    fileInput.value = '';
-  }
-
+  // =====================
   // Reset
+  // =====================
+
   function reset() {
-    removeFile('a');
-    removeFile('b');
+    primaryFiles = [];
+    secondaryFiles = [];
+    primaryData = { columns: [], preview: [], rowCount: 0, uniqueCounts: {} };
+    secondaryData = { columns: [], preview: [], rowCount: 0, uniqueCounts: {} };
     mergeResult = null;
-    backendResultId = null;
-    useBackend = false;
+    resultKey = null;
+
+    elements.fileInputA.value = '';
+    elements.fileInputB.value = '';
     elements.progressFill.style.width = '0%';
     elements.progressText.textContent = '0%';
-    elements.backendNotice.style.display = 'none';
+
+    renderFilesList('primary');
+    renderFilesList('secondary');
+
     showStep('upload');
   }
 
-  // Escape HTML
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
+  // =====================
+  // Event Setup
+  // =====================
 
-  // Setup upload area events
-  function setupUploadArea(uploadArea, fileInput, fileId) {
+  function setupUploadArea(uploadArea, fileInput, side) {
     uploadArea.addEventListener('click', () => fileInput.click());
 
     uploadArea.addEventListener('dragover', (e) => {
@@ -1934,29 +1832,24 @@ const jsonLdSchema = [
     uploadArea.addEventListener('drop', (e) => {
       e.preventDefault();
       uploadArea.classList.remove('dragover');
-      handleFileUpload(e.dataTransfer.files[0], fileId);
+      handleFilesUpload(Array.from(e.dataTransfer.files), side);
     });
 
     fileInput.addEventListener('change', (e) => {
-      handleFileUpload(e.target.files[0], fileId);
+      handleFilesUpload(Array.from(e.target.files), side);
+      e.target.value = ''; // Reset so same files can be selected again
     });
   }
 
-  // Initialize
-  setupUploadArea(elements.uploadAreaA, elements.fileInputA, 'a');
-  setupUploadArea(elements.uploadAreaB, elements.fileInputB, 'b');
+  // Initialize upload areas
+  setupUploadArea(elements.uploadAreaA, elements.fileInputA, 'primary');
+  setupUploadArea(elements.uploadAreaB, elements.fileInputB, 'secondary');
 
-  elements.removeA.addEventListener('click', (e) => {
-    e.stopPropagation();
-    removeFile('a');
-  });
+  // Clear buttons
+  elements.clearA.addEventListener('click', () => clearFiles('primary'));
+  elements.clearB.addEventListener('click', () => clearFiles('secondary'));
 
-  elements.removeB.addEventListener('click', (e) => {
-    e.stopPropagation();
-    removeFile('b');
-  });
-
-  // Navigation
+  // Navigation buttons
   document.getElementById('back-to-upload').addEventListener('click', () => showStep('upload'));
   document.getElementById('continue-to-config').addEventListener('click', showConfig);
   document.getElementById('back-to-preview').addEventListener('click', showPreview);
@@ -1976,10 +1869,6 @@ const jsonLdSchema = [
     document.querySelectorAll('input[name="column"]').forEach(cb => cb.checked = false);
   });
 
-  // Initialize from URL on page load
-  const initialStep = getStepFromURL();
-  if (initialStep !== 'upload') {
-    // Can only restore to upload if no data
-    showStep('upload', false);
-  }
+  // Initialize
+  showStep('upload', false);
 </script>
