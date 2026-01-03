@@ -21,7 +21,7 @@ export const TOOLS: Tool[] = [
   },
   {
     slug: 'data-merge',
-    name: 'Data Merge',
+    name: 'VLOOKUP for large files',
     description: 'Merge and join large datasets quickly. Replace VLOOKUP with powerful join operations.',
     category: 'utility',
   },
