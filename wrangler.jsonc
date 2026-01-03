@@ -1,6 +1,6 @@
 {
 	"main": "dist/_worker.js/index.js",
-	"name": "density-dwarf",
+	"name": "kirubashankar",
   "compatibility_date": "2025-12-31",
   "compatibility_flags": [
     "nodejs_compat",
