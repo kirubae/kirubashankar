@@ -8,8 +8,6 @@ from enum import Enum
 class ResearchType(str, Enum):
     """Supported research types"""
     PERPLEXITY = "perplexity"
-    APOLLO = "apollo"
-    SALESQL = "salesql"
 
 
 class FieldType(str, Enum):
@@ -109,8 +107,6 @@ class RunHistoryEntry(BaseModel):
 
 class CacheStats(BaseModel):
     """Cache statistics"""
-    salesql_entries: int
-    apollo_entries: int
     gcs_enabled: bool
     bucket: Optional[str] = None
 

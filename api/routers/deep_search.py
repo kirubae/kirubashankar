@@ -36,8 +36,6 @@ from models.deep_search import (
 )
 from services.cache_service import get_cache_service
 from services.perplexity_service import process_entity_perplexity
-from services.apollo_service import is_valid_domain, process_domains_apollo
-from services.salesql_service import is_valid_linkedin_url, process_linkedin_url_salesql
 
 logger = logging.getLogger(__name__)
 
@@ -95,19 +93,11 @@ async def upload_csv(
 
         logger.info(f"Uploaded CSV with {total_rows} rows for session {session_id}")
 
-        response_data = {
-            "total_rows": total_rows,
-            "sample_data": sample_data,
-            "has_header": has_header == "yes"
-        }
-
-        # Validate for Apollo
-        if research_type == "apollo":
-            valid_count = sum(1 for row in csv_storage[session_id] if row and is_valid_domain(row[0]))
-            invalid_count = sum(1 for row in csv_storage[session_id] if row and row[0].strip() and not is_valid_domain(row[0]))
-            response_data["validation"] = {"valid_count": valid_count, "invalid_count": invalid_count}
-
-        return CSVUploadResponse(**response_data)
+        return CSVUploadResponse(
+            total_rows=total_rows,
+            sample_data=sample_data,
+            has_header=has_header == "yes"
+        )
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error processing CSV: {str(e)}")
@@ -193,60 +183,6 @@ async def run_research(request: RunResearchRequest, background_tasks: Background
                         progress_tracker[session_id]["completed"] += 1
 
                 progress_tracker[session_id]["batches_completed"] = batch_num
-
-        elif research_type == "apollo":
-            # Process with Apollo (bulk enrich)
-            domains = [row[0] if row else "" for row in request.csv_data]
-            domains = [d for d in domains if d and is_valid_domain(d)]
-
-            # Process in batches of 10
-            batch_size = 10
-            batches = [domains[i:i+batch_size] for i in range(0, len(domains), batch_size)]
-            progress_tracker[session_id]["batches_total"] = len(batches)
-
-            for batch_num, batch in enumerate(batches, 1):
-                if stop_flags.get(session_id):
-                    break
-
-                batch_results = await process_domains_apollo(
-                    settings.apollo_api_key,
-                    batch,
-                    cache_service
-                )
-
-                for result in batch_results:
-                    all_results.append(result)
-                    results_storage[session_id].append(result)
-                    progress_tracker[session_id]["completed"] += 1
-
-                progress_tracker[session_id]["batches_completed"] = batch_num
-
-        elif research_type == "salesql":
-            # Process with SalesQL (one at a time due to rate limits)
-            linkedin_urls = [row[0] if row else "" for row in request.csv_data]
-            linkedin_urls = [u for u in linkedin_urls if u and is_valid_linkedin_url(u)]
-
-            progress_tracker[session_id]["batches_total"] = len(linkedin_urls)
-
-            for idx, url in enumerate(linkedin_urls, 1):
-                if stop_flags.get(session_id):
-                    break
-
-                url_results = await process_linkedin_url_salesql(
-                    settings.salesql_api_key,
-                    url,
-                    cache_service
-                )
-
-                for result in url_results:
-                    all_results.append(result)
-                    results_storage[session_id].append(result)
-
-                progress_tracker[session_id]["completed"] += 1
-                progress_tracker[session_id]["batches_completed"] = idx
-
-                # Rate limiting delay
-                await asyncio.sleep(1.5)
 
         # Save results to CSV
         if all_results:
@@ -354,15 +290,9 @@ async def get_history():
     # Load runs history
     runs = await load_runs_history()
 
-    # Get cache stats
-    salesql_cache = await cache_service.load_full_cache("salesql_cache")
-    apollo_cache = await cache_service.load_full_cache("apollo_cache")
-
     return HistoryResponse(
         runs=[RunHistoryEntry(**run) for run in runs],
         cache_stats=CacheStats(
-            salesql_entries=len(salesql_cache),
-            apollo_entries=len(apollo_cache),
             gcs_enabled=cache_service.gcs_enabled,
             bucket=cache_service.bucket_name
         )

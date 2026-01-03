@@ -27,12 +27,6 @@ services:
         value: "https://kirubashankar.com,http://localhost:4321"
       - key: PERPLEXITY_API_KEY
         type: SECRET
-      - key: APOLLO_API_KEY
-        type: SECRET
-      - key: SALESQL_API_KEY
-        type: SECRET
-      - key: GCS_CACHE_BUCKET
-        value: "deep-search-cache-20251229"
 
     health_check:
       http_path: /health

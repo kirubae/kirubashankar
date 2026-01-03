@@ -27,8 +27,6 @@ class Settings(BaseSettings):
 
     # API Keys
     perplexity_api_key: str = ""
-    apollo_api_key: str = ""
-    salesql_api_key: str = ""
 
     # GCS Cache (optional)
     gcs_cache_bucket: str = "deep-search-cache-20251229"
