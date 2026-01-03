@@ -41,8 +41,7 @@ async def lifespan(app: FastAPI):
     logger.info(f"Storage directories initialized")
     logger.info(f"CORS origins: {settings.cors_origins_list}")
     logger.info(f"Perplexity API Key: {'Set' if settings.perplexity_api_key else 'MISSING'}")
-    logger.info(f"Apollo API Key: {'Set' if settings.apollo_api_key else 'MISSING'}")
-    logger.info(f"SalesQL API Key: {'Set' if settings.salesql_api_key else 'MISSING'}")
+    logger.info(f"R2 Storage: {'Configured' if settings.r2_access_key_id else 'NOT CONFIGURED'}")
 
     yield
 
