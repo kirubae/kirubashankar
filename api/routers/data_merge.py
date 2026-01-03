@@ -199,16 +199,18 @@ async def download_result_excel(result_id: str):
 
 @router.post("/r2/preview")
 async def preview_r2_files(request: R2PreviewRequest):
-    """Preview files from R2 storage (concatenates multiple files)"""
+    """Preview files from R2 storage (concatenates multiple files with validation)"""
     r2 = get_r2_service()
 
     if not r2.is_available:
         raise HTTPException(status_code=503, detail="R2 storage not available")
 
     try:
-        # Download and concatenate all files
+        # Download and validate all files
         dfs = []
-        for key in request.keys:
+        reference_columns = None
+
+        for i, key in enumerate(request.keys):
             data = r2.download_file(key)
             if not data:
                 raise HTTPException(status_code=404, detail=f"File not found: {key}")
@@ -217,6 +219,38 @@ async def preview_r2_files(request: R2PreviewRequest):
                 df = pd.read_excel(data)
             else:
                 df = pd.read_csv(data)
+
+            # Validate: must have headers (check for unnamed columns)
+            unnamed_cols = [c for c in df.columns if str(c).startswith('Unnamed:')]
+            if unnamed_cols:
+                filename = key.split('/')[-1]
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"File '{filename}' appears to have missing column headers. All columns must have headers."
+                )
+
+            # Validate: column structure must match across files
+            current_columns = list(df.columns)
+            if reference_columns is None:
+                reference_columns = current_columns
+            else:
+                # Check column count
+                if len(current_columns) != len(reference_columns):
+                    filename = key.split('/')[-1]
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"File '{filename}' has {len(current_columns)} columns, but expected {len(reference_columns)} columns to match other files."
+                    )
+
+                # Check column names match
+                if current_columns != reference_columns:
+                    filename = key.split('/')[-1]
+                    mismatched = [c for c in current_columns if c not in reference_columns]
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"File '{filename}' has different column names. Mismatched columns: {mismatched[:5]}{'...' if len(mismatched) > 5 else ''}"
+                    )
+
             dfs.append(df)
 
         # Concatenate if multiple files

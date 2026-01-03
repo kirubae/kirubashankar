@@ -179,9 +179,46 @@ def _read_file_from_r2(r2_service, key: str) -> pd.DataFrame:
         raise ValueError(f"File not found in R2: {key}")
 
     if key.endswith('.xlsx') or key.endswith('.xls'):
-        return pd.read_excel(data)
+        df = pd.read_excel(data)
     else:
-        return pd.read_csv(data)
+        df = pd.read_csv(data)
+
+    # Validate: must have headers
+    unnamed_cols = [c for c in df.columns if str(c).startswith('Unnamed:')]
+    if unnamed_cols:
+        filename = key.split('/')[-1]
+        raise ValueError(f"File '{filename}' has missing column headers. All columns must have headers.")
+
+    return df
+
+
+def _validate_and_concat_dfs(dfs: list[pd.DataFrame], keys: list[str], side_name: str) -> pd.DataFrame:
+    """Validate that all DataFrames have matching columns and concatenate them"""
+    if not dfs:
+        raise ValueError(f"No files provided for {side_name}")
+
+    reference_columns = list(dfs[0].columns)
+
+    for i, df in enumerate(dfs[1:], start=1):
+        current_columns = list(df.columns)
+        filename = keys[i].split('/')[-1]
+
+        # Check column count
+        if len(current_columns) != len(reference_columns):
+            raise ValueError(
+                f"{side_name} file '{filename}' has {len(current_columns)} columns, "
+                f"but expected {len(reference_columns)} columns to match other files."
+            )
+
+        # Check column names match
+        if current_columns != reference_columns:
+            mismatched = [c for c in current_columns if c not in reference_columns]
+            raise ValueError(
+                f"{side_name} file '{filename}' has different column names. "
+                f"Mismatched: {mismatched[:5]}{'...' if len(mismatched) > 5 else ''}"
+            )
+
+    return pd.concat(dfs, ignore_index=True) if len(dfs) > 1 else dfs[0]
 
 
 def _run_merge_r2_sync(
@@ -207,7 +244,7 @@ def _run_merge_r2_sync(
 
         job_manager.update_job(job_id, progress=10, message="Downloading primary files from cloud...")
 
-        # Download and concatenate primary files
+        # Download primary files
         primary_dfs = []
         for i, key in enumerate(primary_keys):
             job_manager.update_job(
@@ -219,12 +256,14 @@ def _run_merge_r2_sync(
             primary_dfs.append(df)
             logger.info(f"Loaded primary file: {key} ({len(df)} rows)")
 
-        df_a = pd.concat(primary_dfs, ignore_index=True) if len(primary_dfs) > 1 else primary_dfs[0]
+        # Validate and concatenate primary files
+        job_manager.update_job(job_id, progress=25, message="Validating primary files...")
+        df_a = _validate_and_concat_dfs(primary_dfs, primary_keys, "Primary")
         logger.info(f"Combined primary files: {len(df_a)} total rows")
 
         job_manager.update_job(job_id, progress=30, message="Downloading secondary files from cloud...")
 
-        # Download and concatenate secondary files
+        # Download secondary files
         secondary_dfs = []
         for i, key in enumerate(secondary_keys):
             job_manager.update_job(
@@ -236,7 +275,9 @@ def _run_merge_r2_sync(
             secondary_dfs.append(df)
             logger.info(f"Loaded secondary file: {key} ({len(df)} rows)")
 
-        df_b = pd.concat(secondary_dfs, ignore_index=True) if len(secondary_dfs) > 1 else secondary_dfs[0]
+        # Validate and concatenate secondary files
+        job_manager.update_job(job_id, progress=45, message="Validating secondary files...")
+        df_b = _validate_and_concat_dfs(secondary_dfs, secondary_keys, "Secondary")
         logger.info(f"Combined secondary files: {len(df_b)} total rows")
 
         job_manager.update_job(job_id, progress=50, message="Merging datasets...")
