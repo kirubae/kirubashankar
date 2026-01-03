@@ -1,0 +1,118 @@
+---
+/**
+ * Centralized icon component for consistent SVG usage across the site.
+ * All icons are defined here to avoid duplication.
+ */
+
+interface Props {
+  name: 'home' | 'upload' | 'chevron-right' | 'chevron-left' | 'plus' | 'x' | 'download' | 'play' | 'stop' | 'refresh' | 'lock';
+  size?: number;
+  class?: string;
+}
+
+const { name, size = 16, class: className = '' } = Astro.props;
+
+const icons: Record<string, { viewBox: string; d: string; fill?: boolean; paths?: string[] }> = {
+  home: {
+    viewBox: '0 0 20 20',
+    d: 'M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z',
+    fill: true,
+  },
+  upload: {
+    viewBox: '0 0 24 24',
+    d: '',
+    paths: [
+      'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4',
+      'M17 8l-5-5-5 5',
+      'M12 3v12',
+    ],
+  },
+  'chevron-right': {
+    viewBox: '0 0 24 24',
+    d: '',
+    paths: ['M9 18l6-6-6-6'],
+  },
+  'chevron-left': {
+    viewBox: '0 0 24 24',
+    d: '',
+    paths: ['M15 18l-6-6 6-6'],
+  },
+  plus: {
+    viewBox: '0 0 24 24',
+    d: '',
+    paths: ['M12 5v14', 'M5 12h14'],
+  },
+  x: {
+    viewBox: '0 0 24 24',
+    d: '',
+    paths: ['M18 6L6 18', 'M6 6l12 12'],
+  },
+  download: {
+    viewBox: '0 0 24 24',
+    d: '',
+    paths: [
+      'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4',
+      'M7 10l5 5 5-5',
+      'M12 15V3',
+    ],
+  },
+  play: {
+    viewBox: '0 0 24 24',
+    d: 'M5 3l14 9-14 9V3z',
+    fill: true,
+  },
+  stop: {
+    viewBox: '0 0 24 24',
+    d: 'M6 6h12v12H6z',
+    fill: true,
+  },
+  refresh: {
+    viewBox: '0 0 24 24',
+    d: '',
+    paths: [
+      'M1 4v6h6',
+      'M3.51 15a9 9 0 102.13-9.36L1 10',
+    ],
+  },
+  lock: {
+    viewBox: '0 0 24 24',
+    d: '',
+    paths: [
+      'M3 11h18v11a2 2 0 01-2 2H5a2 2 0 01-2-2V11z',
+      'M7 11V7a5 5 0 0110 0v4',
+    ],
+  },
+};
+
+const icon = icons[name];
+---
+
+{icon.fill ? (
+  <svg
+    viewBox={icon.viewBox}
+    fill="currentColor"
+    width={size}
+    height={size}
+    class={className}
+    aria-hidden="true"
+  >
+    <path d={icon.d} />
+  </svg>
+) : (
+  <svg
+    viewBox={icon.viewBox}
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    width={size}
+    height={size}
+    class={className}
+    aria-hidden="true"
+  >
+    {icon.paths ? (
+      icon.paths.map((path) => <path d={path} />)
+    ) : (
+      <path d={icon.d} />
+    )}
+  </svg>
+)}

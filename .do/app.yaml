@@ -1,0 +1,36 @@
+name: kirubashankar-api
+
+region: nyc
+
+services:
+  - name: api
+    github:
+      repo: your-username/kirubashankar
+      branch: main
+      deploy_on_push: true
+    source_dir: api
+    dockerfile_path: api/Dockerfile
+
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: basic-xs
+
+    routes:
+      - path: /
+
+    envs:
+      - key: CORS_ORIGINS
+        value: "https://kirubashankar.com,http://localhost:4321"
+      - key: PERPLEXITY_API_KEY
+        type: SECRET
+      - key: APOLLO_API_KEY
+        type: SECRET
+      - key: SALESQL_API_KEY
+        type: SECRET
+      - key: GCS_CACHE_BUCKET
+        value: "deep-search-cache-20251229"
+
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 10
+      period_seconds: 30

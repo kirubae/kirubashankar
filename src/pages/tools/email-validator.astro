@@ -1,0 +1,651 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import { generateBreadcrumbSchema } from '@components/seo/schemas/BreadcrumbSchema';
+import { generateWebApplicationSchema } from '@components/seo/schemas/WebApplicationSchema';
+import Breadcrumb from '@components/ui/Breadcrumb.astro';
+import Icon from '@components/ui/Icon.astro';
+import '@styles/tools.css';
+
+const breadcrumbs = [
+  { name: 'Home', url: '/' },
+  { name: 'Things', url: '/tools' },
+  { name: 'Email Validator', url: '/tools/email-validator' },
+];
+
+const jsonLdSchema = [
+  generateBreadcrumbSchema(breadcrumbs),
+  generateWebApplicationSchema({
+    name: 'Email Validator',
+    description: 'Validate email addresses in bulk. Check format and verify MX records exist.',
+    slug: 'email-validator',
+    category: 'UtilityApplication',
+    featureList: ['Email format validation', 'MX record verification', 'Bulk processing', 'CSV/Excel support'],
+  }),
+];
+---
+
+<BaseLayout
+  title="Email Validator - Bulk Email Verification"
+  description="Validate email addresses in bulk. Check format and verify MX records. Upload CSV or Excel files, get results with validation status."
+  jsonLd={jsonLdSchema}
+>
+  <div class="tool-container">
+    <Breadcrumb items={breadcrumbs} />
+
+    <!-- Page Heading -->
+    <header class="page-header">
+      <h1>Email Validator</h1>
+      <p class="page-subtitle">Validate email format and MX records in bulk</p>
+    </header>
+
+    <!-- Step 1: Upload -->
+    <section id="step-upload" class="step">
+      <div class="step-header">
+        <div class="step-badge">1</div>
+        <div>
+          <h2>Upload your file</h2>
+          <p class="step-subtitle">CSV or Excel file with email addresses</p>
+        </div>
+      </div>
+
+      <div class="upload-area" id="upload-area">
+        <div class="upload-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+          </svg>
+        </div>
+        <h2>Drop your file here</h2>
+        <p>or click to browse</p>
+        <button class="btn btn-primary" id="upload-btn">Choose File</button>
+        <input type="file" id="file-input" accept=".csv,.xlsx,.xls" />
+      </div>
+
+      <p class="help-text">
+        Supports CSV and Excel files (.xlsx, .xls). The file should have a header row with column names.
+      </p>
+    </section>
+
+    <!-- Step 2: Select Column -->
+    <section id="step-column" class="step" style="display: none;">
+      <div class="step-header">
+        <div class="step-badge">2</div>
+        <div>
+          <h2>Select email column</h2>
+          <p class="step-subtitle">Multiple email columns detected</p>
+        </div>
+      </div>
+
+      <div class="step-content">
+        <div class="info-card" id="file-info">
+          <p><strong>File:</strong> <span id="file-name">-</span></p>
+          <p><strong>Rows:</strong> <span id="row-count">-</span></p>
+        </div>
+
+        <div class="form-section">
+          <label class="form-label">Which column contains the email addresses?</label>
+          <div id="column-options" class="radio-group"></div>
+        </div>
+
+        <div class="action-bar">
+          <button class="btn btn-secondary" id="back-to-upload">Back</button>
+          <button class="btn btn-primary" id="start-validation">Validate Emails</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 3: Validating -->
+    <section id="step-validating" class="step" style="display: none;">
+      <div class="step-header">
+        <div class="step-badge">3</div>
+        <div>
+          <h2>Validating emails</h2>
+          <p class="step-subtitle" id="validation-status">Checking format...</p>
+        </div>
+      </div>
+
+      <div class="step-content">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <p class="progress-text" id="progress-text">0%</p>
+      </div>
+    </section>
+
+    <!-- Step 4: Results -->
+    <section id="step-results" class="step" style="display: none;">
+      <div class="step-header">
+        <div class="step-badge">4</div>
+        <div>
+          <h2>Validation complete</h2>
+          <p class="step-subtitle">Results are ready</p>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="summary-cards" id="summary-cards">
+        <div class="summary-card">
+          <span class="summary-value" id="total-count">0</span>
+          <span class="summary-label">Total</span>
+        </div>
+        <div class="summary-card valid">
+          <span class="summary-value" id="valid-count">0</span>
+          <span class="summary-label">Valid</span>
+        </div>
+        <div class="summary-card invalid">
+          <span class="summary-value" id="invalid-format-count">0</span>
+          <span class="summary-label">Invalid Format</span>
+        </div>
+        <div class="summary-card warning">
+          <span class="summary-value" id="no-mx-count">0</span>
+          <span class="summary-label">No MX Record</span>
+        </div>
+      </div>
+
+      <!-- Results Table -->
+      <div class="results-table-wrapper">
+        <table id="results-table">
+          <thead id="results-header"></thead>
+          <tbody id="results-body"></tbody>
+        </table>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn btn-secondary" id="start-over">Start Over</button>
+        <button class="btn btn-primary" id="download-results">Download CSV</button>
+      </div>
+    </section>
+  </div>
+</BaseLayout>
+
+<style is:global>
+  /* Page-specific styles */
+  #file-input {
+    display: none;
+  }
+
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .summary-card {
+    background: var(--color-cream);
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+  }
+
+  .summary-card.valid {
+    background: #ecfdf5;
+  }
+
+  .summary-card.invalid {
+    background: #fef2f2;
+  }
+
+  .summary-card.warning {
+    background: #fffbeb;
+  }
+
+  .summary-value {
+    display: block;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--color-ink);
+    margin-bottom: 4px;
+  }
+
+  .summary-card.valid .summary-value {
+    color: #059669;
+  }
+
+  .summary-card.invalid .summary-value {
+    color: #dc2626;
+  }
+
+  .summary-card.warning .summary-value {
+    color: #d97706;
+  }
+
+  .summary-label {
+    font-size: 13px;
+    color: var(--color-ink-light);
+  }
+
+  #results-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  #results-table th,
+  #results-table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  #results-table th {
+    background: var(--color-cream);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+  }
+
+  #results-table tr:hover td {
+    background: var(--color-cream);
+  }
+
+  .status-valid {
+    color: #059669;
+    font-weight: 500;
+  }
+
+  .status-invalid {
+    color: #dc2626;
+    font-weight: 500;
+  }
+
+  .status-warning {
+    color: #d97706;
+    font-weight: 500;
+  }
+
+  @media (max-width: 640px) {
+    .summary-cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+</style>
+
+<!-- SheetJS for Excel parsing -->
+<script is:inline src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+
+<script is:inline>
+  // State
+  let fileData = [];
+  let headers = [];
+  let selectedColumn = null;
+  let validationResults = [];
+
+  // DOM Elements
+  const elements = {
+    uploadArea: document.getElementById('upload-area'),
+    fileInput: document.getElementById('file-input'),
+    uploadBtn: document.getElementById('upload-btn'),
+    stepUpload: document.getElementById('step-upload'),
+    stepColumn: document.getElementById('step-column'),
+    stepValidating: document.getElementById('step-validating'),
+    stepResults: document.getElementById('step-results'),
+    fileName: document.getElementById('file-name'),
+    rowCount: document.getElementById('row-count'),
+    columnOptions: document.getElementById('column-options'),
+    backToUpload: document.getElementById('back-to-upload'),
+    startValidation: document.getElementById('start-validation'),
+    validationStatus: document.getElementById('validation-status'),
+    progressFill: document.getElementById('progress-fill'),
+    progressText: document.getElementById('progress-text'),
+    totalCount: document.getElementById('total-count'),
+    validCount: document.getElementById('valid-count'),
+    invalidFormatCount: document.getElementById('invalid-format-count'),
+    noMxCount: document.getElementById('no-mx-count'),
+    resultsHeader: document.getElementById('results-header'),
+    resultsBody: document.getElementById('results-body'),
+    startOver: document.getElementById('start-over'),
+    downloadResults: document.getElementById('download-results'),
+  };
+
+  // Email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  // CSV Parser
+  function parseCSV(text) {
+    const rows = [];
+    let currentRow = [];
+    let currentField = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      const nextChar = text[i + 1];
+
+      if (inQuotes) {
+        if (char === '"' && nextChar === '"') {
+          currentField += '"';
+          i++;
+        } else if (char === '"') {
+          inQuotes = false;
+        } else {
+          currentField += char;
+        }
+      } else {
+        if (char === '"') {
+          inQuotes = true;
+        } else if (char === ',') {
+          currentRow.push(currentField.trim());
+          currentField = '';
+        } else if (char === '\n' || (char === '\r' && nextChar === '\n')) {
+          currentRow.push(currentField.trim());
+          if (currentRow.some((f) => f)) rows.push(currentRow);
+          currentRow = [];
+          currentField = '';
+          if (char === '\r') i++;
+        } else {
+          currentField += char;
+        }
+      }
+    }
+
+    if (currentField || currentRow.length) {
+      currentRow.push(currentField.trim());
+      if (currentRow.some((f) => f)) rows.push(currentRow);
+    }
+
+    return rows;
+  }
+
+  // Parse file (CSV or Excel)
+  async function parseFile(file) {
+    const extension = file.name.split('.').pop().toLowerCase();
+
+    if (extension === 'csv') {
+      const text = await file.text();
+      const rows = parseCSV(text);
+      headers = rows[0] || [];
+      fileData = rows.slice(1);
+    } else if (extension === 'xlsx' || extension === 'xls') {
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+      headers = jsonData[0] || [];
+      fileData = jsonData.slice(1);
+    }
+  }
+
+  // Detect email columns
+  function detectEmailColumns() {
+    const emailColumns = [];
+
+    headers.forEach((header, index) => {
+      const headerLower = header.toLowerCase();
+      // Check if header contains 'email' or 'e-mail'
+      if (headerLower.includes('email') || headerLower.includes('e-mail')) {
+        emailColumns.push({ index, name: header });
+        return;
+      }
+
+      // Check first few data rows for email patterns
+      const sampleSize = Math.min(5, fileData.length);
+      let emailLikeCount = 0;
+      for (let i = 0; i < sampleSize; i++) {
+        if (fileData[i] && fileData[i][index] && emailRegex.test(fileData[i][index])) {
+          emailLikeCount++;
+        }
+      }
+      if (emailLikeCount >= sampleSize * 0.6) {
+        emailColumns.push({ index, name: header });
+      }
+    });
+
+    return emailColumns;
+  }
+
+  // Show step
+  function showStep(step) {
+    elements.stepUpload.style.display = 'none';
+    elements.stepColumn.style.display = 'none';
+    elements.stepValidating.style.display = 'none';
+    elements.stepResults.style.display = 'none';
+
+    if (step === 'upload') elements.stepUpload.style.display = 'block';
+    if (step === 'column') elements.stepColumn.style.display = 'block';
+    if (step === 'validating') elements.stepValidating.style.display = 'block';
+    if (step === 'results') elements.stepResults.style.display = 'block';
+  }
+
+  // Handle file selection
+  async function handleFile(file) {
+    if (!file) return;
+
+    try {
+      await parseFile(file);
+
+      if (headers.length === 0 || fileData.length === 0) {
+        alert('The file appears to be empty or invalid.');
+        return;
+      }
+
+      elements.fileName.textContent = file.name;
+      elements.rowCount.textContent = fileData.length.toLocaleString();
+
+      const emailColumns = detectEmailColumns();
+
+      if (emailColumns.length === 0) {
+        alert('No email column detected. Please ensure your file has a column containing email addresses.');
+        return;
+      }
+
+      if (emailColumns.length === 1) {
+        selectedColumn = emailColumns[0].index;
+        startValidationProcess();
+      } else {
+        // Show column selection
+        elements.columnOptions.innerHTML = emailColumns
+          .map(
+            (col, i) => `
+            <label class="radio-card">
+              <input type="radio" name="email-column" value="${col.index}" ${i === 0 ? 'checked' : ''}>
+              <div class="radio-content">
+                <span class="radio-icon">@</span>
+                <span>${col.name}</span>
+              </div>
+            </label>
+          `
+          )
+          .join('');
+        showStep('column');
+      }
+    } catch (error) {
+      console.error('Error parsing file:', error);
+      alert('Error parsing file. Please ensure it is a valid CSV or Excel file.');
+    }
+  }
+
+  // Validate emails
+  async function startValidationProcess() {
+    showStep('validating');
+    validationResults = [];
+
+    const emails = fileData.map((row) => row[selectedColumn] || '');
+    const total = emails.length;
+
+    // Phase 1: Format validation
+    elements.validationStatus.textContent = 'Checking format...';
+    const formatResults = emails.map((email) => ({
+      email,
+      formatValid: emailRegex.test(email),
+      hasMx: null,
+      status: '',
+    }));
+
+    // Update progress
+    elements.progressFill.style.width = '30%';
+    elements.progressText.textContent = '30%';
+
+    // Phase 2: Extract unique domains for MX lookup
+    elements.validationStatus.textContent = 'Verifying MX records...';
+    const validEmails = formatResults.filter((r) => r.formatValid);
+    const domains = [...new Set(validEmails.map((r) => r.email.split('@')[1].toLowerCase()))];
+
+    let mxResults = {};
+    if (domains.length > 0) {
+      try {
+        const response = await fetch('/api/validate-emails', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ domains }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          mxResults = data.results || {};
+        }
+      } catch (error) {
+        console.error('MX lookup error:', error);
+      }
+    }
+
+    // Update progress
+    elements.progressFill.style.width = '80%';
+    elements.progressText.textContent = '80%';
+
+    // Combine results
+    formatResults.forEach((result) => {
+      if (!result.formatValid) {
+        result.status = 'Invalid Format';
+        result.hasMx = '-';
+      } else {
+        const domain = result.email.split('@')[1].toLowerCase();
+        result.hasMx = mxResults[domain] ? 'Yes' : 'No';
+        result.status = mxResults[domain] ? 'Valid' : 'No MX Record';
+      }
+    });
+
+    validationResults = formatResults;
+
+    // Update progress
+    elements.progressFill.style.width = '100%';
+    elements.progressText.textContent = '100%';
+
+    // Show results
+    setTimeout(() => showResults(), 300);
+  }
+
+  // Show results
+  function showResults() {
+    showStep('results');
+
+    // Calculate stats
+    const total = validationResults.length;
+    const valid = validationResults.filter((r) => r.status === 'Valid').length;
+    const invalidFormat = validationResults.filter((r) => r.status === 'Invalid Format').length;
+    const noMx = validationResults.filter((r) => r.status === 'No MX Record').length;
+
+    elements.totalCount.textContent = total.toLocaleString();
+    elements.validCount.textContent = valid.toLocaleString();
+    elements.invalidFormatCount.textContent = invalidFormat.toLocaleString();
+    elements.noMxCount.textContent = noMx.toLocaleString();
+
+    // Build table header
+    const newHeaders = [...headers, 'Format Valid', 'MX Record', 'Status'];
+    elements.resultsHeader.innerHTML = `<tr>${newHeaders.map((h) => `<th>${h}</th>`).join('')}</tr>`;
+
+    // Build table body (show first 100 rows)
+    const displayRows = fileData.slice(0, 100);
+    elements.resultsBody.innerHTML = displayRows
+      .map((row, i) => {
+        const result = validationResults[i];
+        const statusClass =
+          result.status === 'Valid'
+            ? 'status-valid'
+            : result.status === 'Invalid Format'
+              ? 'status-invalid'
+              : 'status-warning';
+
+        const cells = [
+          ...row.map((cell) => `<td>${escapeHtml(cell || '')}</td>`),
+          `<td>${result.formatValid ? 'Yes' : 'No'}</td>`,
+          `<td>${result.hasMx}</td>`,
+          `<td class="${statusClass}">${result.status}</td>`,
+        ];
+
+        return `<tr>${cells.join('')}</tr>`;
+      })
+      .join('');
+
+    if (fileData.length > 100) {
+      elements.resultsBody.innerHTML += `<tr><td colspan="${newHeaders.length}" style="text-align: center; color: var(--color-ink-light);">... and ${fileData.length - 100} more rows (all included in download)</td></tr>`;
+    }
+  }
+
+  // Escape HTML
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Download results as CSV
+  function downloadResults() {
+    const newHeaders = [...headers, 'Format Valid', 'MX Record', 'Status'];
+    const rows = [newHeaders];
+
+    fileData.forEach((row, i) => {
+      const result = validationResults[i];
+      rows.push([...row, result.formatValid ? 'Yes' : 'No', result.hasMx, result.status]);
+    });
+
+    const csv = rows.map((row) => row.map((cell) => `"${String(cell || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'email_validation_results.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Reset
+  function reset() {
+    fileData = [];
+    headers = [];
+    selectedColumn = null;
+    validationResults = [];
+    elements.fileInput.value = '';
+    elements.progressFill.style.width = '0%';
+    elements.progressText.textContent = '0%';
+    showStep('upload');
+  }
+
+  // Event Listeners
+  elements.uploadBtn.addEventListener('click', () => elements.fileInput.click());
+  elements.uploadArea.addEventListener('click', (e) => {
+    if (e.target !== elements.uploadBtn) elements.fileInput.click();
+  });
+
+  elements.fileInput.addEventListener('change', (e) => {
+    handleFile(e.target.files[0]);
+  });
+
+  elements.uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    elements.uploadArea.classList.add('dragover');
+  });
+
+  elements.uploadArea.addEventListener('dragleave', () => {
+    elements.uploadArea.classList.remove('dragover');
+  });
+
+  elements.uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    elements.uploadArea.classList.remove('dragover');
+    handleFile(e.dataTransfer.files[0]);
+  });
+
+  elements.backToUpload.addEventListener('click', reset);
+
+  elements.startValidation.addEventListener('click', () => {
+    const selected = document.querySelector('input[name="email-column"]:checked');
+    if (selected) {
+      selectedColumn = parseInt(selected.value);
+      startValidationProcess();
+    }
+  });
+
+  elements.startOver.addEventListener('click', reset);
+  elements.downloadResults.addEventListener('click', downloadResults);
+</script>

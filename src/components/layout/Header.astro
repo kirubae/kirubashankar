@@ -1,0 +1,46 @@
+---
+import { SITE } from '@data/site';
+
+interface Props {
+  showNav?: boolean;
+}
+
+const { showNav = true } = Astro.props;
+const currentPath = Astro.url.pathname;
+---
+
+<header class="border-b border-border">
+  <div class="max-w-3xl mx-auto px-5 py-4">
+    <nav class="flex items-center justify-between" aria-label="Main navigation">
+      <a href="/" class="text-lg font-semibold text-ink hover:text-terracotta transition-colors">
+        {SITE.name.split(' ')[0]}
+      </a>
+      {showNav && (
+        <ul class="flex items-center gap-6 text-sm">
+          <li>
+            <a
+              href="/"
+              class:list={[
+                'transition-colors',
+                currentPath === '/' ? 'text-terracotta font-medium' : 'text-ink-light hover:text-terracotta',
+              ]}
+            >
+              About
+            </a>
+          </li>
+          <li>
+            <a
+              href="/tools"
+              class:list={[
+                'transition-colors',
+                currentPath.startsWith('/tools') ? 'text-terracotta font-medium' : 'text-ink-light hover:text-terracotta',
+              ]}
+            >
+              Things
+            </a>
+          </li>
+        </ul>
+      )}
+    </nav>
+  </div>
+</header>

@@ -1,0 +1,27 @@
+---
+import { SOCIAL_LINKS } from '@data/person';
+
+const currentYear = new Date().getFullYear();
+---
+
+<footer class="border-t border-border mt-auto">
+  <div class="max-w-3xl mx-auto px-5 py-6">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-ink-light">
+      <p>&copy; {currentYear} Kiruba Shankar Eswaran</p>
+      <ul class="flex items-center gap-4">
+        {SOCIAL_LINKS.map((link) => (
+          <li>
+            <a
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="hover:text-terracotta transition-colors"
+            >
+              {link.name}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+</footer>

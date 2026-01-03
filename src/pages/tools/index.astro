@@ -1,0 +1,140 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import { getAllTools } from '@data/tools';
+import { generateBreadcrumbSchema } from '@components/seo/schemas/BreadcrumbSchema';
+import Icon from '@components/ui/Icon.astro';
+
+const tools = getAllTools();
+
+const breadcrumbs = [
+  { name: 'Home', url: '/' },
+  { name: 'Things', url: '/tools' },
+];
+
+const jsonLdSchema = generateBreadcrumbSchema(breadcrumbs);
+---
+
+<BaseLayout
+  title="Handy Things"
+  description="Vibe-coded in spare time to help me get things done. Turned out it might help others too — so it's here for everyone. No ads, no tracking, no noise."
+  jsonLd={jsonLdSchema}
+>
+  <div class="max-w-3xl mx-auto mt-6 mb-8 md:mt-8 md:mb-12 px-5">
+    <!-- Breadcrumb -->
+    <nav class="flex items-center gap-2 text-sm mb-4" aria-label="Breadcrumb">
+      <a href="/" class="text-ink-light hover:text-terracotta transition-colors" aria-label="Home">
+        <Icon name="home" size={16} />
+      </a>
+      <span class="text-border">/</span>
+      <span class="text-ink font-medium">Things</span>
+    </nav>
+
+    <header class="mb-6">
+      <h1 class="text-2xl md:text-3xl font-bold text-ink mb-2">Handy Things</h1>
+      <p class="text-ink-light">
+        Vibe-coded in spare time to help me get things done.<br />
+        Turned out it might help others too — so it's here for everyone.<br />
+        No ads, no tracking, no noise.
+      </p>
+    </header>
+
+  <!-- Terminal Window -->
+  <div class="terminal-window">
+    <!-- Title Bar -->
+    <div class="terminal-titlebar">
+      <div class="terminal-buttons">
+        <span class="terminal-btn terminal-btn-close"></span>
+        <span class="terminal-btn terminal-btn-minimize"></span>
+        <span class="terminal-btn terminal-btn-maximize"></span>
+      </div>
+      <div class="terminal-title">handy-things — zsh</div>
+      <div class="terminal-buttons-spacer"></div>
+    </div>
+
+    <!-- Terminal Content -->
+    <div class="terminal-content">
+      <section>
+        {tools.length > 0 ? (
+          <ul class="divide-y divide-zinc-700">
+            {tools.map((tool) => (
+              <li class="py-6 first:pt-0 last:pb-0">
+                <a href={tool.url || `/tools/${tool.slug}`} class="group block">
+                  <h3 class="font-medium text-zinc-100 group-hover:text-green-400 mb-1">
+                    {tool.name}
+                  </h3>
+                  <p class="text-zinc-400 text-sm">{tool.description}</p>
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p class="text-zinc-400">Tools coming soon. Check back later!</p>
+        )}
+      </section>
+    </div>
+  </div>
+  </div>
+</BaseLayout>
+
+<style>
+  /* Terminal Window */
+  .terminal-window {
+    background: #1e1e1e;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Title Bar */
+  .terminal-titlebar {
+    background: #3c3c3c;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .terminal-buttons {
+    display: flex;
+    gap: 8px;
+  }
+
+  .terminal-buttons-spacer {
+    width: 52px;
+  }
+
+  .terminal-btn {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .terminal-btn-close {
+    background: #ff5f56;
+  }
+
+  .terminal-btn-minimize {
+    background: #ffbd2e;
+  }
+
+  .terminal-btn-maximize {
+    background: #27c93f;
+  }
+
+  .terminal-title {
+    font-size: 13px;
+    color: #9a9a9a;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  }
+
+  /* Terminal Content */
+  .terminal-content {
+    padding: 24px 32px;
+  }
+
+  @media (max-width: 640px) {
+    .terminal-content {
+      padding: 20px 24px;
+    }
+  }
+</style>

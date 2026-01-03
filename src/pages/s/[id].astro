@@ -1,0 +1,263 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import '@styles/tools.css';
+
+export const prerender = false;
+
+const { id } = Astro.params;
+
+// Fetch file metadata (without sensitive data)
+const { FILE_SHARE_DB } = Astro.locals.runtime.env;
+
+interface FileInfo {
+  id: string;
+  filename: string;
+  file_size: number;
+  created_at: string;
+  expires_at: string | null;
+  has_password: number;
+  has_email_restriction: number;
+}
+
+let file: FileInfo | null = null;
+let error: string | null = null;
+
+try {
+  file = await FILE_SHARE_DB.prepare(`
+    SELECT id, filename, file_size,
+           created_at, expires_at,
+           CASE WHEN password_hash IS NOT NULL THEN 1 ELSE 0 END as has_password,
+           CASE WHEN allowed_emails IS NOT NULL AND allowed_emails != '[]' THEN 1 ELSE 0 END as has_email_restriction
+    FROM files
+    WHERE id = ? AND is_deleted = 0
+  `).bind(id).first<FileInfo>();
+
+  if (!file) {
+    error = 'File not found';
+  } else if (file.expires_at && new Date(file.expires_at) < new Date()) {
+    error = 'This file has expired';
+  }
+} catch (e) {
+  error = 'Failed to load file';
+}
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+---
+
+<BaseLayout
+  title={file ? `Download ${file.filename}` : 'File Not Found'}
+  description="Download shared file"
+  noindex={true}
+>
+  <div class="tool-container">
+    <header class="page-header" style="text-align:center">
+      <h1>File Share</h1>
+    </header>
+
+    {error ? (
+      <section class="step">
+        <div class="step-content" style="text-align:center; max-width: 100%;">
+          <div class="error-icon" style="margin-bottom:16px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="64" height="64" style="color:#ef4444; margin: 0 auto; display: block;">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <h2 style="margin: 0 0 8px;">{error}</h2>
+          <p class="step-subtitle">The file you're looking for is not available.</p>
+          <div style="margin-top: 24px;">
+            <a href="/" class="btn btn-secondary">Go Home</a>
+          </div>
+        </div>
+      </section>
+    ) : (
+      <>
+        <!-- Access Form Section -->
+        <section id="access-section" class="step">
+          <div class="step-content" style="text-align:center; max-width: 100%;">
+            <div class="file-icon" style="margin-bottom:20px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="64" height="64" style="color:var(--color-terracotta); margin: 0 auto; display: block;">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+            </div>
+
+            <h2 style="margin: 0 0 8px;">Kiruba has shared {file.filename} with you</h2>
+            <p class="step-subtitle">{formatSize(file.file_size)} PDF</p>
+
+            <p class="help-text" style="margin:16px auto; max-width:400px; text-align: center;">
+              Please enter your details to view the file.
+              {file.has_email_restriction ? ' This file is restricted to specific email addresses.' : ''}
+            </p>
+
+            <form id="access-form" style="max-width:400px; margin:24px auto 0; text-align:left">
+              <input type="hidden" id="file-id" value={id} />
+              <input type="hidden" id="file-name" value={file.filename} />
+
+              <div class="form-group">
+                <label class="form-label">Your Email</label>
+                <input type="email" id="access-email" class="form-input" placeholder="Enter your email" required />
+              </div>
+
+              {file.has_password ? (
+                <div class="form-group" style="margin-top:16px">
+                  <label class="form-label">Password</label>
+                  <input type="password" id="access-password" class="form-input" placeholder="Enter file password" />
+                </div>
+              ) : null}
+
+              <p id="access-error" class="auth-error" style="text-align:center; min-height: 20px;"></p>
+
+              <div style="text-align:center; margin-top:24px">
+                <button type="submit" id="btn-view" class="btn btn-primary btn-large">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                  View File
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- PDF Viewer Section (hidden initially) -->
+        <section id="viewer-section" class="step" style="display: none;">
+          <div class="step-content" style="max-width: 100%;">
+            <div class="viewer-header">
+              <div class="viewer-file-info">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24" style="color:var(--color-terracotta);">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                <span id="viewer-filename">{file.filename}</span>
+              </div>
+              <button id="btn-download" class="btn btn-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Download
+              </button>
+            </div>
+            <div class="pdf-container">
+              <iframe id="pdf-viewer" title="PDF Viewer"></iframe>
+            </div>
+          </div>
+        </section>
+      </>
+    )}
+  </div>
+</BaseLayout>
+
+<style>
+  .auth-error {
+    color: #ef4444;
+    font-size: 14px;
+  }
+
+  .viewer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .viewer-file-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 500;
+  }
+
+  .pdf-container {
+    width: 100%;
+    height: 75vh;
+    min-height: 500px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f5f5f5;
+  }
+
+  .pdf-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+</style>
+
+<script is:inline>
+  const form = document.getElementById('access-form');
+  if (form) {
+    const btnView = document.getElementById('btn-view');
+    const originalBtnText = btnView.innerHTML;
+    let downloadUrl = '';
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const fileId = document.getElementById('file-id').value;
+      const email = document.getElementById('access-email').value;
+      const passwordInput = document.getElementById('access-password');
+      const password = passwordInput ? passwordInput.value : null;
+      const errorEl = document.getElementById('access-error');
+
+      errorEl.textContent = '';
+      btnView.disabled = true;
+      btnView.innerHTML = 'Validating...';
+
+      try {
+        const response = await fetch('/api/share/access', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ file_id: fileId, email, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          errorEl.textContent = data.error || 'Access denied';
+          btnView.disabled = false;
+          btnView.innerHTML = originalBtnText;
+          return;
+        }
+
+        // Store download URL for download button
+        downloadUrl = data.download_url;
+
+        // Create view URL (add mode=view + PDF viewer params)
+        // #view=FitH fits to width, navpanes=0 hides side panels, toolbar=0 hides toolbar
+        const viewUrl = downloadUrl + '&mode=view#navpanes=0&view=FitH';
+
+        // Show PDF viewer
+        document.getElementById('access-section').style.display = 'none';
+        document.getElementById('viewer-section').style.display = 'block';
+        document.getElementById('pdf-viewer').src = viewUrl;
+
+      } catch (err) {
+        errorEl.textContent = 'An error occurred. Please try again.';
+        btnView.disabled = false;
+        btnView.innerHTML = originalBtnText;
+      }
+    });
+
+    // Download button handler
+    document.getElementById('btn-download').addEventListener('click', () => {
+      if (downloadUrl) {
+        window.location.href = downloadUrl;
+      }
+    });
+  }
+</script>

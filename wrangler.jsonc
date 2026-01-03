@@ -1,0 +1,29 @@
+{
+	"main": "dist/_worker.js/index.js",
+	"name": "density-dwarf",
+  "compatibility_date": "2025-12-31",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+	"assets": {
+		"binding": "ASSETS",
+		"directory": "./dist"
+	},
+	"observability": {
+    "enabled": true
+  },
+  "r2_buckets": [
+    {
+      "binding": "FILE_SHARE_BUCKET",
+      "bucket_name": "file-share"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "FILE_SHARE_DB",
+      "database_name": "file-share-db",
+      "database_id": "219c19e3-6068-4a27-8b0f-f48f1308445c"
+    }
+  ]
+}

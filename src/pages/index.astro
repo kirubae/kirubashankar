@@ -1,0 +1,106 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import { PERSON, SOCIAL_LINKS, FEATURED_COMPANIES, MEDIA_MENTIONS } from '@data/person';
+import { generatePersonSchema } from '@components/seo/schemas/PersonSchema';
+import { generateWebSiteSchema } from '@components/seo/schemas/WebSiteSchema';
+
+const jsonLdSchema = [generatePersonSchema(), generateWebSiteSchema()];
+---
+
+<BaseLayout
+  title={PERSON.name}
+  description={`${PERSON.name}, ${PERSON.jobTitle} of ${PERSON.company}, with experience in entrepreneurship and building impactful businesses.`}
+  type="profile"
+  jsonLd={jsonLdSchema}
+>
+  <article class="max-w-3xl mx-auto my-8 md:my-12 bg-paper border border-border rounded px-5 py-8">
+    <!-- Profile Header -->
+    <header class="flex flex-col-reverse md:flex-row md:items-start md:justify-between gap-6 pb-8 border-b border-border">
+      <div class="flex-1">
+        <h1 class="text-2xl md:text-3xl font-bold text-ink mb-2">
+          {PERSON.name}
+        </h1>
+        <p class="text-lg text-ink-light mb-4">
+          <span>{PERSON.jobTitle}</span> at{' '}
+          <a
+            href={FEATURED_COMPANIES.find((c) => c.current)?.url}
+            class="text-terracotta hover:text-terracotta-dark hover:underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {PERSON.company}
+          </a>
+        </p>
+        <p class="text-ink leading-relaxed mb-4">
+          A builder at heart. Curious by default. Always experimenting to make things work better for people — even if the impact is just 1%. Focused on building a better tomorrow, and laying foundations for others to build on.
+        </p>
+        <p class="text-ink leading-relaxed mb-4">
+          From founding{' '}
+          <a href="https://www.zaask.pt" target="_blank" rel="noopener noreferrer" class="text-terracotta hover:text-terracotta-dark hover:underline">Zaask</a>{' '}
+          to simplify how people access professional services, to helping build the UK's first FCA-regulated insurance robo-advisor, the focus has always been the same: make complex things work better for people.
+        </p>
+        <p class="text-ink leading-relaxed">
+          Now at{' '}
+          <a href="https://www.eleos.co.uk" target="_blank" rel="noopener noreferrer" class="text-terracotta hover:text-terracotta-dark hover:underline">Eleos</a>, working on life insurance — making it simpler, more accessible, and genuinely useful for the people who rely on it.
+        </p>
+      </div>
+      <img
+        src="/images/kiruba-profile-image.png"
+        alt={PERSON.name}
+        class="w-28 h-28 md:w-32 md:h-32 rounded-full object-cover mx-auto md:mx-0 border-2 border-border"
+        width="128"
+        height="128"
+      />
+    </header>
+
+    <!-- Connect Section -->
+    <section class="py-8 border-b border-border">
+      <h2 class="text-lg font-bold text-ink mb-4">Connect with me</h2>
+      <nav class="flex flex-wrap gap-4" aria-label="Social links">
+        {SOCIAL_LINKS.map((link) => (
+          <a
+            href={link.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-terracotta font-medium hover:text-terracotta-dark hover:underline"
+          >
+            {link.name}
+          </a>
+        ))}
+      </nav>
+    </section>
+
+    <!-- Featured Links Section -->
+    <section class="py-8 border-b border-border">
+      <h2 class="text-lg font-bold text-ink mb-4">Featured links</h2>
+      <nav class="flex flex-wrap gap-x-6 gap-y-2" aria-label="Featured companies">
+        <span class="text-ink">
+          Eleos (<a href="https://www.eleos.co.uk" target="_blank" rel="noopener noreferrer" class="text-terracotta font-medium hover:text-terracotta-dark hover:underline">UK</a> | <a href="https://www.eleoslife.com" target="_blank" rel="noopener noreferrer" class="text-terracotta font-medium hover:text-terracotta-dark hover:underline">US</a>)
+        </span>
+        <span class="text-ink">
+          Zaask (<a href="https://www.zaask.pt" target="_blank" rel="noopener noreferrer" class="text-terracotta font-medium hover:text-terracotta-dark hover:underline">PT</a> | <a href="https://www.zaask.es" target="_blank" rel="noopener noreferrer" class="text-terracotta font-medium hover:text-terracotta-dark hover:underline">ES</a>)
+        </span>
+      </nav>
+    </section>
+
+    <!-- Media Mentions Section -->
+    <section class="py-8">
+      <h2 class="text-lg font-bold text-ink mb-6">Media mentions</h2>
+      <ul class="space-y-4">
+        {MEDIA_MENTIONS.map((mention) => (
+          <li>
+            <p class="font-medium text-ink mb-1">{mention.title}</p>
+            <a
+              href={mention.url}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              class="text-terracotta text-sm hover:text-terracotta-dark hover:underline"
+            >
+              {mention.publication}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  </article>
+</BaseLayout>

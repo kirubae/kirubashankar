@@ -1,0 +1,43 @@
+---
+import type { SEOProps } from '@types/index';
+import { SITE } from '@data/site';
+
+interface Props extends SEOProps {}
+
+const {
+  title,
+  description,
+  canonical = Astro.url.href,
+  image = SITE.defaultImage,
+  type = 'website',
+  noindex = false,
+} = Astro.props;
+
+const fullTitle = title === SITE.name ? title : `${title} | ${SITE.name}`;
+const imageUrl = image.startsWith('http') ? image : new URL(image, SITE.url).href;
+const canonicalUrl = canonical.startsWith('http') ? canonical : new URL(canonical, SITE.url).href;
+---
+
+<!-- Primary Meta Tags -->
+<title>{fullTitle}</title>
+<meta name="title" content={fullTitle} />
+<meta name="description" content={description} />
+{noindex && <meta name="robots" content="noindex, nofollow" />}
+<link rel="canonical" href={canonicalUrl} />
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content={type} />
+<meta property="og:url" content={canonicalUrl} />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:image" content={imageUrl} />
+<meta property="og:site_name" content={SITE.name} />
+<meta property="og:locale" content={SITE.locale} />
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:url" content={canonicalUrl} />
+<meta name="twitter:title" content={fullTitle} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={imageUrl} />
+<meta name="twitter:creator" content={SITE.twitterHandle} />

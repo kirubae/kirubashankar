@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+/* 1990s India inspired design tokens */
+@theme {
+  /* Warm nostalgic palette */
+  --color-cream: #FAFAF8;
+  --color-paper: #FFFFFF;
+  --color-terracotta: #0284C7;
+  --color-terracotta-dark: #0369A1;
+  --color-mustard: #D4A534;
+  --color-maroon: #6B1C23;
+  --color-deep-green: #1B4D3E;
+  --color-ink: #2C2416;
+  --color-ink-light: #5C4D3C;
+  --color-border: #E8E4DC;
+}
+
+/* Base styles */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply antialiased;
+    background-color: var(--color-cream);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-terracotta);
+    outline-offset: 2px;
+  }
+}
+
+/* Skip link for accessibility */
+.skip-link {
+  @apply sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:rounded-md;
+  background-color: var(--color-terracotta);
+  color: white;
+}

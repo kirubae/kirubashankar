@@ -1,0 +1,1985 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import { generateBreadcrumbSchema } from '@components/seo/schemas/BreadcrumbSchema';
+import { generateWebApplicationSchema } from '@components/seo/schemas/WebApplicationSchema';
+import Breadcrumb from '@components/ui/Breadcrumb.astro';
+import '@styles/tools.css';
+
+const breadcrumbs = [
+  { name: 'Home', url: '/' },
+  { name: 'Things', url: '/tools' },
+  { name: 'Data Merge', url: '/tools/data-merge' },
+];
+
+const jsonLdSchema = [
+  generateBreadcrumbSchema(breadcrumbs),
+  generateWebApplicationSchema({
+    name: 'Data Merge',
+    description: 'Merge and join large datasets quickly. Replace VLOOKUP with powerful join operations.',
+    slug: 'data-merge',
+    category: 'UtilityApplication',
+    featureList: ['CSV and Excel support', 'Left, Right, Inner, Full joins', 'Handle 500k+ rows', 'Column selection and renaming'],
+  }),
+];
+---
+
+<BaseLayout
+  title="Data Merge - Join Large Datasets"
+  description="Merge and join large datasets quickly and reliably. Support for CSV and Excel files, multiple join types, and handles hundreds of thousands of rows."
+  jsonLd={jsonLdSchema}
+>
+  <div class="merge-container">
+    <Breadcrumb items={breadcrumbs} />
+
+    <!-- Page Heading -->
+    <header class="page-header">
+      <h1>Data Merge</h1>
+      <p class="page-subtitle">Join large datasets with powerful merge operations</p>
+    </header>
+
+    <!-- Step 1: Upload Files -->
+    <section id="step-upload" class="step" data-step="upload">
+      <div class="step-header">
+        <div class="step-badge">1</div>
+        <div>
+          <h2>Upload your files</h2>
+          <p class="step-subtitle">Two CSV or Excel files to merge</p>
+        </div>
+      </div>
+
+      <div class="upload-grid">
+        <!-- File A -->
+        <div class="upload-box">
+          <div class="upload-label">File A (Left)</div>
+          <div class="upload-area" id="upload-area-a" data-file="a">
+            <div class="upload-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+              </svg>
+            </div>
+            <p class="upload-text">Drop file or click to browse</p>
+            <input type="file" id="file-input-a" accept=".csv,.xlsx,.xls" />
+          </div>
+          <div class="file-info" id="file-info-a" style="display: none;">
+            <span class="file-name" id="file-name-a"></span>
+            <span class="file-meta" id="file-meta-a"></span>
+            <button class="btn-remove" id="remove-a" title="Remove file">&times;</button>
+          </div>
+        </div>
+
+        <!-- File B -->
+        <div class="upload-box">
+          <div class="upload-label">File B (Right)</div>
+          <div class="upload-area" id="upload-area-b" data-file="b">
+            <div class="upload-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+              </svg>
+            </div>
+            <p class="upload-text">Drop file or click to browse</p>
+            <input type="file" id="file-input-b" accept=".csv,.xlsx,.xls" />
+          </div>
+          <div class="file-info" id="file-info-b" style="display: none;">
+            <span class="file-name" id="file-name-b"></span>
+            <span class="file-meta" id="file-meta-b"></span>
+            <button class="btn-remove" id="remove-b" title="Remove file">&times;</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="help-text">
+        Supports CSV and Excel files up to 500MB. For best results, ensure both files have header rows with column names.
+      </p>
+
+      <div id="backend-notice" class="backend-notice" style="display: none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+        <span>Large files detected. Using server-side processing for better performance.</span>
+      </div>
+    </section>
+
+    <!-- Step 2: Preview Data with Tabs -->
+    <section id="step-preview" class="step" data-step="preview" style="display: none;">
+      <div class="step-header">
+        <div class="step-badge">2</div>
+        <div>
+          <h2>Preview your data</h2>
+          <p class="step-subtitle">Confirm the data looks correct</p>
+        </div>
+      </div>
+
+      <!-- Excel-style Tabs -->
+      <div class="spreadsheet-container">
+        <div class="sheet-tabs">
+          <button class="sheet-tab active" data-tab="a" id="tab-a">
+            <span class="tab-icon">A</span>
+            <span class="tab-name" id="tab-name-a">File A</span>
+            <span class="tab-meta" id="tab-meta-a"></span>
+          </button>
+          <button class="sheet-tab" data-tab="b" id="tab-b">
+            <span class="tab-icon">B</span>
+            <span class="tab-name" id="tab-name-b">File B</span>
+            <span class="tab-meta" id="tab-meta-b"></span>
+          </button>
+        </div>
+
+        <div class="sheet-content">
+          <div class="sheet-panel active" id="panel-a">
+            <div class="spreadsheet-wrapper">
+              <table class="spreadsheet" id="preview-table-a">
+                <thead id="preview-header-a"></thead>
+                <tbody id="preview-body-a"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="sheet-panel" id="panel-b">
+            <div class="spreadsheet-wrapper">
+              <table class="spreadsheet" id="preview-table-b">
+                <thead id="preview-header-b"></thead>
+                <tbody id="preview-body-b"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn btn-secondary" id="back-to-upload">Back</button>
+        <button class="btn btn-primary" id="continue-to-config">Continue</button>
+      </div>
+    </section>
+
+    <!-- Step 3: Configure Join -->
+    <section id="step-config" class="step" data-step="config" style="display: none;">
+      <div class="step-header">
+        <div class="step-badge">3</div>
+        <div>
+          <h2>Configure the merge</h2>
+          <p class="step-subtitle">Choose join type and matching columns</p>
+        </div>
+      </div>
+
+      <div class="config-content">
+        <!-- Join Type Selection -->
+        <div class="form-section">
+          <label class="form-label">Join Type</label>
+          <div class="join-type-grid">
+            <label class="join-option">
+              <input type="radio" name="join-type" value="left" checked>
+              <div class="join-card">
+                <div class="join-icon">
+                  <svg viewBox="0 0 48 24" fill="none">
+                    <circle cx="16" cy="12" r="10" fill="var(--color-terracotta)" opacity="0.8"/>
+                    <circle cx="32" cy="12" r="10" stroke="var(--color-border)" stroke-width="2" fill="none"/>
+                  </svg>
+                </div>
+                <span class="join-name">Left Join</span>
+                <span class="join-desc">All from File A + matches from B</span>
+              </div>
+            </label>
+
+            <label class="join-option">
+              <input type="radio" name="join-type" value="right">
+              <div class="join-card">
+                <div class="join-icon">
+                  <svg viewBox="0 0 48 24" fill="none">
+                    <circle cx="16" cy="12" r="10" stroke="var(--color-border)" stroke-width="2" fill="none"/>
+                    <circle cx="32" cy="12" r="10" fill="var(--color-terracotta)" opacity="0.8"/>
+                  </svg>
+                </div>
+                <span class="join-name">Right Join</span>
+                <span class="join-desc">All from File B + matches from A</span>
+              </div>
+            </label>
+
+            <label class="join-option">
+              <input type="radio" name="join-type" value="inner">
+              <div class="join-card">
+                <div class="join-icon">
+                  <svg viewBox="0 0 48 24" fill="none">
+                    <circle cx="16" cy="12" r="10" stroke="var(--color-border)" stroke-width="2" fill="none"/>
+                    <circle cx="32" cy="12" r="10" stroke="var(--color-border)" stroke-width="2" fill="none"/>
+                    <ellipse cx="24" cy="12" rx="4" ry="8" fill="var(--color-terracotta)" opacity="0.8"/>
+                  </svg>
+                </div>
+                <span class="join-name">Inner Join</span>
+                <span class="join-desc">Only matching records</span>
+              </div>
+            </label>
+
+            <label class="join-option">
+              <input type="radio" name="join-type" value="outer">
+              <div class="join-card">
+                <div class="join-icon">
+                  <svg viewBox="0 0 48 24" fill="none">
+                    <circle cx="16" cy="12" r="10" fill="var(--color-terracotta)" opacity="0.8"/>
+                    <circle cx="32" cy="12" r="10" fill="var(--color-terracotta)" opacity="0.8"/>
+                  </svg>
+                </div>
+                <span class="join-name">Full Outer</span>
+                <span class="join-desc">All records from both files</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Key Column Selection -->
+        <div class="form-section">
+          <label class="form-label">Match Columns (Keys)</label>
+          <p class="form-hint">Select the columns that should match between files</p>
+
+          <div class="key-selection-grid">
+            <div class="key-select-box">
+              <label class="key-label">File A Column</label>
+              <select id="key-column-a" class="form-select"></select>
+              <div class="key-stats" id="key-stats-a"></div>
+            </div>
+
+            <div class="key-equals">=</div>
+
+            <div class="key-select-box">
+              <label class="key-label">File B Column</label>
+              <select id="key-column-b" class="form-select"></select>
+              <div class="key-stats" id="key-stats-b"></div>
+            </div>
+          </div>
+
+          <!-- Match Preview -->
+          <div class="match-preview" id="match-preview" style="display: none;">
+            <div class="match-preview-content">
+              <span class="match-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+              </span>
+              <span class="match-text">
+                <strong id="match-count">0</strong> matching keys found
+                <span class="match-details" id="match-details"></span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn btn-secondary" id="back-to-preview">Back</button>
+        <button class="btn btn-primary" id="continue-to-columns">Continue</button>
+      </div>
+    </section>
+
+    <!-- Step 4: Select Columns -->
+    <section id="step-columns" class="step" data-step="columns" style="display: none;">
+      <div class="step-header">
+        <div class="step-badge">4</div>
+        <div>
+          <h2>Select output columns</h2>
+          <p class="step-subtitle">Choose which columns to include in the result</p>
+        </div>
+      </div>
+
+      <div class="columns-content">
+        <div class="columns-list" id="columns-list">
+          <!-- Columns will be populated dynamically -->
+        </div>
+
+        <div class="columns-actions">
+          <button class="btn btn-secondary btn-small" id="select-all-columns">Select All</button>
+          <button class="btn btn-secondary btn-small" id="deselect-all-columns">Deselect All</button>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn btn-secondary" id="back-to-config">Back</button>
+        <button class="btn btn-primary" id="start-merge">Merge Data</button>
+      </div>
+    </section>
+
+    <!-- Step 5: Processing -->
+    <section id="step-processing" class="step" data-step="processing" style="display: none;">
+      <div class="step-header">
+        <div class="step-badge">5</div>
+        <div>
+          <h2>Merging data</h2>
+          <p class="step-subtitle" id="processing-status">Initializing...</p>
+        </div>
+      </div>
+
+      <div class="step-content">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <p class="progress-text" id="progress-text">0%</p>
+      </div>
+    </section>
+
+    <!-- Step 6: Results -->
+    <section id="step-results" class="step" data-step="results" style="display: none;">
+      <div class="step-header">
+        <div class="step-badge">6</div>
+        <div>
+          <h2>Merge complete</h2>
+          <p class="step-subtitle">Your data has been merged successfully</p>
+        </div>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="summary-grid">
+        <div class="summary-card">
+          <span class="summary-value" id="stat-left">0</span>
+          <span class="summary-label">File A Rows</span>
+        </div>
+        <div class="summary-card">
+          <span class="summary-value" id="stat-right">0</span>
+          <span class="summary-label">File B Rows</span>
+        </div>
+        <div class="summary-card highlight">
+          <span class="summary-value" id="stat-output">0</span>
+          <span class="summary-label">Output Rows</span>
+        </div>
+        <div class="summary-card success">
+          <span class="summary-value" id="stat-matched">0</span>
+          <span class="summary-label">Matched</span>
+        </div>
+        <div class="summary-card warning">
+          <span class="summary-value" id="stat-left-only">0</span>
+          <span class="summary-label">Left Only</span>
+        </div>
+        <div class="summary-card warning">
+          <span class="summary-value" id="stat-right-only">0</span>
+          <span class="summary-label">Right Only</span>
+        </div>
+      </div>
+
+      <!-- Results Preview -->
+      <div class="results-section">
+        <h3>Preview (first 100 rows)</h3>
+        <div class="spreadsheet-wrapper results-spreadsheet">
+          <table class="spreadsheet" id="results-table">
+            <thead id="results-header"></thead>
+            <tbody id="results-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn btn-secondary" id="start-over">Start Over</button>
+        <div class="download-buttons">
+          <button class="btn btn-primary" id="download-csv">Download CSV</button>
+          <button class="btn btn-secondary" id="download-excel">Download Excel</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Worker Loading Overlay -->
+    <div id="worker-loading" class="worker-loading" style="display: none;">
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <p>Loading Python runtime...</p>
+        <p class="loading-hint">This may take a few seconds on first use</p>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style is:global>
+  /* Merge Container - Full width with max */
+  .merge-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px 32px;
+  }
+
+  /* Upload Grid */
+  .upload-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 16px;
+  }
+
+  .upload-box {
+    position: relative;
+  }
+
+  .upload-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-ink);
+    margin-bottom: 12px;
+  }
+
+  .upload-area {
+    background: var(--color-paper);
+    border: 2px dashed var(--color-border);
+    border-radius: 12px;
+    padding: 32px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .upload-area:hover,
+  .upload-area.dragover {
+    border-color: var(--color-terracotta);
+    background: var(--color-cream);
+  }
+
+  .upload-area.has-file {
+    display: none;
+  }
+
+  .upload-area input[type="file"] {
+    display: none;
+  }
+
+  .upload-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 12px;
+    background: var(--color-cream);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .upload-icon svg {
+    width: 24px;
+    height: 24px;
+    stroke: var(--color-ink-light);
+  }
+
+  .upload-text {
+    color: var(--color-ink-light);
+    font-size: 14px;
+    margin: 0;
+  }
+
+  .file-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: var(--color-cream);
+    border-radius: 8px;
+  }
+
+  .file-name {
+    font-weight: 500;
+    color: var(--color-ink);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .file-meta {
+    font-size: 13px;
+    color: var(--color-ink-light);
+    white-space: nowrap;
+  }
+
+  .btn-remove {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: var(--color-paper);
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    color: var(--color-ink-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .btn-remove:hover {
+    background: #fef2f2;
+    color: #dc2626;
+  }
+
+  /* Excel-style Spreadsheet Tabs */
+  .spreadsheet-container {
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--color-paper);
+    margin-bottom: 24px;
+  }
+
+  .sheet-tabs {
+    display: flex;
+    background: #f3f4f6;
+    border-bottom: 1px solid var(--color-border);
+    padding: 0 8px;
+    gap: 2px;
+  }
+
+  .sheet-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--color-ink-light);
+    transition: all 0.15s;
+    margin-bottom: -1px;
+  }
+
+  .sheet-tab:hover {
+    background: rgba(255, 255, 255, 0.5);
+    color: var(--color-ink);
+  }
+
+  .sheet-tab.active {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    border-bottom-color: var(--color-terracotta);
+    font-weight: 500;
+  }
+
+  .tab-icon {
+    width: 20px;
+    height: 20px;
+    background: var(--color-terracotta);
+    color: white;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .sheet-tab[data-tab="b"] .tab-icon {
+    background: #8b5cf6;
+  }
+
+  .tab-name {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tab-meta {
+    font-size: 11px;
+    color: var(--color-ink-light);
+    background: var(--color-cream);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .sheet-content {
+    position: relative;
+  }
+
+  .sheet-panel {
+    display: none;
+  }
+
+  .sheet-panel.active {
+    display: block;
+  }
+
+  /* Spreadsheet Table */
+  .spreadsheet-wrapper {
+    overflow: auto;
+    max-height: 400px;
+  }
+
+  .results-spreadsheet {
+    max-height: 500px;
+  }
+
+  .spreadsheet {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    table-layout: auto;
+  }
+
+  .spreadsheet th,
+  .spreadsheet td {
+    padding: 8px 12px;
+    text-align: left;
+    border-right: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    white-space: nowrap;
+    min-width: 100px;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .spreadsheet th:last-child,
+  .spreadsheet td:last-child {
+    border-right: none;
+  }
+
+  .spreadsheet th {
+    background: #f9fafb;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    color: var(--color-ink);
+  }
+
+  .spreadsheet tbody tr:hover td {
+    background: #f9fafb;
+  }
+
+  .spreadsheet .row-num {
+    background: #f3f4f6;
+    color: var(--color-ink-light);
+    font-size: 11px;
+    text-align: center;
+    min-width: 50px;
+    max-width: 50px;
+    position: sticky;
+    left: 0;
+    z-index: 5;
+  }
+
+  .spreadsheet th.row-num {
+    z-index: 15;
+  }
+
+  /* Join Type Grid */
+  .join-type-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .join-option input {
+    display: none;
+  }
+
+  .join-card {
+    padding: 16px;
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .join-option input:checked + .join-card {
+    border-color: var(--color-terracotta);
+    background: rgba(2, 132, 199, 0.05);
+  }
+
+  .join-icon {
+    height: 32px;
+    margin-bottom: 8px;
+  }
+
+  .join-icon svg {
+    height: 24px;
+    width: auto;
+  }
+
+  .join-name {
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--color-ink);
+    margin-bottom: 4px;
+  }
+
+  .join-desc {
+    font-size: 11px;
+    color: var(--color-ink-light);
+  }
+
+  /* Key Selection */
+  .key-selection-grid {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    max-width: 600px;
+  }
+
+  .key-select-box {
+    flex: 1;
+  }
+
+  .key-label {
+    display: block;
+    font-size: 12px;
+    color: var(--color-ink-light);
+    margin-bottom: 6px;
+  }
+
+  .key-equals {
+    font-size: 24px;
+    color: var(--color-ink-light);
+    padding-top: 20px;
+  }
+
+  .key-stats {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--color-ink-light);
+  }
+
+  .key-stats strong {
+    color: var(--color-ink);
+  }
+
+  .match-preview {
+    margin-top: 20px;
+    padding: 16px;
+    background: #ecfdf5;
+    border-radius: 8px;
+    border: 1px solid #a7f3d0;
+  }
+
+  .match-preview.warning {
+    background: #fffbeb;
+    border-color: #fcd34d;
+  }
+
+  .match-preview.error {
+    background: #fef2f2;
+    border-color: #fca5a5;
+  }
+
+  .match-preview-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .match-icon {
+    color: #059669;
+    flex-shrink: 0;
+  }
+
+  .match-preview.warning .match-icon {
+    color: #d97706;
+  }
+
+  .match-preview.error .match-icon {
+    color: #dc2626;
+  }
+
+  .match-text {
+    font-size: 14px;
+    color: var(--color-ink);
+  }
+
+  .match-text strong {
+    font-weight: 600;
+  }
+
+  .match-details {
+    display: block;
+    font-size: 12px;
+    color: var(--color-ink-light);
+    margin-top: 2px;
+  }
+
+  /* File size warning */
+  .file-size-warning {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    border-radius: 8px;
+    margin-top: 12px;
+    font-size: 13px;
+    color: #92400e;
+  }
+
+  .file-size-warning.error {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #991b1b;
+  }
+
+  .backend-notice {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    margin-top: 16px;
+    font-size: 13px;
+    color: #1e40af;
+  }
+
+  .backend-notice svg {
+    flex-shrink: 0;
+  }
+
+  .form-hint {
+    font-size: 13px;
+    color: var(--color-ink-light);
+    margin: 4px 0 16px;
+  }
+
+  /* Columns List */
+  .columns-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 8px;
+    margin-bottom: 16px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+
+  .column-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--color-cream);
+    border-radius: 6px;
+    font-size: 13px;
+  }
+
+  .column-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .column-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .column-source {
+    font-size: 11px;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .column-source.source-a {
+    background: var(--color-terracotta);
+  }
+
+  .column-source.source-b {
+    background: #8b5cf6;
+  }
+
+  .columns-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-small {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  /* Summary Grid */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .summary-card {
+    background: var(--color-cream);
+    padding: 16px;
+    border-radius: 8px;
+    text-align: center;
+  }
+
+  .summary-card.highlight {
+    background: rgba(2, 132, 199, 0.1);
+  }
+
+  .summary-card.success {
+    background: #ecfdf5;
+  }
+
+  .summary-card.warning {
+    background: #fffbeb;
+  }
+
+  .summary-value {
+    display: block;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-ink);
+    margin-bottom: 4px;
+  }
+
+  .summary-card.highlight .summary-value {
+    color: var(--color-terracotta);
+  }
+
+  .summary-card.success .summary-value {
+    color: #059669;
+  }
+
+  .summary-card.warning .summary-value {
+    color: #d97706;
+  }
+
+  .summary-label {
+    font-size: 12px;
+    color: var(--color-ink-light);
+  }
+
+  /* Results */
+  .results-section {
+    margin-bottom: 24px;
+  }
+
+  .results-section h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 12px;
+  }
+
+  .download-buttons {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* Worker Loading Overlay */
+  .worker-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .loading-content {
+    text-align: center;
+  }
+
+  .loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-terracotta);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .loading-content p {
+    margin: 0 0 4px;
+    color: var(--color-ink);
+    font-weight: 500;
+  }
+
+  .loading-hint {
+    font-size: 13px;
+    color: var(--color-ink-light) !important;
+    font-weight: 400 !important;
+  }
+
+  /* Responsive */
+  @media (max-width: 1200px) {
+    .merge-container {
+      padding: 24px 20px;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .upload-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .join-type-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .summary-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .merge-container {
+      padding: 16px;
+    }
+
+    .summary-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .key-selection-grid {
+      flex-direction: column;
+    }
+
+    .key-equals {
+      padding: 0;
+      transform: rotate(90deg);
+    }
+
+    .sheet-tabs {
+      overflow-x: auto;
+    }
+  }
+</style>
+
+<!-- SheetJS for Excel parsing and export -->
+<script is:inline src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+
+<script is:inline>
+  // State
+  let worker = null;
+  let workerReady = false;
+  let fileA = { file: null, content: null, columns: [], preview: [], rowCount: 0, keyValues: {}, fileId: null };
+  let fileB = { file: null, content: null, columns: [], preview: [], rowCount: 0, keyValues: {}, fileId: null };
+  let mergeResult = null;
+  let currentStep = 'upload';
+  let useBackend = false; // Whether to use server-side processing
+  let backendResultId = null; // Result ID from backend merge
+
+  // File size limits (in bytes)
+  const FILE_SIZE_BROWSER_LIMIT = 50 * 1024 * 1024; // 50MB - use backend above this
+  const FILE_SIZE_HARD_LIMIT = 500 * 1024 * 1024; // 500MB - absolute max
+
+  // Backend API URL
+  const BACKEND_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:8000/api/merge'
+    : 'https://api.kirubashankar.com/api/merge';
+
+  // Step mapping
+  const steps = ['upload', 'preview', 'config', 'columns', 'processing', 'results'];
+
+  // DOM Elements
+  const elements = {
+    stepUpload: document.getElementById('step-upload'),
+    stepPreview: document.getElementById('step-preview'),
+    stepConfig: document.getElementById('step-config'),
+    stepColumns: document.getElementById('step-columns'),
+    stepProcessing: document.getElementById('step-processing'),
+    stepResults: document.getElementById('step-results'),
+    workerLoading: document.getElementById('worker-loading'),
+    uploadAreaA: document.getElementById('upload-area-a'),
+    uploadAreaB: document.getElementById('upload-area-b'),
+    fileInputA: document.getElementById('file-input-a'),
+    fileInputB: document.getElementById('file-input-b'),
+    fileInfoA: document.getElementById('file-info-a'),
+    fileInfoB: document.getElementById('file-info-b'),
+    fileNameA: document.getElementById('file-name-a'),
+    fileNameB: document.getElementById('file-name-b'),
+    fileMetaA: document.getElementById('file-meta-a'),
+    fileMetaB: document.getElementById('file-meta-b'),
+    removeA: document.getElementById('remove-a'),
+    removeB: document.getElementById('remove-b'),
+    tabA: document.getElementById('tab-a'),
+    tabB: document.getElementById('tab-b'),
+    tabNameA: document.getElementById('tab-name-a'),
+    tabNameB: document.getElementById('tab-name-b'),
+    tabMetaA: document.getElementById('tab-meta-a'),
+    tabMetaB: document.getElementById('tab-meta-b'),
+    panelA: document.getElementById('panel-a'),
+    panelB: document.getElementById('panel-b'),
+    previewHeaderA: document.getElementById('preview-header-a'),
+    previewHeaderB: document.getElementById('preview-header-b'),
+    previewBodyA: document.getElementById('preview-body-a'),
+    previewBodyB: document.getElementById('preview-body-b'),
+    keyColumnA: document.getElementById('key-column-a'),
+    keyColumnB: document.getElementById('key-column-b'),
+    keyStatsA: document.getElementById('key-stats-a'),
+    keyStatsB: document.getElementById('key-stats-b'),
+    matchPreview: document.getElementById('match-preview'),
+    matchCount: document.getElementById('match-count'),
+    matchDetails: document.getElementById('match-details'),
+    columnsList: document.getElementById('columns-list'),
+    processingStatus: document.getElementById('processing-status'),
+    progressFill: document.getElementById('progress-fill'),
+    progressText: document.getElementById('progress-text'),
+    resultsHeader: document.getElementById('results-header'),
+    resultsBody: document.getElementById('results-body'),
+    backendNotice: document.getElementById('backend-notice'),
+  };
+
+  // URL-based navigation
+  function updateURL(step) {
+    const newURL = `${window.location.pathname}#${step}`;
+    history.pushState({ step }, '', newURL);
+  }
+
+  function getStepFromURL() {
+    const hash = window.location.hash.replace('#', '');
+    return steps.includes(hash) ? hash : 'upload';
+  }
+
+  // Handle browser back/forward
+  window.addEventListener('popstate', (e) => {
+    const step = e.state?.step || getStepFromURL();
+    showStep(step, false);
+  });
+
+  // Initialize worker
+  function initWorker() {
+    if (worker) return;
+
+    elements.workerLoading.style.display = 'flex';
+
+    worker = new Worker('/workers/merge-worker.js');
+
+    worker.onmessage = function(e) {
+      const { type, payload } = e.data;
+
+      switch (type) {
+        case 'PROGRESS':
+          updateProgress(payload.percent, payload.message);
+          break;
+
+        case 'READY':
+          workerReady = true;
+          elements.workerLoading.style.display = 'none';
+          // Parse any pending files
+          if (fileA.content && !fileA.columns.length) {
+            worker.postMessage({ type: 'PARSE', payload: { content: fileA.content, fileId: 'a' } });
+          }
+          if (fileB.content && !fileB.columns.length) {
+            worker.postMessage({ type: 'PARSE', payload: { content: fileB.content, fileId: 'b' } });
+          }
+          break;
+
+        case 'PARSED':
+          handleFileParsed(payload);
+          break;
+
+        case 'MERGE_COMPLETE':
+          handleMergeComplete(payload);
+          break;
+
+        case 'ERROR':
+          alert('Error: ' + payload.message);
+          elements.workerLoading.style.display = 'none';
+          break;
+      }
+    };
+
+    worker.postMessage({ type: 'INIT' });
+  }
+
+  // Update progress
+  function updateProgress(percent, message) {
+    elements.progressFill.style.width = percent + '%';
+    elements.progressText.textContent = percent + '%';
+    if (message) {
+      elements.processingStatus.textContent = message;
+    }
+  }
+
+  // Show step
+  function showStep(step, updateHistory = true) {
+    currentStep = step;
+
+    elements.stepUpload.style.display = 'none';
+    elements.stepPreview.style.display = 'none';
+    elements.stepConfig.style.display = 'none';
+    elements.stepColumns.style.display = 'none';
+    elements.stepProcessing.style.display = 'none';
+    elements.stepResults.style.display = 'none';
+
+    const stepEl = document.getElementById('step-' + step);
+    if (stepEl) {
+      stepEl.style.display = 'block';
+    }
+
+    if (updateHistory) {
+      updateURL(step);
+    }
+
+    // Scroll to top of step
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Tab switching
+  function switchTab(tab) {
+    elements.tabA.classList.toggle('active', tab === 'a');
+    elements.tabB.classList.toggle('active', tab === 'b');
+    elements.panelA.classList.toggle('active', tab === 'a');
+    elements.panelB.classList.toggle('active', tab === 'b');
+  }
+
+  elements.tabA.addEventListener('click', () => switchTab('a'));
+  elements.tabB.addEventListener('click', () => switchTab('b'));
+
+  // Parse file to CSV content
+  async function parseFileToCSV(file) {
+    const extension = file.name.split('.').pop().toLowerCase();
+
+    if (extension === 'csv') {
+      return await file.text();
+    } else if (extension === 'xlsx' || extension === 'xls') {
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      return XLSX.utils.sheet_to_csv(firstSheet);
+    }
+    return null;
+  }
+
+  // Format file size
+  function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  // Handle file upload
+  async function handleFileUpload(file, fileId) {
+    if (!file) return;
+
+    // Check file size
+    if (file.size > FILE_SIZE_HARD_LIMIT) {
+      alert(`File too large (${formatFileSize(file.size)}). Maximum size is ${formatFileSize(FILE_SIZE_HARD_LIMIT)}.`);
+      return;
+    }
+
+    // Determine if we should use backend (large files)
+    const shouldUseBackend = file.size > FILE_SIZE_BROWSER_LIMIT;
+
+    if (shouldUseBackend && !useBackend) {
+      useBackend = true;
+      console.log('Large file detected, switching to backend processing');
+      elements.backendNotice.style.display = 'flex';
+    }
+
+    const fileObj = fileId === 'a' ? fileA : fileB;
+    const uploadArea = fileId === 'a' ? elements.uploadAreaA : elements.uploadAreaB;
+    const fileInfo = fileId === 'a' ? elements.fileInfoA : elements.fileInfoB;
+    const fileName = fileId === 'a' ? elements.fileNameA : elements.fileNameB;
+    const fileMeta = fileId === 'a' ? elements.fileMetaA : elements.fileMetaB;
+
+    // Update UI immediately
+    uploadArea.classList.add('has-file');
+    fileInfo.style.display = 'flex';
+    fileName.textContent = file.name;
+    fileMeta.textContent = 'Uploading...';
+
+    try {
+      if (useBackend) {
+        // Use backend for large files
+        await handleFileUploadBackend(file, fileId, fileObj, fileMeta);
+      } else {
+        // Use browser-based processing for small files
+        await handleFileUploadBrowser(file, fileId, fileObj, fileMeta);
+      }
+    } catch (error) {
+      console.error('Error handling file:', error);
+      alert('Error reading file. Please try again.');
+      uploadArea.classList.remove('has-file');
+      fileInfo.style.display = 'none';
+    }
+  }
+
+  // Handle file upload with backend (for large files)
+  async function handleFileUploadBackend(file, fileId, fileObj, fileMeta) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    fileMeta.textContent = 'Uploading to server...';
+
+    const response = await fetch(`${BACKEND_URL}/upload`, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Upload failed');
+    }
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error || 'Upload failed');
+    }
+
+    fileObj.file = file;
+    fileObj.fileId = result.fileId;
+    fileObj.columns = result.columns;
+    fileObj.rowCount = result.rowCount;
+    fileObj.preview = result.preview;
+    fileObj.dtypes = result.dtypes;
+    fileObj.uniqueCounts = result.uniqueCounts;
+
+    fileMeta.textContent = `${result.rowCount.toLocaleString()} rows, ${result.columns.length} cols`;
+
+    checkFilesReady();
+  }
+
+  // Handle file upload with browser (for small files)
+  async function handleFileUploadBrowser(file, fileId, fileObj, fileMeta) {
+    fileMeta.textContent = 'Parsing...';
+
+    // Parse file to CSV
+    const content = await parseFileToCSV(file);
+    if (!content) {
+      throw new Error('Could not parse file. Please use CSV or Excel format.');
+    }
+
+    fileObj.file = file;
+    fileObj.content = content;
+
+    // Initialize worker if needed
+    if (!worker) {
+      initWorker();
+    }
+
+    // Parse with worker if ready
+    if (workerReady) {
+      worker.postMessage({ type: 'PARSE', payload: { content, fileId } });
+    }
+  }
+
+  // Handle file parsed
+  function handleFileParsed(payload) {
+    const { fileId, success, error, columns, rowCount, preview, dtypes } = payload;
+
+    if (!success) {
+      alert('Error parsing file: ' + error);
+      return;
+    }
+
+    const fileObj = fileId === 'a' ? fileA : fileB;
+    const fileMeta = fileId === 'a' ? elements.fileMetaA : elements.fileMetaB;
+
+    fileObj.columns = columns;
+    fileObj.rowCount = rowCount;
+    fileObj.preview = preview;
+    fileObj.dtypes = dtypes;
+
+    // Extract key values for each column (for match preview)
+    // We'll extract from the full content for accurate matching
+    extractKeyValues(fileObj);
+
+    fileMeta.textContent = `${rowCount.toLocaleString()} rows, ${columns.length} cols`;
+
+    checkFilesReady();
+  }
+
+  // Extract unique values for each column (for match preview)
+  function extractKeyValues(fileObj) {
+    if (!fileObj.content) return;
+
+    const lines = fileObj.content.split('\n');
+    const headers = parseCSVLine(lines[0]);
+    fileObj.keyValues = {};
+
+    headers.forEach((col, colIdx) => {
+      const values = new Set();
+      for (let i = 1; i < lines.length && i <= 10000; i++) { // Limit to first 10k rows for performance
+        const row = parseCSVLine(lines[i]);
+        if (row[colIdx]) {
+          values.add(row[colIdx].trim().toLowerCase());
+        }
+      }
+      fileObj.keyValues[col] = values;
+    });
+
+    fileObj.totalRowsForMatching = Math.min(lines.length - 1, 10000);
+  }
+
+  // Simple CSV line parser
+  function parseCSVLine(line) {
+    if (!line) return [];
+    const cells = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"' && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        cells.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    cells.push(current);
+    return cells;
+  }
+
+  // Update match preview
+  async function updateMatchPreview() {
+    const keyA = elements.keyColumnA.value;
+    const keyB = elements.keyColumnB.value;
+
+    if (!keyA || !keyB) {
+      elements.matchPreview.style.display = 'none';
+      return;
+    }
+
+    if (useBackend) {
+      // Use backend API for match preview
+      await updateMatchPreviewBackend(keyA, keyB);
+    } else {
+      // Use browser-based match preview
+      updateMatchPreviewBrowser(keyA, keyB);
+    }
+  }
+
+  // Match preview using backend
+  async function updateMatchPreviewBackend(keyA, keyB) {
+    if (!fileA.fileId || !fileB.fileId) {
+      elements.matchPreview.style.display = 'none';
+      return;
+    }
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/preview-match`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileAId: fileA.fileId,
+          fileBId: fileB.fileId,
+          keyA,
+          keyB
+        })
+      });
+
+      if (!response.ok) {
+        console.error('Match preview failed');
+        return;
+      }
+
+      const result = await response.json();
+
+      elements.keyStatsA.innerHTML = `<strong>${result.uniqueA.toLocaleString()}</strong> unique values`;
+      elements.keyStatsB.innerHTML = `<strong>${result.uniqueB.toLocaleString()}</strong> unique values`;
+
+      elements.matchPreview.style.display = 'block';
+      elements.matchCount.textContent = result.matchCount.toLocaleString();
+
+      elements.matchPreview.classList.remove('warning', 'error');
+
+      if (result.matchCount === 0) {
+        elements.matchPreview.classList.add('error');
+        elements.matchDetails.textContent = 'No matches found. Check if you selected the correct columns.';
+      } else if (result.matchPercent < 50) {
+        elements.matchPreview.classList.add('warning');
+        elements.matchDetails.textContent = `${result.matchPercent}% of File A keys have matches in File B`;
+      } else {
+        elements.matchDetails.textContent = `${result.matchPercent}% of File A keys have matches in File B`;
+      }
+    } catch (error) {
+      console.error('Match preview error:', error);
+    }
+  }
+
+  // Match preview using browser
+  function updateMatchPreviewBrowser(keyA, keyB) {
+    if (!fileA.keyValues[keyA] || !fileB.keyValues[keyB]) {
+      elements.matchPreview.style.display = 'none';
+      return;
+    }
+
+    // Get unique values from each file
+    const valuesA = fileA.keyValues[keyA];
+    const valuesB = fileB.keyValues[keyB];
+
+    // Count matches
+    let matchCount = 0;
+    valuesA.forEach(val => {
+      if (valuesB.has(val)) matchCount++;
+    });
+
+    // Update stats next to dropdowns
+    elements.keyStatsA.innerHTML = `<strong>${valuesA.size.toLocaleString()}</strong> unique values`;
+    elements.keyStatsB.innerHTML = `<strong>${valuesB.size.toLocaleString()}</strong> unique values`;
+
+    // Update match preview
+    elements.matchPreview.style.display = 'block';
+    elements.matchCount.textContent = matchCount.toLocaleString();
+
+    const matchPercent = ((matchCount / valuesA.size) * 100).toFixed(1);
+
+    // Determine status and styling
+    elements.matchPreview.classList.remove('warning', 'error');
+
+    if (matchCount === 0) {
+      elements.matchPreview.classList.add('error');
+      elements.matchDetails.textContent = 'No matches found. Check if you selected the correct columns.';
+    } else if (matchCount < valuesA.size * 0.5) {
+      elements.matchPreview.classList.add('warning');
+      elements.matchDetails.textContent = `${matchPercent}% of File A keys have matches in File B`;
+    } else {
+      elements.matchDetails.textContent = `${matchPercent}% of File A keys have matches in File B`;
+    }
+  }
+
+  // Check if both files are ready
+  function checkFilesReady() {
+    // For backend mode, we don't need workerReady
+    if (useBackend) {
+      if (fileA.columns.length > 0 && fileB.columns.length > 0) {
+        showPreview();
+      }
+    } else {
+      if (fileA.columns.length > 0 && fileB.columns.length > 0 && workerReady) {
+        showPreview();
+      }
+    }
+  }
+
+  // Show preview step
+  function showPreview() {
+    // Update tab names and metadata
+    elements.tabNameA.textContent = fileA.file.name;
+    elements.tabNameB.textContent = fileB.file.name;
+    elements.tabMetaA.textContent = `${fileA.rowCount.toLocaleString()} rows`;
+    elements.tabMetaB.textContent = `${fileB.rowCount.toLocaleString()} rows`;
+
+    // Render preview tables
+    renderSpreadsheet(fileA, elements.previewHeaderA, elements.previewBodyA);
+    renderSpreadsheet(fileB, elements.previewHeaderB, elements.previewBodyB);
+
+    // Default to tab A
+    switchTab('a');
+
+    showStep('preview');
+  }
+
+  // Render spreadsheet table
+  function renderSpreadsheet(fileObj, headerEl, bodyEl) {
+    // Header with row number column
+    headerEl.innerHTML = '<tr><th class="row-num">#</th>' +
+      fileObj.columns.map(c => `<th>${escapeHtml(c)}</th>`).join('') +
+      '</tr>';
+
+    // Body with row numbers
+    bodyEl.innerHTML = fileObj.preview.map((row, idx) =>
+      `<tr><td class="row-num">${idx + 1}</td>` +
+      fileObj.columns.map(col => `<td>${escapeHtml(row[col] || '')}</td>`).join('') +
+      '</tr>'
+    ).join('');
+  }
+
+  // Show config step
+  function showConfig() {
+    // Populate key column dropdowns
+    elements.keyColumnA.innerHTML = fileA.columns.map(c =>
+      `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`
+    ).join('');
+
+    elements.keyColumnB.innerHTML = fileB.columns.map(c =>
+      `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`
+    ).join('');
+
+    // Add event listeners for match preview
+    elements.keyColumnA.onchange = updateMatchPreview;
+    elements.keyColumnB.onchange = updateMatchPreview;
+
+    // Initial match preview
+    updateMatchPreview();
+
+    showStep('config');
+  }
+
+  // Show columns step
+  function showColumns() {
+    // Combine columns from both files
+    const allColumns = [];
+
+    fileA.columns.forEach(col => {
+      allColumns.push({ name: col, source: 'A', checked: true });
+    });
+
+    fileB.columns.forEach(col => {
+      // Skip if it's the key column (will be duplicated)
+      if (col !== elements.keyColumnB.value) {
+        allColumns.push({ name: col, source: 'B', checked: true });
+      }
+    });
+
+    elements.columnsList.innerHTML = allColumns.map((col, i) => `
+      <label class="column-item">
+        <input type="checkbox" name="column" value="${escapeHtml(col.name)}" data-source="${col.source}" ${col.checked ? 'checked' : ''}>
+        <span class="column-name">${escapeHtml(col.name)}</span>
+        <span class="column-source source-${col.source.toLowerCase()}">File ${col.source}</span>
+      </label>
+    `).join('');
+
+    showStep('columns');
+  }
+
+  // Start merge
+  function startMerge() {
+    showStep('processing');
+    updateProgress(0, 'Starting merge...');
+
+    const joinType = document.querySelector('input[name="join-type"]:checked').value;
+    const leftKey = elements.keyColumnA.value;
+    const rightKey = elements.keyColumnB.value;
+
+    // Get selected columns
+    const selectedColumns = [];
+    document.querySelectorAll('input[name="column"]:checked').forEach(cb => {
+      selectedColumns.push(cb.value);
+    });
+
+    if (useBackend) {
+      startMergeBackend(joinType, leftKey, rightKey, selectedColumns);
+    } else {
+      startMergeBrowser(joinType, leftKey, rightKey, selectedColumns);
+    }
+  }
+
+  // Start merge using browser (web worker)
+  function startMergeBrowser(joinType, leftKey, rightKey, selectedColumns) {
+    worker.postMessage({
+      type: 'MERGE',
+      payload: {
+        leftContent: fileA.content,
+        rightContent: fileB.content,
+        config: {
+          joinType,
+          leftKey,
+          rightKey,
+          selectedColumns
+        }
+      }
+    });
+  }
+
+  // Start merge using backend API
+  async function startMergeBackend(joinType, leftKey, rightKey, selectedColumns) {
+    try {
+      updateProgress(5, 'Sending merge request...');
+
+      const response = await fetch(`${BACKEND_URL}/jobs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileAId: fileA.fileId,
+          fileBId: fileB.fileId,
+          joinType,
+          leftKey,
+          rightKey,
+          selectedColumns
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Merge request failed');
+      }
+
+      const result = await response.json();
+      const jobId = result.jobId;
+
+      // Poll for job status
+      pollMergeJob(jobId);
+    } catch (error) {
+      console.error('Merge error:', error);
+      alert('Error starting merge: ' + error.message);
+      showStep('columns');
+    }
+  }
+
+  // Poll for merge job completion
+  async function pollMergeJob(jobId) {
+    try {
+      const response = await fetch(`${BACKEND_URL}/jobs/${jobId}`);
+      if (!response.ok) {
+        throw new Error('Failed to get job status');
+      }
+
+      const job = await response.json();
+
+      if (job.status === 'processing') {
+        updateProgress(job.progress || 10, job.message || 'Processing...');
+        setTimeout(() => pollMergeJob(jobId), 500);
+      } else if (job.status === 'complete') {
+        backendResultId = job.resultId;
+        handleMergeCompleteBackend(job);
+      } else if (job.status === 'error') {
+        throw new Error(job.message || 'Merge failed');
+      }
+    } catch (error) {
+      console.error('Poll error:', error);
+      alert('Error during merge: ' + error.message);
+      showStep('columns');
+    }
+  }
+
+  // Handle merge complete from backend
+  function handleMergeCompleteBackend(job) {
+    mergeResult = {
+      stats: job.stats,
+      columns: job.columns,
+      preview: job.preview,
+      csv: null // Not available in memory, will download from server
+    };
+
+    // Update summary stats
+    document.getElementById('stat-left').textContent = job.stats.leftRows.toLocaleString();
+    document.getElementById('stat-right').textContent = job.stats.rightRows.toLocaleString();
+    document.getElementById('stat-output').textContent = job.stats.outputRows.toLocaleString();
+    document.getElementById('stat-matched').textContent = job.stats.matched.toLocaleString();
+    document.getElementById('stat-left-only').textContent = job.stats.leftOnly.toLocaleString();
+    document.getElementById('stat-right-only').textContent = job.stats.rightOnly.toLocaleString();
+
+    // Render results table
+    elements.resultsHeader.innerHTML = '<tr><th class="row-num">#</th>' +
+      job.columns.map(c => `<th>${escapeHtml(c)}</th>`).join('') +
+      '</tr>';
+
+    elements.resultsBody.innerHTML = job.preview.map((row, idx) =>
+      `<tr><td class="row-num">${idx + 1}</td>` +
+      job.columns.map(col => `<td>${escapeHtml(row[col] || '')}</td>`).join('') +
+      '</tr>'
+    ).join('');
+
+    if (job.stats.outputRows > 100) {
+      elements.resultsBody.innerHTML += `<tr><td colspan="${job.columns.length + 1}" style="text-align: center; color: var(--color-ink-light); background: #f9fafb;">... and ${(job.stats.outputRows - 100).toLocaleString()} more rows</td></tr>`;
+    }
+
+    showStep('results');
+  }
+
+  // Handle merge complete
+  function handleMergeComplete(result) {
+    mergeResult = result;
+
+    // Update summary stats
+    document.getElementById('stat-left').textContent = result.stats.leftRows.toLocaleString();
+    document.getElementById('stat-right').textContent = result.stats.rightRows.toLocaleString();
+    document.getElementById('stat-output').textContent = result.stats.outputRows.toLocaleString();
+    document.getElementById('stat-matched').textContent = result.stats.matched.toLocaleString();
+    document.getElementById('stat-left-only').textContent = result.stats.leftOnly.toLocaleString();
+    document.getElementById('stat-right-only').textContent = result.stats.rightOnly.toLocaleString();
+
+    // Render results table
+    elements.resultsHeader.innerHTML = '<tr><th class="row-num">#</th>' +
+      result.columns.map(c => `<th>${escapeHtml(c)}</th>`).join('') +
+      '</tr>';
+
+    elements.resultsBody.innerHTML = result.preview.map((row, idx) =>
+      `<tr><td class="row-num">${idx + 1}</td>` +
+      result.columns.map(col => `<td>${escapeHtml(row[col] || '')}</td>`).join('') +
+      '</tr>'
+    ).join('');
+
+    if (result.stats.outputRows > 100) {
+      elements.resultsBody.innerHTML += `<tr><td colspan="${result.columns.length + 1}" style="text-align: center; color: var(--color-ink-light); background: #f9fafb;">... and ${(result.stats.outputRows - 100).toLocaleString()} more rows</td></tr>`;
+    }
+
+    showStep('results');
+  }
+
+  // Download CSV
+  function downloadCSV() {
+    if (!mergeResult) return;
+
+    if (useBackend && backendResultId) {
+      // Download from backend
+      window.location.href = `${BACKEND_URL}/results/${backendResultId}`;
+    } else if (mergeResult.csv) {
+      // Download from browser memory
+      const blob = new Blob([mergeResult.csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'merged_data.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  // Download Excel
+  function downloadExcel() {
+    if (!mergeResult) return;
+
+    if (useBackend && backendResultId) {
+      // Download from backend
+      window.location.href = `${BACKEND_URL}/results/${backendResultId}/excel`;
+    } else if (mergeResult.csv) {
+      // Create Excel from browser memory
+      const rows = mergeResult.csv.split('\n').map(line => {
+        const cells = [];
+        let current = '';
+        let inQuotes = false;
+
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"' && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            cells.push(current);
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        cells.push(current);
+        return cells;
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Merged Data');
+
+      // Add summary sheet
+      const summaryData = [
+        ['Merge Summary'],
+        [''],
+        ['File A Rows', mergeResult.stats.leftRows],
+        ['File B Rows', mergeResult.stats.rightRows],
+        ['Output Rows', mergeResult.stats.outputRows],
+        ['Matched', mergeResult.stats.matched],
+        ['Left Only', mergeResult.stats.leftOnly],
+        ['Right Only', mergeResult.stats.rightOnly],
+        [''],
+        ['Join Type', mergeResult.stats.joinType],
+      ];
+      const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+
+      XLSX.writeFile(wb, 'merged_data.xlsx');
+    }
+  }
+
+  // Remove file
+  function removeFile(fileId) {
+    const fileObj = fileId === 'a' ? fileA : fileB;
+    const uploadArea = fileId === 'a' ? elements.uploadAreaA : elements.uploadAreaB;
+    const fileInfo = fileId === 'a' ? elements.fileInfoA : elements.fileInfoB;
+    const fileInput = fileId === 'a' ? elements.fileInputA : elements.fileInputB;
+
+    fileObj.file = null;
+    fileObj.content = null;
+    fileObj.columns = [];
+    fileObj.preview = [];
+    fileObj.rowCount = 0;
+    fileObj.keyValues = {};
+    fileObj.fileId = null;
+
+    uploadArea.classList.remove('has-file');
+    fileInfo.style.display = 'none';
+    fileInput.value = '';
+  }
+
+  // Reset
+  function reset() {
+    removeFile('a');
+    removeFile('b');
+    mergeResult = null;
+    backendResultId = null;
+    useBackend = false;
+    elements.progressFill.style.width = '0%';
+    elements.progressText.textContent = '0%';
+    elements.backendNotice.style.display = 'none';
+    showStep('upload');
+  }
+
+  // Escape HTML
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Setup upload area events
+  function setupUploadArea(uploadArea, fileInput, fileId) {
+    uploadArea.addEventListener('click', () => fileInput.click());
+
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      handleFileUpload(e.dataTransfer.files[0], fileId);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      handleFileUpload(e.target.files[0], fileId);
+    });
+  }
+
+  // Initialize
+  setupUploadArea(elements.uploadAreaA, elements.fileInputA, 'a');
+  setupUploadArea(elements.uploadAreaB, elements.fileInputB, 'b');
+
+  elements.removeA.addEventListener('click', (e) => {
+    e.stopPropagation();
+    removeFile('a');
+  });
+
+  elements.removeB.addEventListener('click', (e) => {
+    e.stopPropagation();
+    removeFile('b');
+  });
+
+  // Navigation
+  document.getElementById('back-to-upload').addEventListener('click', () => showStep('upload'));
+  document.getElementById('continue-to-config').addEventListener('click', showConfig);
+  document.getElementById('back-to-preview').addEventListener('click', showPreview);
+  document.getElementById('continue-to-columns').addEventListener('click', showColumns);
+  document.getElementById('back-to-config').addEventListener('click', showConfig);
+  document.getElementById('start-merge').addEventListener('click', startMerge);
+  document.getElementById('start-over').addEventListener('click', reset);
+  document.getElementById('download-csv').addEventListener('click', downloadCSV);
+  document.getElementById('download-excel').addEventListener('click', downloadExcel);
+
+  // Column selection
+  document.getElementById('select-all-columns').addEventListener('click', () => {
+    document.querySelectorAll('input[name="column"]').forEach(cb => cb.checked = true);
+  });
+
+  document.getElementById('deselect-all-columns').addEventListener('click', () => {
+    document.querySelectorAll('input[name="column"]').forEach(cb => cb.checked = false);
+  });
+
+  // Initialize from URL on page load
+  const initialStep = getStepFromURL();
+  if (initialStep !== 'upload') {
+    // Can only restore to upload if no data
+    showStep('upload', false);
+  }
+</script>

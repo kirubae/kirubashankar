@@ -1,0 +1,45 @@
+# build output
+dist/
+
+# generated types
+.astro/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# environment variables
+.env
+.env.production
+.env.local
+
+# macOS-specific files
+.DS_Store
+
+# jetbrains setting folder
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+api/venv/
+api/storage/uploads/*
+api/storage/results/*
+api/storage/cache/*
+!api/storage/**/.gitkeep
+
+# Wrangler
+.wrangler/
+.dev.vars
+
+# Claude
+.claude/

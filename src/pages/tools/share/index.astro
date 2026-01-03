@@ -1,0 +1,1197 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Breadcrumb from '@components/ui/Breadcrumb.astro';
+import '@styles/tools.css';
+
+export const prerender = false;
+
+const breadcrumbs = [
+  { name: 'Home', url: '/' },
+  { name: 'Things', url: '/tools' },
+  { name: 'File Share', url: '/tools/share' },
+];
+---
+
+<BaseLayout
+  title="File Share"
+  description="Share PDF files securely with expiry dates and access controls"
+  noindex={true}
+>
+  <div class="tool-container">
+    <Breadcrumb items={breadcrumbs} />
+
+    <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
+      <div>
+        <h1>File Share</h1>
+        <p class="page-subtitle">Share PDFs with controlled access</p>
+      </div>
+      <button id="btn-logout" class="btn btn-secondary" style="display: none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+        Logout
+      </button>
+    </header>
+
+    <!-- Auth Step -->
+    <section id="auth-section" class="step">
+      <div class="step-header">
+        <div class="step-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+        <div>
+          <h2>Login</h2>
+          <p class="step-subtitle">Access restricted. Enter password to share files.</p>
+        </div>
+      </div>
+      <div class="step-content">
+        <div class="auth-input-group">
+          <input type="password" id="auth-password" class="form-input" placeholder="Enter password" autocomplete="off" />
+        </div>
+        <p id="auth-error" class="auth-error"></p>
+        <div class="action-bar" style="border-top: none; padding-top: 16px; margin-top: 16px; gap: 12px;">
+          <button id="btn-auth" class="btn btn-primary btn-large" style="margin-left: 0;">
+            Login
+          </button>
+          <button id="btn-guest" class="btn btn-secondary btn-large">
+            Continue as Guest
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Guest Email Step -->
+    <section id="guest-section" class="step" style="display: none;">
+      <div class="step-header">
+        <div class="step-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </div>
+        <div>
+          <h2>Guest Access</h2>
+          <p class="step-subtitle">Enter your email to share a file (10MB limit, 1 file per email)</p>
+        </div>
+      </div>
+      <div class="step-content">
+        <div class="auth-input-group">
+          <input type="email" id="guest-email" class="form-input" placeholder="Enter your email" autocomplete="email" />
+        </div>
+        <p id="guest-error" class="auth-error"></p>
+        <div class="action-bar" style="border-top: none; padding-top: 16px; margin-top: 16px; gap: 12px;">
+          <button id="btn-guest-continue" class="btn btn-primary btn-large" style="margin-left: 0;">
+            Continue
+          </button>
+          <button id="btn-guest-back" class="btn btn-secondary btn-large">
+            Back
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dashboard (hidden until authenticated) -->
+    <div id="dashboard" style="display: none;">
+
+      <!-- Files List Section (shown first) -->
+      <section id="files-section" class="step">
+        <div class="step-header">
+          <div class="step-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+          </div>
+          <div style="flex: 1;">
+            <h2>Shared Files</h2>
+            <p class="step-subtitle">Manage your shared files</p>
+          </div>
+          <button id="btn-show-upload" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            Upload File
+          </button>
+        </div>
+        <div class="step-content" style="max-width:100%">
+          <div id="files-loading" class="progress-text">Loading files...</div>
+          <div id="files-empty" style="display:none" class="help-text">No files shared yet. Click "Upload File" to share your first PDF.</div>
+          <div id="files-list" class="results-table-wrapper" style="display:none">
+            <table class="results-table">
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th>Uploaded By</th>
+                  <th>Created</th>
+                  <th>Expires</th>
+                  <th>Downloads</th>
+                  <th>Protection</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="files-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Upload Section (hidden by default, shown when clicking Upload File) -->
+      <section id="upload-section" class="step" style="display: none;">
+        <div class="step-header">
+          <div class="step-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+          </div>
+          <div style="flex: 1;">
+            <h2>Upload File</h2>
+            <p class="step-subtitle" id="upload-subtitle">Share a new PDF file (max 100MB)</p>
+          </div>
+          <button id="btn-back-to-files" class="btn btn-secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            Back to Files
+          </button>
+        </div>
+        <div class="step-content">
+          <form id="upload-form">
+            <div class="upload-area" id="upload-area">
+              <div class="upload-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+              </div>
+              <h3 style="margin: 0 0 8px; font-size: 18px;">Upload PDF</h3>
+              <p>Drop your file here or click to browse</p>
+              <button type="button" class="btn btn-primary" id="upload-btn">Choose File</button>
+              <input type="file" id="file-input" accept=".pdf,application/pdf" style="display:none" />
+            </div>
+
+            <div id="file-selected" class="info-card file-selected-card" style="display:none">
+              <div class="file-selected-info">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24" style="color: var(--color-terracotta);">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                <div>
+                  <p style="margin: 0; font-weight: 500;"><span id="selected-filename"></span></p>
+                  <p style="margin: 4px 0 0; font-size: 13px; color: var(--color-ink-light);"><span id="selected-size"></span></p>
+                </div>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-remove-file">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+                Remove
+              </button>
+            </div>
+
+            <div class="form-section" id="upload-options" style="display:none">
+              <h4 style="margin: 0 0 20px; font-size: 16px;">Sharing Options</h4>
+
+              <div class="form-group">
+                <label class="form-label">Expiry</label>
+                <div class="radio-group">
+                  <label class="radio-card">
+                    <input type="radio" name="expiry_type" value="never" checked />
+                    <span class="radio-content">Never expires</span>
+                  </label>
+                  <label class="radio-card">
+                    <input type="radio" name="expiry_type" value="date" />
+                    <span class="radio-content">Set expiry date</span>
+                  </label>
+                </div>
+                <input type="datetime-local" id="expiry-date" class="form-input" style="display:none; margin-top:12px" />
+              </div>
+
+              <div class="form-group" style="margin-top:20px">
+                <label class="form-label">Password Protection (optional)</label>
+                <input type="text" id="file-password" class="form-input" placeholder="Leave empty for no password" autocomplete="off" />
+              </div>
+
+              <div class="form-group" style="margin-top:20px">
+                <label class="form-label">Restrict to Emails (optional)</label>
+                <textarea id="allowed-emails" class="form-input" rows="3" placeholder="Enter emails, one per line. Leave empty to allow anyone."></textarea>
+              </div>
+
+              <div class="action-bar">
+                <button type="button" id="btn-cancel-upload" class="btn btn-secondary">Cancel</button>
+                <button type="submit" id="btn-upload" class="btn btn-primary btn-large">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+                  Upload & Share
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <div id="upload-progress" style="display:none">
+            <div class="progress-bar">
+              <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <p class="progress-text" id="progress-text">Uploading...</p>
+          </div>
+
+          <div id="upload-success" class="info-card" style="display:none; background: #d1fae5;">
+            <p style="margin-bottom: 12px;"><strong>File uploaded successfully!</strong></p>
+            <p style="margin-bottom: 12px;">Share URL: <a href="" id="share-url" target="_blank" style="color: var(--color-terracotta);"></a></p>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-secondary" id="btn-copy-url">Copy URL</button>
+              <button class="btn btn-primary" id="btn-back-to-files-success">Back to Files</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Access Logs Modal -->
+    <div id="logs-modal" class="modal" style="display:none">
+      <div class="modal-content modal-wide">
+        <div class="modal-header">
+          <h3>Access Logs</h3>
+          <button class="btn-close" id="close-logs">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div id="logs-loading">Loading...</div>
+          <div id="logs-empty" style="display:none" class="help-text">No access logs yet.</div>
+          <div id="logs-list" class="results-table-wrapper" style="display:none; max-height: 500px;">
+            <table class="results-table">
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>Time</th>
+                  <th>Location</th>
+                  <th>IP</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="logs-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit File Modal -->
+    <div id="edit-modal" class="modal" style="display:none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Edit File Settings</h3>
+          <button class="btn-close" id="close-edit">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="edit-form">
+            <input type="hidden" id="edit-file-id" />
+
+            <div class="form-group">
+              <label class="form-label">Expiry</label>
+              <div class="radio-group">
+                <label class="radio-card">
+                  <input type="radio" name="edit_expiry_type" value="never" />
+                  <span class="radio-content">Never expires</span>
+                </label>
+                <label class="radio-card">
+                  <input type="radio" name="edit_expiry_type" value="date" />
+                  <span class="radio-content">Set expiry date</span>
+                </label>
+              </div>
+              <input type="datetime-local" id="edit-expiry-date" class="form-input" style="margin-top:12px" />
+            </div>
+
+            <div class="form-group" style="margin-top:20px">
+              <label class="form-label">New Password (leave empty to keep unchanged)</label>
+              <input type="text" id="edit-password" class="form-input" placeholder="New password or empty" autocomplete="off" />
+              <label style="margin-top:8px; display:flex; align-items:center; gap:8px; font-size:14px; cursor:pointer;">
+                <input type="checkbox" id="edit-remove-password" />
+                Remove password protection
+              </label>
+            </div>
+
+            <div class="form-group" style="margin-top:20px">
+              <label class="form-label">Allowed Emails</label>
+              <textarea id="edit-allowed-emails" class="form-input" rows="3" placeholder="Enter emails, one per line. Leave empty to allow anyone."></textarea>
+            </div>
+
+            <div class="action-bar">
+              <button type="button" class="btn btn-secondary" id="btn-cancel-edit">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="modal" style="display:none">
+      <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+          <h3>Delete File</h3>
+          <button class="btn-close" id="close-delete">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete "<span id="delete-filename"></span>"?</p>
+          <p style="color: var(--color-ink-light); font-size: 14px; margin-top: 8px;">This action cannot be undone.</p>
+          <input type="hidden" id="delete-file-id" />
+          <div class="action-bar">
+            <button type="button" class="btn btn-secondary" id="btn-cancel-delete">Cancel</button>
+            <button type="button" class="btn btn-danger" id="btn-confirm-delete">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style is:global>
+  /* Modal styles */
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .modal-content {
+    background: var(--color-paper);
+    border-radius: 12px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: auto;
+  }
+
+  .modal-content.modal-wide {
+    max-width: 900px;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .modal-header h3 {
+    margin: 0;
+  }
+
+  .btn-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--color-ink-light);
+    padding: 0;
+    line-height: 1;
+  }
+
+  .btn-close:hover {
+    color: var(--color-ink);
+  }
+
+  .modal-body {
+    padding: 24px;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .auth-error {
+    color: #ef4444;
+    font-size: 14px;
+    margin-top: 8px;
+    min-height: 20px;
+  }
+
+  /* File action buttons */
+  .file-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-icon {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .btn-sm {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  /* Status badges */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .status-badge.success {
+    background: #d1fae5;
+    color: #059669;
+  }
+
+  .status-badge.failed {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  .status-badge.protected {
+    background: #fef3c7;
+    color: #d97706;
+  }
+
+  .status-badge.open {
+    background: #e0f2fe;
+    color: #0284c7;
+  }
+
+  /* File selected card */
+  .file-selected-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .file-selected-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* Step header with button */
+  .step-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+</style>
+
+<script is:inline>
+  // Session configuration
+  const SESSION_KEY = 'fileshare_session';
+  const GUEST_SESSION_KEY = 'fileshare_guest';
+  const SESSION_DURATION_MS = 60 * 60 * 1000; // 1 hour
+  const DASHBOARD_PASSWORD_HASH = '8e9e26c2ef86ecd02ba5c84da8a0859a39b4181b19f4c89312d6f1c1b78ccf15';
+  const MAX_FILE_SIZE_ADMIN = 100 * 1024 * 1024; // 100MB
+  const MAX_FILE_SIZE_GUEST = 10 * 1024 * 1024;  // 10MB
+
+  // Current mode: 'admin' or 'guest'
+  let currentMode = null;
+  let guestEmail = null;
+
+  // Crypto utilities
+  async function sha256(message) {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  // Generate encrypted session token
+  async function generateSessionToken() {
+    const timestamp = Date.now();
+    const randomBytes = new Uint8Array(16);
+    crypto.getRandomValues(randomBytes);
+    const random = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    const tokenData = `${DASHBOARD_PASSWORD_HASH}:${timestamp}:${random}`;
+    const token = await sha256(tokenData);
+    return { token, timestamp };
+  }
+
+  // Generate encrypted guest token (email-based)
+  async function generateGuestToken(email) {
+    const timestamp = Date.now();
+    const randomBytes = new Uint8Array(16);
+    crypto.getRandomValues(randomBytes);
+    const random = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    const tokenData = `guest:${email}:${timestamp}:${random}`;
+    const token = await sha256(tokenData);
+    return { token, timestamp, email: email.toLowerCase() };
+  }
+
+  // Verify admin session token
+  function isAdminSessionValid() {
+    try {
+      const sessionData = localStorage.getItem(SESSION_KEY);
+      if (!sessionData) return false;
+
+      const { token, timestamp } = JSON.parse(sessionData);
+      if (!token || !timestamp) return false;
+
+      const now = Date.now();
+      if (now - timestamp > SESSION_DURATION_MS) {
+        localStorage.removeItem(SESSION_KEY);
+        return false;
+      }
+
+      return true;
+    } catch {
+      localStorage.removeItem(SESSION_KEY);
+      return false;
+    }
+  }
+
+  // Verify guest session
+  function getGuestSession() {
+    try {
+      const sessionData = localStorage.getItem(GUEST_SESSION_KEY);
+      if (!sessionData) return null;
+
+      const { token, timestamp, email } = JSON.parse(sessionData);
+      if (!token || !timestamp || !email) return null;
+
+      const now = Date.now();
+      if (now - timestamp > SESSION_DURATION_MS) {
+        localStorage.removeItem(GUEST_SESSION_KEY);
+        return null;
+      }
+
+      return { email };
+    } catch {
+      localStorage.removeItem(GUEST_SESSION_KEY);
+      return null;
+    }
+  }
+
+  // Save admin session
+  async function saveAdminSession() {
+    const { token, timestamp } = await generateSessionToken();
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ token, timestamp }));
+  }
+
+  // Save guest session
+  async function saveGuestSession(email) {
+    const { token, timestamp, email: normalizedEmail } = await generateGuestToken(email);
+    localStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({ token, timestamp, email: normalizedEmail }));
+  }
+
+  // Clear all sessions (logout)
+  function clearSession() {
+    localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(GUEST_SESSION_KEY);
+    currentMode = null;
+    guestEmail = null;
+  }
+
+  // Get current max file size
+  function getMaxFileSize() {
+    return currentMode === 'guest' ? MAX_FILE_SIZE_GUEST : MAX_FILE_SIZE_ADMIN;
+  }
+
+  function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return 'Never';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  function isExpired(expiresAt) {
+    if (!expiresAt) return false;
+    return new Date(expiresAt) < new Date();
+  }
+
+  // State
+  let selectedFile = null;
+  let files = [];
+
+  // DOM elements
+  const authSection = document.getElementById('auth-section');
+  const guestSection = document.getElementById('guest-section');
+  const dashboard = document.getElementById('dashboard');
+  const authPassword = document.getElementById('auth-password');
+  const authError = document.getElementById('auth-error');
+  const btnAuth = document.getElementById('btn-auth');
+  const btnGuest = document.getElementById('btn-guest');
+  const btnGuestContinue = document.getElementById('btn-guest-continue');
+  const btnGuestBack = document.getElementById('btn-guest-back');
+  const guestEmailInput = document.getElementById('guest-email');
+  const guestError = document.getElementById('guest-error');
+  const btnLogout = document.getElementById('btn-logout');
+  const filesSection = document.getElementById('files-section');
+  const uploadSection = document.getElementById('upload-section');
+  const uploadSubtitle = document.getElementById('upload-subtitle');
+
+  // Upload form elements (needed before session check for resetUploadForm)
+  const uploadArea = document.getElementById('upload-area');
+  const fileInput = document.getElementById('file-input');
+  const uploadBtn = document.getElementById('upload-btn');
+  const fileSelectedEl = document.getElementById('file-selected');
+  const uploadOptions = document.getElementById('upload-options');
+  const uploadForm = document.getElementById('upload-form');
+  const uploadProgress = document.getElementById('upload-progress');
+  const uploadSuccess = document.getElementById('upload-success');
+
+  // Show dashboard (authenticated state)
+  function showDashboard(mode = 'admin', email = null) {
+    currentMode = mode;
+    guestEmail = email;
+
+    authSection.style.display = 'none';
+    guestSection.style.display = 'none';
+    dashboard.style.display = 'block';
+    btnLogout.style.display = 'flex';
+
+    // Update upload subtitle based on mode
+    const maxSize = mode === 'guest' ? '10MB' : '100MB';
+    uploadSubtitle.textContent = `Share a new PDF file (max ${maxSize})`;
+
+    // For guests, go directly to upload section
+    if (mode === 'guest') {
+      filesSection.style.display = 'none';
+      uploadSection.style.display = 'block';
+      resetUploadForm();
+    } else {
+      loadFiles();
+    }
+  }
+
+  // Show login (unauthenticated state)
+  function showLogin() {
+    currentMode = null;
+    guestEmail = null;
+    authSection.style.display = 'block';
+    guestSection.style.display = 'none';
+    dashboard.style.display = 'none';
+    btnLogout.style.display = 'none';
+    authPassword.value = '';
+    authError.textContent = '';
+    guestEmailInput.value = '';
+    guestError.textContent = '';
+  }
+
+  // Show guest email input
+  function showGuestInput() {
+    authSection.style.display = 'none';
+    guestSection.style.display = 'block';
+    guestEmailInput.focus();
+  }
+
+  // Check session on page load
+  if (isAdminSessionValid()) {
+    showDashboard('admin');
+  } else {
+    const guestSession = getGuestSession();
+    if (guestSession) {
+      showDashboard('guest', guestSession.email);
+    } else {
+      showLogin();
+    }
+  }
+
+  // Auth - admin login
+  btnAuth.addEventListener('click', async () => {
+    const password = authPassword.value;
+    if (!password) {
+      authError.textContent = 'Please enter password';
+      return;
+    }
+
+    const hash = await sha256(password);
+    if (hash === DASHBOARD_PASSWORD_HASH) {
+      await saveAdminSession();
+      showDashboard('admin');
+    } else {
+      authError.textContent = 'Invalid password';
+    }
+  });
+
+  authPassword.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') btnAuth.click();
+  });
+
+  // Guest mode flow
+  btnGuest.addEventListener('click', showGuestInput);
+
+  btnGuestBack.addEventListener('click', showLogin);
+
+  btnGuestContinue.addEventListener('click', async () => {
+    const email = guestEmailInput.value.trim();
+    if (!email) {
+      guestError.textContent = 'Please enter your email';
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      guestError.textContent = 'Please enter a valid email address';
+      return;
+    }
+
+    await saveGuestSession(email);
+    showDashboard('guest', email.toLowerCase());
+  });
+
+  guestEmailInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') btnGuestContinue.click();
+  });
+
+  // Logout
+  btnLogout.addEventListener('click', () => {
+    clearSession();
+    showLogin();
+  });
+
+  // Show/hide upload section
+  document.getElementById('btn-show-upload').addEventListener('click', () => {
+    filesSection.style.display = 'none';
+    uploadSection.style.display = 'block';
+    resetUploadForm();
+  });
+
+  document.getElementById('btn-back-to-files').addEventListener('click', () => {
+    uploadSection.style.display = 'none';
+    filesSection.style.display = 'block';
+  });
+
+  document.getElementById('btn-cancel-upload').addEventListener('click', () => {
+    uploadSection.style.display = 'none';
+    filesSection.style.display = 'block';
+  });
+
+  document.getElementById('btn-back-to-files-success').addEventListener('click', () => {
+    uploadSection.style.display = 'none';
+    filesSection.style.display = 'block';
+    loadFiles();
+  });
+
+  // File upload event listeners
+  uploadBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    fileInput.click();
+  });
+
+  uploadArea.addEventListener('click', () => fileInput.click());
+
+  uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('dragover');
+  });
+
+  uploadArea.addEventListener('dragleave', () => {
+    uploadArea.classList.remove('dragover');
+  });
+
+  uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileSelect(file);
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) handleFileSelect(fileInput.files[0]);
+  });
+
+  function handleFileSelect(file) {
+    if (file.type !== 'application/pdf') {
+      alert('Only PDF files are allowed');
+      return;
+    }
+    const maxSize = getMaxFileSize();
+    const maxSizeMB = maxSize / (1024 * 1024);
+    if (file.size > maxSize) {
+      alert(`File size exceeds ${maxSizeMB}MB limit`);
+      return;
+    }
+
+    selectedFile = file;
+    document.getElementById('selected-filename').textContent = file.name;
+    document.getElementById('selected-size').textContent = formatFileSize(file.size);
+
+    uploadArea.style.display = 'none';
+    fileSelectedEl.style.display = 'flex';
+    uploadOptions.style.display = 'block';
+  }
+
+  // Remove file button
+  document.getElementById('btn-remove-file').addEventListener('click', () => {
+    selectedFile = null;
+    fileInput.value = '';
+    uploadArea.style.display = 'block';
+    fileSelectedEl.style.display = 'none';
+    uploadOptions.style.display = 'none';
+  });
+
+  // Expiry radio
+  document.querySelectorAll('input[name="expiry_type"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      const expiryDate = document.getElementById('expiry-date');
+      expiryDate.style.display = radio.value === 'date' ? 'block' : 'none';
+    });
+  });
+
+  function resetUploadForm() {
+    selectedFile = null;
+    fileInput.value = '';
+    uploadArea.style.display = 'block';
+    fileSelectedEl.style.display = 'none';
+    uploadOptions.style.display = 'none';
+    uploadProgress.style.display = 'none';
+    uploadSuccess.style.display = 'none';
+    document.getElementById('file-password').value = '';
+    document.getElementById('allowed-emails').value = '';
+    document.getElementById('expiry-date').value = '';
+    document.querySelector('input[name="expiry_type"][value="never"]').checked = true;
+    document.getElementById('expiry-date').style.display = 'none';
+  }
+
+  // Upload form submit
+  uploadForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!selectedFile) return;
+
+    const expiryType = document.querySelector('input[name="expiry_type"]:checked').value;
+    const expiryDate = expiryType === 'date' ? document.getElementById('expiry-date').value : null;
+    const password = document.getElementById('file-password').value;
+    const allowedEmailsText = document.getElementById('allowed-emails').value;
+    const allowedEmails = allowedEmailsText
+      .split('\n')
+      .map(e => e.trim())
+      .filter(e => e.length > 0);
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    if (expiryDate) formData.append('expires_at', expiryDate);
+    if (password) formData.append('password', password);
+    if (allowedEmails.length > 0) formData.append('allowed_emails', JSON.stringify(allowedEmails));
+    // Add uploader email for guest mode
+    if (currentMode === 'guest' && guestEmail) {
+      formData.append('uploader_email', guestEmail);
+    }
+
+    uploadOptions.style.display = 'none';
+    fileSelectedEl.style.display = 'none';
+    uploadProgress.style.display = 'block';
+    document.getElementById('progress-fill').style.width = '50%';
+
+    try {
+      const response = await fetch('/api/share/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Upload failed');
+      }
+
+      document.getElementById('progress-fill').style.width = '100%';
+
+      setTimeout(() => {
+        uploadProgress.style.display = 'none';
+        uploadSuccess.style.display = 'block';
+
+        const shareUrl = window.location.origin + data.share_url;
+        const shareLink = document.getElementById('share-url');
+        shareLink.href = shareUrl;
+        shareLink.textContent = shareUrl;
+      }, 500);
+
+    } catch (error) {
+      alert(error.message);
+      resetUploadForm();
+    }
+  });
+
+  // Copy URL
+  document.getElementById('btn-copy-url').addEventListener('click', () => {
+    const shareUrl = document.getElementById('share-url').href;
+    navigator.clipboard.writeText(shareUrl);
+    document.getElementById('btn-copy-url').textContent = 'Copied!';
+    setTimeout(() => {
+      document.getElementById('btn-copy-url').textContent = 'Copy URL';
+    }, 2000);
+  });
+
+  // Load files
+  async function loadFiles() {
+    const loading = document.getElementById('files-loading');
+    const empty = document.getElementById('files-empty');
+    const list = document.getElementById('files-list');
+    const tbody = document.getElementById('files-tbody');
+
+    loading.style.display = 'block';
+    empty.style.display = 'none';
+    list.style.display = 'none';
+
+    try {
+      const response = await fetch('/api/share/files');
+      const data = await response.json();
+      files = data.files || [];
+
+      loading.style.display = 'none';
+
+      if (files.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+
+      list.style.display = 'block';
+      tbody.innerHTML = files.map(file => {
+        const expired = isExpired(file.expires_at);
+        const hasPassword = !!file.password_hash;
+        const hasEmailRestriction = file.allowed_emails && JSON.parse(file.allowed_emails).length > 0;
+        const uploadedBy = file.uploader_email || 'Admin';
+
+        let protectionBadges = '';
+        if (hasPassword) protectionBadges += '<span class="status-badge protected">Password</span> ';
+        if (hasEmailRestriction) protectionBadges += '<span class="status-badge protected">Email</span>';
+        if (!hasPassword && !hasEmailRestriction) protectionBadges = '<span class="status-badge open">Open</span>';
+
+        return `
+          <tr style="${expired ? 'opacity: 0.5;' : ''}">
+            <td>
+              <strong>${file.filename}</strong>
+              <br><span style="font-size: 12px; color: var(--color-ink-light);">${formatFileSize(file.file_size)}</span>
+            </td>
+            <td style="font-size: 13px;">${uploadedBy}</td>
+            <td>${formatDate(file.created_at)}</td>
+            <td>${expired ? '<span style="color: #ef4444;">Expired</span>' : formatDate(file.expires_at)}</td>
+            <td>${file.download_count}</td>
+            <td>${protectionBadges}</td>
+            <td>
+              <div class="file-actions">
+                <button class="btn btn-secondary btn-icon" onclick="copyFileUrl('${file.id}')" title="Copy URL">Copy</button>
+                <button class="btn btn-secondary btn-icon" onclick="viewLogs('${file.id}')" title="View Logs">Logs</button>
+                <button class="btn btn-secondary btn-icon" onclick="editFile('${file.id}')" title="Edit">Edit</button>
+                <button class="btn btn-danger btn-icon" onclick="deleteFile('${file.id}', '${file.filename}')" title="Delete">Del</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+    } catch (error) {
+      loading.textContent = 'Failed to load files';
+    }
+  }
+
+  // Copy file URL (now using /s/ short URL)
+  window.copyFileUrl = function(id) {
+    const url = window.location.origin + '/s/' + id;
+    navigator.clipboard.writeText(url);
+    alert('URL copied to clipboard');
+  };
+
+  // View logs
+  window.viewLogs = async function(id) {
+    const modal = document.getElementById('logs-modal');
+    const loading = document.getElementById('logs-loading');
+    const empty = document.getElementById('logs-empty');
+    const list = document.getElementById('logs-list');
+    const tbody = document.getElementById('logs-tbody');
+
+    modal.style.display = 'flex';
+    loading.style.display = 'block';
+    empty.style.display = 'none';
+    list.style.display = 'none';
+
+    try {
+      const response = await fetch(`/api/share/files/${id}?logs=true`);
+      const data = await response.json();
+      const logs = data.access_logs || [];
+
+      loading.style.display = 'none';
+
+      if (logs.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+
+      list.style.display = 'block';
+      tbody.innerHTML = logs.map(log => `
+        <tr>
+          <td>${log.email}</td>
+          <td>${formatDate(log.accessed_at)}</td>
+          <td>${log.location || '-'}</td>
+          <td style="font-family: monospace; font-size: 12px;">${log.ip_address || '-'}</td>
+          <td>
+            <span class="status-badge ${log.success ? 'success' : 'failed'}">
+              ${log.success ? 'Success' : log.failure_reason || 'Failed'}
+            </span>
+          </td>
+        </tr>
+      `).join('');
+
+    } catch (error) {
+      loading.textContent = 'Failed to load logs';
+    }
+  };
+
+  document.getElementById('close-logs').addEventListener('click', () => {
+    document.getElementById('logs-modal').style.display = 'none';
+  });
+
+  // Edit file
+  window.editFile = function(id) {
+    const file = files.find(f => f.id === id);
+    if (!file) return;
+
+    document.getElementById('edit-file-id').value = id;
+
+    // Set expiry
+    if (file.expires_at) {
+      document.querySelector('input[name="edit_expiry_type"][value="date"]').checked = true;
+      document.getElementById('edit-expiry-date').value = file.expires_at.slice(0, 16);
+    } else {
+      document.querySelector('input[name="edit_expiry_type"][value="never"]').checked = true;
+      document.getElementById('edit-expiry-date').value = '';
+    }
+
+    // Set password checkbox
+    document.getElementById('edit-remove-password').checked = false;
+    document.getElementById('edit-password').value = '';
+
+    // Set allowed emails
+    const emails = file.allowed_emails ? JSON.parse(file.allowed_emails) : [];
+    document.getElementById('edit-allowed-emails').value = emails.join('\n');
+
+    document.getElementById('edit-modal').style.display = 'flex';
+  };
+
+  document.querySelectorAll('input[name="edit_expiry_type"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      const expiryDate = document.getElementById('edit-expiry-date');
+      expiryDate.style.display = radio.value === 'date' ? 'block' : 'none';
+    });
+  });
+
+  document.getElementById('close-edit').addEventListener('click', () => {
+    document.getElementById('edit-modal').style.display = 'none';
+  });
+
+  document.getElementById('btn-cancel-edit').addEventListener('click', () => {
+    document.getElementById('edit-modal').style.display = 'none';
+  });
+
+  document.getElementById('edit-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const id = document.getElementById('edit-file-id').value;
+    const expiryType = document.querySelector('input[name="edit_expiry_type"]:checked').value;
+    const expiryDate = expiryType === 'date' ? document.getElementById('edit-expiry-date').value : null;
+    const password = document.getElementById('edit-password').value;
+    const removePassword = document.getElementById('edit-remove-password').checked;
+    const allowedEmailsText = document.getElementById('edit-allowed-emails').value;
+    const allowedEmails = allowedEmailsText
+      .split('\n')
+      .map(e => e.trim())
+      .filter(e => e.length > 0);
+
+    const body = {
+      expires_at: expiryDate,
+      allowed_emails: allowedEmails
+    };
+
+    if (removePassword) {
+      body.remove_password = true;
+    } else if (password) {
+      body.password = password;
+    }
+
+    try {
+      const response = await fetch(`/api/share/files/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update file');
+      }
+
+      document.getElementById('edit-modal').style.display = 'none';
+      loadFiles();
+
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+
+  // Delete file
+  window.deleteFile = function(id, filename) {
+    document.getElementById('delete-file-id').value = id;
+    document.getElementById('delete-filename').textContent = filename;
+    document.getElementById('delete-modal').style.display = 'flex';
+  };
+
+  document.getElementById('close-delete').addEventListener('click', () => {
+    document.getElementById('delete-modal').style.display = 'none';
+  });
+
+  document.getElementById('btn-cancel-delete').addEventListener('click', () => {
+    document.getElementById('delete-modal').style.display = 'none';
+  });
+
+  document.getElementById('btn-confirm-delete').addEventListener('click', async () => {
+    const id = document.getElementById('delete-file-id').value;
+
+    try {
+      const response = await fetch(`/api/share/files/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete file');
+      }
+
+      document.getElementById('delete-modal').style.display = 'none';
+      loadFiles();
+
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+
+  // Close modals on backdrop click
+  document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.style.display = 'none';
+      }
+    });
+  });
+</script>

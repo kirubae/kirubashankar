@@ -1,0 +1,964 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import { generateBreadcrumbSchema } from '@components/seo/schemas/BreadcrumbSchema';
+import { generateWebApplicationSchema } from '@components/seo/schemas/WebApplicationSchema';
+import Breadcrumb from '@components/ui/Breadcrumb.astro';
+import Icon from '@components/ui/Icon.astro';
+import '@styles/tools.css';
+
+const breadcrumbs = [
+  { name: 'Home', url: '/' },
+  { name: 'Things', url: '/tools' },
+  { name: 'Companies Research', url: '/tools/deep-search' },
+];
+
+const jsonLdSchema = [
+  generateBreadcrumbSchema(breadcrumbs),
+  generateWebApplicationSchema({
+    name: 'Companies Research',
+    description: 'AI-powered research tool. Upload a list of companies and get detailed research using Perplexity AI.',
+    slug: 'deep-search',
+    category: 'BusinessApplication',
+    featureList: ['AI-powered company research', 'Bulk research from CSV', 'Custom research fields', 'Export to CSV'],
+  }),
+];
+---
+
+<BaseLayout
+  title="Companies Research - AI-Powered Company Research"
+  description="Research companies at scale using AI. Upload a CSV of company names, define custom research fields, and get detailed insights powered by Perplexity AI."
+  jsonLd={jsonLdSchema}
+>
+  <div class="tool-container">
+    <Breadcrumb items={breadcrumbs} />
+
+    <!-- Page Heading -->
+    <header class="page-header">
+      <h1>Companies Research</h1>
+      <p class="page-subtitle">AI-powered company research using Perplexity</p>
+    </header>
+
+    <!-- Step 1: Upload -->
+    <section id="step-upload" class="step active">
+      <div class="step-header">
+        <div class="step-badge">1</div>
+        <div>
+          <h2>Upload Companies</h2>
+          <p class="step-subtitle">Upload a CSV file with company names</p>
+        </div>
+      </div>
+
+      <div class="step-content">
+        <!-- Upload Area -->
+        <div class="upload-area" id="upload-area">
+          <div class="upload-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+          </div>
+          <h2>Upload your CSV</h2>
+          <p>Drop your file here or click to browse</p>
+          <button class="btn btn-primary" id="upload-btn">Choose File</button>
+          <input type="file" id="file-input" accept=".csv" />
+        </div>
+
+        <div class="help-text">
+          <strong>Tip:</strong> First column should contain company names. If values contain commas, make sure they're quoted.
+        </div>
+
+        <!-- File Info -->
+        <div id="file-info" class="info-card" style="display: none;">
+          <p><strong>File:</strong> <span id="file-name"></span></p>
+          <p><strong>Rows:</strong> <span id="file-rows">0</span> companies</p>
+        </div>
+
+        <!-- Header Selection -->
+        <div id="header-section" class="form-section" style="display: none;">
+          <label class="form-label">Does your CSV have a header row?</label>
+          <div class="radio-group">
+            <label class="radio-card">
+              <input type="radio" name="has_header" value="yes" checked />
+              <span class="radio-content">
+                <span class="radio-icon">✓</span>
+                Yes, skip first row
+              </span>
+            </label>
+            <label class="radio-card">
+              <input type="radio" name="has_header" value="no" />
+              <span class="radio-content">
+                <span class="radio-icon">✗</span>
+                No headers
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div id="continue-section" style="display: none;">
+          <button id="btn-continue" class="btn btn-primary btn-large">
+            Continue
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 2: Authentication -->
+    <section id="step-auth" class="step" style="display: none;">
+      <div class="step-header">
+        <div class="step-badge">2</div>
+        <div>
+          <h2>Authentication</h2>
+          <p class="step-subtitle">Enter password or your own API key</p>
+        </div>
+      </div>
+
+      <div class="step-content">
+        <div class="auth-options">
+          <div class="auth-option">
+            <h3>Option 1: Password</h3>
+            <p>If you have the password, enter it below to use the built-in API.</p>
+            <div class="auth-input-group">
+              <input type="password" id="auth-password" placeholder="Enter password" autocomplete="off" />
+            </div>
+          </div>
+
+          <div class="auth-divider">
+            <span>OR</span>
+          </div>
+
+          <div class="auth-option">
+            <h3>Option 2: Your Perplexity API Key</h3>
+            <p>Use your own <a href="https://www.perplexity.ai/settings/api" target="_blank" rel="noopener">Perplexity API key</a>.</p>
+            <div class="auth-input-group">
+              <input type="text" id="auth-api-key" placeholder="pplx-xxxx..." autocomplete="off" />
+            </div>
+          </div>
+        </div>
+
+        <p id="auth-error" class="auth-error"></p>
+
+        <div class="action-bar">
+          <button id="btn-back-auth" class="btn btn-secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            Back
+          </button>
+          <button id="btn-continue-auth" class="btn btn-primary btn-large">
+            Continue
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 3: Define Fields -->
+    <section id="step-fields" class="step" style="display: none;">
+      <div class="step-header">
+        <div class="step-badge">3</div>
+        <div>
+          <h2>Define Research Fields</h2>
+          <p class="step-subtitle">What information do you want to research?</p>
+        </div>
+      </div>
+
+      <div class="step-content">
+        <div id="fields-list" class="fields-container"></div>
+
+        <button id="btn-add-field" class="btn btn-secondary btn-add">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Add Field
+        </button>
+
+        <div class="action-bar">
+          <button id="btn-back-fields" class="btn btn-secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            Back
+          </button>
+          <button id="btn-run-research" class="btn btn-primary btn-large" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            Run Research
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 4: Results -->
+    <section id="step-results" class="step" style="display: none;">
+      <div class="step-header">
+        <div class="step-badge">4</div>
+        <div>
+          <h2>Research Results</h2>
+          <p class="step-subtitle" id="results-status">Processing...</p>
+        </div>
+      </div>
+
+      <div class="step-content">
+        <div id="progress-section">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+          <p id="progress-text" class="progress-text">Starting research...</p>
+        </div>
+
+        <div class="results-table-wrapper">
+          <table id="results-table">
+            <thead id="results-header"></thead>
+            <tbody id="results-body"></tbody>
+          </table>
+        </div>
+
+        <div class="action-bar">
+          <button id="btn-back-fields" class="btn btn-secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            Back
+          </button>
+          <button id="btn-stop" class="btn btn-danger" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <rect x="6" y="6" width="12" height="12"></rect>
+            </svg>
+            Stop
+          </button>
+          <button id="btn-download" class="btn btn-primary" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            Download CSV
+          </button>
+          <button id="btn-new-research" class="btn btn-secondary" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <polyline points="1 4 1 10 7 10"></polyline>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+            New Research
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</BaseLayout>
+
+<style is:global>
+  /* Page-specific styles for Companies Research */
+  #file-input {
+    display: none;
+  }
+
+  .btn-add {
+    width: 100%;
+    justify-content: center;
+    margin-top: 16px;
+  }
+
+  /* Field Cards */
+  .fields-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .field-card {
+    background: var(--color-paper);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 24px;
+    position: relative;
+  }
+
+  .btn-remove {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 6px;
+    background: var(--color-cream);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--color-ink-light);
+    transition: all 0.2s;
+  }
+
+  .btn-remove:hover {
+    background: #fef2f2;
+    color: #ef4444;
+  }
+
+  .field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .field-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-ink);
+  }
+
+  .field-card input,
+  .field-card select {
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    background: var(--color-paper);
+    width: 100%;
+  }
+
+  .field-card input:focus,
+  .field-card select:focus {
+    outline: none;
+    border-color: var(--color-terracotta);
+  }
+
+  .enum-options {
+    display: none;
+    margin-top: 16px;
+    padding: 16px;
+    background: var(--color-cream);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+  }
+
+  .enum-options.visible {
+    display: block;
+  }
+
+  .enum-options .field-label {
+    margin-bottom: 8px;
+  }
+
+  .enum-hint {
+    font-size: 12px;
+    color: var(--color-ink-light);
+    margin-top: 8px;
+  }
+
+  @media (max-width: 600px) {
+    .field-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Results Table (page-specific IDs) */
+  #results-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  #results-table th,
+  #results-table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  #results-table th {
+    background: var(--color-cream);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+  }
+
+  #results-table tr:hover td {
+    background: var(--color-cream);
+  }
+
+  /* Auth Options */
+  .auth-options {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .auth-option {
+    padding: 20px;
+    background: var(--color-cream);
+    border-radius: 8px;
+  }
+
+  .auth-option h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    color: var(--color-ink);
+  }
+
+  .auth-option > p {
+    color: var(--color-ink-light);
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+
+  .auth-option a {
+    color: var(--color-terracotta);
+  }
+
+  .auth-input-group input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-size: 16px;
+    font-family: inherit;
+    background: var(--color-paper);
+  }
+
+  .auth-input-group input:focus {
+    outline: none;
+    border-color: var(--color-terracotta);
+  }
+
+  .auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .auth-divider::before,
+  .auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--color-border);
+  }
+
+  .auth-divider span {
+    color: var(--color-ink-light);
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .auth-error {
+    color: #ef4444;
+    font-size: 14px;
+    margin-top: 16px;
+    min-height: 20px;
+  }
+</style>
+
+<script is:inline>
+  // SHA-256 hash of the password "Florida"
+  const PASSWORD_HASH = '8e9e26c2ef86ecd02ba5c84da8a0859a39b4181b19f4c89312d6f1c1b78ccf15';
+  const BUILT_IN_API_KEY = ''; // Set via environment or user input
+
+  // Hash function using Web Crypto API
+  async function sha256(message) {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  // State
+  let csvData = [];
+  let fields = [];
+  let results = [];
+  let isRunning = false;
+  let customApiKey = null; // Will be set if user provides their own key
+
+  // Field data types
+  const fieldTypes = {
+    'String': { label: 'Text', description: 'Free text response' },
+    'Numeric': { label: 'Number', description: 'Numeric value' },
+    'Boolean': { label: 'Yes/No', description: 'True or false value' },
+    'Enum': { label: 'Options', description: 'One of a set of values' },
+  };
+
+  // DOM Elements
+  const elements = {
+    uploadArea: document.getElementById('upload-area'),
+    fileInput: document.getElementById('file-input'),
+    uploadBtn: document.getElementById('upload-btn'),
+    fileInfo: document.getElementById('file-info'),
+    fileName: document.getElementById('file-name'),
+    fileRows: document.getElementById('file-rows'),
+    headerSection: document.getElementById('header-section'),
+    continueSection: document.getElementById('continue-section'),
+    btnContinue: document.getElementById('btn-continue'),
+    stepUpload: document.getElementById('step-upload'),
+    stepAuth: document.getElementById('step-auth'),
+    stepFields: document.getElementById('step-fields'),
+    stepResults: document.getElementById('step-results'),
+    authPassword: document.getElementById('auth-password'),
+    authApiKey: document.getElementById('auth-api-key'),
+    authError: document.getElementById('auth-error'),
+    btnBackAuth: document.getElementById('btn-back-auth'),
+    btnContinueAuth: document.getElementById('btn-continue-auth'),
+    fieldsList: document.getElementById('fields-list'),
+    btnAddField: document.getElementById('btn-add-field'),
+    btnBackFields: document.getElementById('btn-back-fields'),
+    btnRunResearch: document.getElementById('btn-run-research'),
+    btnStop: document.getElementById('btn-stop'),
+    btnDownload: document.getElementById('btn-download'),
+    btnNewResearch: document.getElementById('btn-new-research'),
+    progressFill: document.getElementById('progress-fill'),
+    progressText: document.getElementById('progress-text'),
+    resultsStatus: document.getElementById('results-status'),
+    resultsHeader: document.getElementById('results-header'),
+    resultsBody: document.getElementById('results-body'),
+  };
+
+  // Initialize
+  document.addEventListener('DOMContentLoaded', () => {
+    setupEventListeners();
+    addField(); // Add first field by default
+  });
+
+  function setupEventListeners() {
+    // Upload
+    elements.uploadArea.addEventListener('click', () => elements.fileInput.click());
+    elements.uploadBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      elements.fileInput.click();
+    });
+    elements.fileInput.addEventListener('change', handleFileSelect);
+
+    // Drag and drop
+    elements.uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      elements.uploadArea.classList.add('dragover');
+    });
+    elements.uploadArea.addEventListener('dragleave', () => {
+      elements.uploadArea.classList.remove('dragover');
+    });
+    elements.uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      elements.uploadArea.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        elements.fileInput.files = e.dataTransfer.files;
+        handleFileSelect({ target: elements.fileInput });
+      }
+    });
+
+    // Navigation
+    elements.btnContinue.addEventListener('click', () => showStep('auth'));
+    elements.btnBackAuth.addEventListener('click', () => showStep('upload'));
+    elements.btnContinueAuth.addEventListener('click', handleAuth);
+    elements.btnBackFields.addEventListener('click', () => showStep('auth'));
+    elements.btnAddField.addEventListener('click', addField);
+    elements.btnRunResearch.addEventListener('click', runResearch);
+    elements.btnStop.addEventListener('click', stopResearch);
+    elements.btnDownload.addEventListener('click', downloadResults);
+    elements.btnNewResearch.addEventListener('click', () => location.reload());
+  }
+
+  async function handleAuth() {
+    const password = elements.authPassword.value.trim();
+    const apiKey = elements.authApiKey.value.trim();
+    elements.authError.textContent = '';
+
+    if (!password && !apiKey) {
+      elements.authError.textContent = 'Please enter a password or API key';
+      return;
+    }
+
+    if (password) {
+      const hash = await sha256(password);
+      if (hash === PASSWORD_HASH) {
+        customApiKey = null; // Use built-in key
+        showStep('fields');
+        return;
+      } else {
+        elements.authError.textContent = 'Incorrect password';
+        elements.authPassword.value = '';
+        elements.authPassword.focus();
+        return;
+      }
+    }
+
+    if (apiKey) {
+      if (apiKey.startsWith('pplx-')) {
+        customApiKey = apiKey; // Use custom key
+        showStep('fields');
+        return;
+      } else {
+        elements.authError.textContent = 'Invalid API key format (should start with pplx-)';
+        return;
+      }
+    }
+  }
+
+  function handleFileSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target.result;
+      csvData = parseCSV(text);
+
+      elements.fileName.textContent = file.name;
+      elements.fileRows.textContent = csvData.length;
+      elements.fileInfo.style.display = 'block';
+      elements.headerSection.style.display = 'block';
+      elements.continueSection.style.display = 'block';
+    };
+    reader.readAsText(file);
+  }
+
+  function parseCSV(text) {
+    const rows = [];
+    let currentRow = [];
+    let currentField = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      const nextChar = text[i + 1];
+
+      if (inQuotes) {
+        if (char === '"' && nextChar === '"') {
+          currentField += '"';
+          i++;
+        } else if (char === '"') {
+          inQuotes = false;
+        } else {
+          currentField += char;
+        }
+      } else {
+        if (char === '"') {
+          inQuotes = true;
+        } else if (char === ',') {
+          currentRow.push(currentField.trim());
+          currentField = '';
+        } else if (char === '\n' || (char === '\r' && nextChar === '\n')) {
+          currentRow.push(currentField.trim());
+          if (currentRow.some((f) => f !== '')) {
+            rows.push(currentRow);
+          }
+          currentRow = [];
+          currentField = '';
+          if (char === '\r') i++;
+        } else {
+          currentField += char;
+        }
+      }
+    }
+
+    if (currentField || currentRow.length > 0) {
+      currentRow.push(currentField.trim());
+      if (currentRow.some((f) => f !== '')) {
+        rows.push(currentRow);
+      }
+    }
+
+    return rows;
+  }
+
+  function showStep(step) {
+    // Handle header skip when leaving upload step
+    if (step === 'auth' && elements.stepUpload.style.display !== 'none') {
+      const hasHeader = document.querySelector('input[name="has_header"]:checked').value === 'yes';
+      if (hasHeader && csvData.length > 0) {
+        csvData = csvData.slice(1);
+        elements.fileRows.textContent = csvData.length;
+      }
+    }
+
+    elements.stepUpload.style.display = step === 'upload' ? 'block' : 'none';
+    elements.stepAuth.style.display = step === 'auth' ? 'block' : 'none';
+    elements.stepFields.style.display = step === 'fields' ? 'block' : 'none';
+    elements.stepResults.style.display = step === 'results' ? 'block' : 'none';
+  }
+
+  function addField() {
+    const id = Date.now();
+
+    const fieldCard = document.createElement('div');
+    fieldCard.className = 'field-card';
+    fieldCard.id = `field-${id}`;
+
+    // Remove button (top right corner)
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'btn-remove';
+    removeBtn.title = 'Remove field';
+    removeBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+    removeBtn.addEventListener('click', () => {
+      fieldCard.remove();
+      updateRunButton();
+    });
+
+    // Grid with 3 columns: Field Name, Field Type, Research Prompt
+    const grid = document.createElement('div');
+    grid.className = 'field-grid';
+
+    // Field Name
+    const nameGroup = document.createElement('div');
+    nameGroup.className = 'field-group';
+    const nameLabel = document.createElement('label');
+    nameLabel.className = 'field-label';
+    nameLabel.textContent = 'Field Name';
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.id = `field-name-${id}`;
+    nameInput.className = 'field-name';
+    nameInput.placeholder = 'e.g., Industry';
+    nameInput.addEventListener('input', updateRunButton);
+    nameGroup.appendChild(nameLabel);
+    nameGroup.appendChild(nameInput);
+
+    // Field Type
+    const typeGroup = document.createElement('div');
+    typeGroup.className = 'field-group';
+    const typeLabel = document.createElement('label');
+    typeLabel.className = 'field-label';
+    typeLabel.textContent = 'Field Type';
+    const select = document.createElement('select');
+    select.id = `field-type-${id}`;
+    Object.entries(fieldTypes).forEach(([key, value]) => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.textContent = value.label;
+      select.appendChild(option);
+    });
+    typeGroup.appendChild(typeLabel);
+    typeGroup.appendChild(select);
+
+    // Research Prompt
+    const promptGroup = document.createElement('div');
+    promptGroup.className = 'field-group';
+    const promptLabel = document.createElement('label');
+    promptLabel.className = 'field-label';
+    promptLabel.textContent = 'Research Prompt';
+    const promptInput = document.createElement('input');
+    promptInput.type = 'text';
+    promptInput.id = `field-prompt-${id}`;
+    promptInput.className = 'field-prompt';
+    promptInput.placeholder = 'e.g., What industry does this company operate in?';
+    promptInput.addEventListener('input', updateRunButton);
+    promptGroup.appendChild(promptLabel);
+    promptGroup.appendChild(promptInput);
+
+    grid.appendChild(nameGroup);
+    grid.appendChild(typeGroup);
+    grid.appendChild(promptGroup);
+
+    // Enum options section (hidden by default)
+    const enumSection = document.createElement('div');
+    enumSection.className = 'enum-options';
+    enumSection.id = `enum-options-${id}`;
+
+    const enumGroup = document.createElement('div');
+    enumGroup.className = 'field-group';
+    const enumLabel = document.createElement('label');
+    enumLabel.className = 'field-label';
+    enumLabel.textContent = 'Allowed Options';
+    const enumInput = document.createElement('input');
+    enumInput.type = 'text';
+    enumInput.id = `enum-values-${id}`;
+    enumInput.placeholder = 'e.g., B2B, B2C, Both, Unknown';
+    enumInput.addEventListener('input', updateRunButton);
+    const enumHint = document.createElement('div');
+    enumHint.className = 'enum-hint';
+    enumHint.textContent = 'Comma-separated list of allowed values';
+    enumGroup.appendChild(enumLabel);
+    enumGroup.appendChild(enumInput);
+    enumGroup.appendChild(enumHint);
+    enumSection.appendChild(enumGroup);
+
+    // Toggle enum options visibility
+    select.addEventListener('change', () => {
+      enumSection.classList.toggle('visible', select.value === 'Enum');
+      updateRunButton();
+    });
+
+    fieldCard.appendChild(removeBtn);
+    fieldCard.appendChild(grid);
+    fieldCard.appendChild(enumSection);
+    elements.fieldsList.appendChild(fieldCard);
+
+    updateRunButton();
+  }
+
+  function updateRunButton() {
+    const fields = getFields();
+    const hasValidFields = fields.length > 0 && fields.every(f => f.name && f.prompt);
+    elements.btnRunResearch.disabled = !hasValidFields;
+  }
+
+  function getFields() {
+    const fieldCards = elements.fieldsList.querySelectorAll('.field-card');
+    const fields = [];
+    fieldCards.forEach((card) => {
+      const select = card.querySelector('select');
+      const nameInput = card.querySelector('.field-name');
+      const promptInput = card.querySelector('.field-prompt');
+      const enumInput = card.querySelector('[id^="enum-values-"]');
+
+      const name = nameInput?.value.trim() || '';
+      const prompt = promptInput?.value.trim() || '';
+      const type = select?.value || 'String';
+
+      if (name && prompt) {
+        const field = {
+          type: type,
+          name: name,
+          prompt: prompt,
+        };
+
+        // Add enum options if type is Enum
+        if (type === 'Enum' && enumInput) {
+          field.options = enumInput.value.split(',').map(v => v.trim()).filter(v => v);
+        }
+
+        fields.push(field);
+      }
+    });
+    return fields;
+  }
+
+  async function runResearch() {
+    fields = getFields();
+    if (fields.length === 0) {
+      alert('Please add at least one research field');
+      return;
+    }
+
+    if (csvData.length === 0) {
+      alert('No data to research');
+      return;
+    }
+
+    showStep('results');
+    isRunning = true;
+    results = [];
+
+    elements.btnStop.style.display = 'none';
+    elements.btnDownload.style.display = 'none';
+    elements.btnNewResearch.style.display = 'none';
+
+    // Setup table headers
+    const headerRow = document.createElement('tr');
+    headerRow.innerHTML = '<th>Company</th>' + fields.map((f) => `<th>${f.name}</th>`).join('');
+    elements.resultsHeader.innerHTML = '';
+    elements.resultsHeader.appendChild(headerRow);
+    elements.resultsBody.innerHTML = '';
+
+    const companies = csvData.map((row) => row[0]).filter(c => c);
+
+    try {
+      elements.progressText.textContent = `Researching ${companies.length} companies...`;
+      elements.progressFill.style.width = '10%';
+
+      const response = await fetch('/api/research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companies: companies,
+          fields: fields.map((f) => ({
+            name: f.name,
+            prompt: f.prompt,
+            type: f.type,
+            options: f.options || null,
+          })),
+          apiKey: customApiKey, // null if using built-in key via password
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to run research');
+      }
+
+      const data = await response.json();
+      results = data.results || [];
+
+      // Display all results
+      results.forEach((result) => addResultRow(result));
+      updateProgress(results.length, companies.length);
+      researchComplete();
+
+    } catch (error) {
+      console.error('Error running research:', error);
+      elements.progressText.textContent = 'Error: ' + error.message;
+      elements.btnNewResearch.style.display = 'inline-flex';
+      isRunning = false;
+    }
+  }
+
+  function updateProgress(completed, total) {
+    const percent = Math.round((completed / total) * 100);
+    elements.progressFill.style.width = `${percent}%`;
+    elements.progressText.textContent = `Researching ${completed} of ${total} companies...`;
+    elements.resultsStatus.textContent = `${completed}/${total} complete`;
+  }
+
+  function updateResults(newResults) {
+    newResults.forEach((result, index) => {
+      if (index >= results.length) {
+        results.push(result);
+        addResultRow(result);
+      }
+    });
+  }
+
+  function addResultRow(result) {
+    const row = document.createElement('tr');
+    row.innerHTML = `<td>${result.company || ''}</td>` + fields.map((f) => `<td>${result[f.name] || ''}</td>`).join('');
+    elements.resultsBody.appendChild(row);
+  }
+
+  function researchComplete() {
+    isRunning = false;
+    elements.progressText.textContent = 'Research complete!';
+    elements.resultsStatus.textContent = 'Complete';
+    elements.btnStop.style.display = 'none';
+    elements.btnDownload.style.display = 'inline-flex';
+    elements.btnNewResearch.style.display = 'inline-flex';
+  }
+
+  function stopResearch() {
+    isRunning = false;
+    if (pollInterval) clearInterval(pollInterval);
+    elements.progressText.textContent = 'Stopped';
+    elements.resultsStatus.textContent = 'Stopped';
+    elements.btnStop.style.display = 'none';
+    elements.btnDownload.style.display = 'inline-flex';
+    elements.btnNewResearch.style.display = 'inline-flex';
+  }
+
+  function downloadResults() {
+    if (results.length === 0) return;
+
+    const headers = ['Company', ...fields.map((f) => f.name)];
+    const rows = results.map((r) => [r.company, ...fields.map((f) => r[f.name] || '')]);
+
+    const csvContent = [headers, ...rows].map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `research_results_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+</script>

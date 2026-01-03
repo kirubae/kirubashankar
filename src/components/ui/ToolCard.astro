@@ -1,0 +1,28 @@
+---
+/**
+ * Card component for displaying tools in the tools listing.
+ * Uses design tokens for consistent styling.
+ */
+import type { Tool } from '@types/index';
+
+interface Props {
+  tool: Tool;
+}
+
+const { tool } = Astro.props;
+---
+
+<a
+  href={`/tools/${tool.slug}`}
+  class="group block bg-paper rounded-lg border border-border p-6 hover:border-terracotta transition-colors"
+>
+  <h3 class="text-lg font-semibold text-ink group-hover:text-terracotta transition-colors mb-2">
+    {tool.name}
+  </h3>
+  <p class="text-ink-light text-sm">{tool.description}</p>
+  {tool.category && (
+    <span class="inline-block mt-3 px-2 py-1 bg-cream text-ink-light text-xs rounded">
+      {tool.category}
+    </span>
+  )}
+</a>

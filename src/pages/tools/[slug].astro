@@ -1,0 +1,47 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import { getAllTools, getToolBySlug } from '@data/tools';
+import { generateBreadcrumbSchema } from '@components/seo/schemas/BreadcrumbSchema';
+
+export function getStaticPaths() {
+  const tools = getAllTools();
+  return tools.map((tool) => ({
+    params: { slug: tool.slug },
+  }));
+}
+
+const { slug } = Astro.params;
+const tool = getToolBySlug(slug as string);
+
+if (!tool) {
+  return Astro.redirect('/404');
+}
+
+const breadcrumbs = [
+  { name: 'Home', url: '/' },
+  { name: 'Tools', url: '/tools' },
+  { name: tool.name, url: `/tools/${tool.slug}` },
+];
+
+const jsonLdSchema = generateBreadcrumbSchema(breadcrumbs);
+---
+
+<BaseLayout title={tool.name} description={tool.description} jsonLd={jsonLdSchema}>
+  <div class="max-w-3xl mx-auto px-5 py-8 md:py-12">
+    <nav class="mb-6">
+      <a href="/tools" class="text-[#1a0dab] hover:underline text-sm">
+        &larr; Back to Tools
+      </a>
+    </nav>
+
+    <header class="mb-8">
+      <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">{tool.name}</h1>
+      <p class="text-gray-600">{tool.description}</p>
+    </header>
+
+    <div class="bg-white rounded-lg shadow-sm p-6 md:p-8">
+      <!-- Tool component will be rendered here -->
+      <p class="text-gray-500 text-center py-8">Tool implementation goes here.</p>
+    </div>
+  </div>
+</BaseLayout>

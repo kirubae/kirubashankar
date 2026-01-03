@@ -1,0 +1,52 @@
+---
+import '@styles/global.css';
+import SEOHead from '@components/seo/SEOHead.astro';
+import JsonLd from '@components/seo/JsonLd.astro';
+import Header from '@components/layout/Header.astro';
+import Footer from '@components/layout/Footer.astro';
+import type { SEOProps } from '@types/index';
+
+interface Props extends SEOProps {
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  showNav?: boolean;
+}
+
+const { title, description, canonical, image, type, noindex, jsonLd, showNav } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
+    <link rel="apple-touch-icon" href="/images/favicon.png" />
+
+    <SEOHead
+      title={title}
+      description={description}
+      canonical={canonical}
+      image={image}
+      type={type}
+      noindex={noindex}
+    />
+
+    {jsonLd && <JsonLd schema={jsonLd} />}
+
+    <!-- Preconnect to Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="min-h-screen flex flex-col bg-cream text-ink font-['Work_Sans',sans-serif]">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <Header showNav={showNav} />
+    <main id="main-content" class="flex-1">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

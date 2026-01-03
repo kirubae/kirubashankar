@@ -1,0 +1,36 @@
+---
+/**
+ * Reusable breadcrumb navigation component.
+ * Provides consistent styling and structure across all pages.
+ */
+import Icon from './Icon.astro';
+
+interface BreadcrumbItem {
+  name: string;
+  url: string;
+}
+
+interface Props {
+  items: BreadcrumbItem[];
+}
+
+const { items } = Astro.props;
+
+// Last item is the current page
+const currentPage = items[items.length - 1];
+const parentItems = items.slice(0, -1);
+---
+
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a href="/" aria-label="Home">
+    <Icon name="home" size={16} />
+  </a>
+  {parentItems.slice(1).map((item) => (
+    <>
+      <span class="separator">/</span>
+      <a href={item.url}>{item.name}</a>
+    </>
+  ))}
+  <span class="separator">/</span>
+  <span class="current">{currentPage.name}</span>
+</nav>
