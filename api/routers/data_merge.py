@@ -197,6 +197,33 @@ async def download_result_excel(result_id: str):
 # R2 Cloud Storage Endpoints (for large files)
 # ============================================
 
+@router.post("/r2/upload-url")
+async def get_upload_url(filename: str, content_type: str = "application/octet-stream"):
+    """Generate a presigned URL for direct upload to R2 (bypasses 100MB CF limit)"""
+    r2 = get_r2_service()
+
+    if not r2.is_available:
+        raise HTTPException(status_code=503, detail="R2 storage not available")
+
+    # Generate unique key
+    import time
+    timestamp = int(time.time() * 1000)
+    random_id = str(uuid.uuid4())[:8]
+    key = f"uploads/{timestamp}-{random_id}-{filename}"
+
+    # Generate presigned upload URL (valid for 1 hour)
+    upload_url = r2.generate_presigned_upload_url(key, content_type, expires_in=3600)
+
+    if not upload_url:
+        raise HTTPException(status_code=500, detail="Failed to generate upload URL")
+
+    return {
+        "uploadUrl": upload_url,
+        "key": key,
+        "expiresIn": 3600
+    }
+
+
 @router.post("/r2/preview")
 async def preview_r2_files(request: R2PreviewRequest):
     """Preview files from R2 storage (concatenates multiple files with validation)"""

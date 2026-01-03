@@ -1270,15 +1270,37 @@ const jsonLdSchema = [
   elements.tabB.addEventListener('click', () => switchTab('b'));
 
   // =====================
-  // File Upload to R2
+  // File Upload to R2 (Direct with Presigned URL)
   // =====================
 
-  // Upload a single file to R2 with progress tracking
-  function uploadFileToR2(file, onProgress) {
+  // Get content type based on file extension
+  function getContentType(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    if (ext === 'csv') return 'text/csv';
+    if (ext === 'xlsx') return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    if (ext === 'xls') return 'application/vnd.ms-excel';
+    return 'application/octet-stream';
+  }
+
+  // Get presigned upload URL from backend
+  async function getUploadUrl(filename, contentType) {
+    const params = new URLSearchParams({ filename, content_type: contentType });
+    const response = await fetch(`${BACKEND_URL}/r2/upload-url?${params}`, {
+      method: 'POST'
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Failed to get upload URL' }));
+      throw new Error(error.detail || 'Failed to get upload URL');
+    }
+
+    return await response.json();
+  }
+
+  // Upload file directly to R2 using presigned URL
+  function uploadToR2Direct(file, uploadUrl, contentType, onProgress) {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      const formData = new FormData();
-      formData.append('file', file);
 
       xhr.upload.addEventListener('progress', (e) => {
         if (e.lengthComputable && onProgress) {
@@ -1289,28 +1311,33 @@ const jsonLdSchema = [
 
       xhr.addEventListener('load', () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          try {
-            const result = JSON.parse(xhr.responseText);
-            resolve(result);
-          } catch (e) {
-            reject(new Error('Invalid response'));
-          }
+          resolve();
         } else {
-          try {
-            const error = JSON.parse(xhr.responseText);
-            reject(new Error(error.error || 'Upload failed'));
-          } catch (e) {
-            reject(new Error('Upload failed'));
-          }
+          reject(new Error(`Upload failed: ${xhr.status}`));
         }
       });
 
-      xhr.addEventListener('error', () => reject(new Error('Network error')));
+      xhr.addEventListener('error', () => reject(new Error('Network error during upload')));
       xhr.addEventListener('abort', () => reject(new Error('Upload cancelled')));
 
-      xhr.open('POST', R2_UPLOAD_URL);
-      xhr.send(formData);
+      xhr.open('PUT', uploadUrl);
+      xhr.setRequestHeader('Content-Type', contentType);
+      xhr.send(file);
     });
+  }
+
+  // Upload a single file to R2 (get URL, then upload directly)
+  async function uploadFileToR2(file, onProgress) {
+    const contentType = getContentType(file.name);
+
+    // Step 1: Get presigned upload URL from backend
+    onProgress && onProgress(0, 0, file.size);
+    const { uploadUrl, key } = await getUploadUrl(file.name, contentType);
+
+    // Step 2: Upload directly to R2
+    await uploadToR2Direct(file, uploadUrl, contentType, onProgress);
+
+    return { key, filename: file.name, size: file.size };
   }
 
   // Handle multiple file uploads for a side

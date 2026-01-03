@@ -121,6 +121,27 @@ class R2Service:
             logger.error(f"Failed to generate presigned URL: {key} - {e}")
             return None
 
+    def generate_presigned_upload_url(self, key: str, content_type: str = 'application/octet-stream', expires_in: int = 3600) -> Optional[str]:
+        """Generate a presigned URL for uploading a file directly to R2"""
+        if not self.client:
+            logger.error("R2 client not initialized")
+            return None
+
+        try:
+            url = self.client.generate_presigned_url(
+                'put_object',
+                Params={
+                    'Bucket': settings.r2_bucket_name,
+                    'Key': key,
+                    'ContentType': content_type
+                },
+                ExpiresIn=expires_in
+            )
+            return url
+        except Exception as e:
+            logger.error(f"Failed to generate presigned upload URL: {key} - {e}")
+            return None
+
 
 # Singleton instance
 _r2_service: Optional[R2Service] = None
