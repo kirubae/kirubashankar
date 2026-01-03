@@ -5,7 +5,7 @@ region: nyc
 services:
   - name: api
     github:
-      repo: your-username/kirubashankar
+      repo: kirubae/kirubashankar
       branch: main
       deploy_on_push: true
     source_dir: api
