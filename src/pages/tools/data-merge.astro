@@ -514,6 +514,21 @@ const jsonLdSchema = [
     color: var(--color-ink-light);
   }
 
+  .file-item .file-progress {
+    height: 4px;
+    background: #e5e7eb;
+    border-radius: 2px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+
+  .file-item .file-progress-bar {
+    height: 100%;
+    background: var(--color-terracotta);
+    border-radius: 2px;
+    transition: width 0.2s ease-out;
+  }
+
   .file-item .btn-remove {
     width: 24px;
     height: 24px;
@@ -1258,22 +1273,44 @@ const jsonLdSchema = [
   // File Upload to R2
   // =====================
 
-  // Upload a single file to R2
-  async function uploadFileToR2(file) {
-    const formData = new FormData();
-    formData.append('file', file);
+  // Upload a single file to R2 with progress tracking
+  function uploadFileToR2(file, onProgress) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      const formData = new FormData();
+      formData.append('file', file);
 
-    const response = await fetch(R2_UPLOAD_URL, {
-      method: 'POST',
-      body: formData
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable && onProgress) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          onProgress(percent, e.loaded, e.total);
+        }
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const result = JSON.parse(xhr.responseText);
+            resolve(result);
+          } catch (e) {
+            reject(new Error('Invalid response'));
+          }
+        } else {
+          try {
+            const error = JSON.parse(xhr.responseText);
+            reject(new Error(error.error || 'Upload failed'));
+          } catch (e) {
+            reject(new Error('Upload failed'));
+          }
+        }
+      });
+
+      xhr.addEventListener('error', () => reject(new Error('Network error')));
+      xhr.addEventListener('abort', () => reject(new Error('Upload cancelled')));
+
+      xhr.open('POST', R2_UPLOAD_URL);
+      xhr.send(formData);
     });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Upload failed' }));
-      throw new Error(error.error || 'Upload failed');
-    }
-
-    return await response.json();
   }
 
   // Handle multiple file uploads for a side
@@ -1302,6 +1339,7 @@ const jsonLdSchema = [
         filename: file.name,
         size: file.size,
         status: 'uploading',
+        progress: 0,
         r2Key: null,
         error: null
       };
@@ -1312,10 +1350,18 @@ const jsonLdSchema = [
       uploadArea.classList.add('has-file');
 
       try {
-        // Upload to R2
-        const result = await uploadFileToR2(file);
+        // Upload to R2 with progress tracking
+        const result = await uploadFileToR2(file, (percent, loaded, total) => {
+          fileEntry.progress = percent;
+          // Update just this file's progress display
+          const fileItem = filesListEl.querySelector(`[data-index="${filesList.indexOf(fileEntry)}"] .file-meta`);
+          if (fileItem) {
+            fileItem.textContent = `Uploading... ${percent}% (${formatFileSize(loaded)} / ${formatFileSize(total)})`;
+          }
+        });
         fileEntry.r2Key = result.key;
         fileEntry.status = 'uploaded';
+        fileEntry.progress = 100;
         renderFilesList(side);
       } catch (error) {
         console.error('Upload error:', error);
@@ -1348,8 +1394,11 @@ const jsonLdSchema = [
     filesListEl.innerHTML = filesList.map((f, idx) => {
       const ext = f.filename.split('.').pop().toUpperCase();
       const statusClass = f.status === 'uploading' ? 'uploading' : (f.status === 'error' ? 'error' : '');
-      const statusText = f.status === 'uploading' ? 'Uploading...' :
+      const statusText = f.status === 'uploading' ? `Uploading... ${f.progress || 0}%` :
                         (f.status === 'error' ? f.error : formatFileSize(f.size));
+      const progressBar = f.status === 'uploading'
+        ? `<div class="file-progress"><div class="file-progress-bar" style="width: ${f.progress || 0}%"></div></div>`
+        : '';
 
       return `
         <div class="file-item ${statusClass}" data-index="${idx}">
@@ -1357,6 +1406,7 @@ const jsonLdSchema = [
           <div class="file-details">
             <div class="file-name">${escapeHtml(f.filename)}</div>
             <div class="file-meta">${statusText}</div>
+            ${progressBar}
           </div>
           <button class="btn-remove" data-side="${side}" data-index="${idx}">&times;</button>
         </div>
