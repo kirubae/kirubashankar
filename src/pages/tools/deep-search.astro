@@ -788,6 +788,7 @@ const jsonLdSchema = [
       customApiKey = null; // Use built-in key
       elements.authModal.classList.add('hidden');
       elements.mainContent.style.display = 'block';
+      showStep('upload');
       addField(); // Add first field
     } else {
       elements.authError.style.display = 'block';
@@ -804,6 +805,7 @@ const jsonLdSchema = [
       customApiKey = apiKey;
       elements.authModal.classList.add('hidden');
       elements.mainContent.style.display = 'block';
+      showStep('upload');
       addField(); // Add first field
     } else {
       elements.authApiError.textContent = 'Invalid API key format (should start with pplx-)';
