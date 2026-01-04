@@ -269,7 +269,7 @@ const jsonLdSchema = [
   let r2Key = null;
   let selectedColumnName = null;
   let jobId = null;
-  let resultKey = null;
+  let csvData = null;  // Base64 encoded CSV
   let jobStats = null;
 
   // DOM Elements
@@ -461,7 +461,7 @@ const jsonLdSchema = [
       if (result.status === 'completed') {
         jobId = result.jobId;
         jobStats = result.stats;
-        resultKey = result.result_key;
+        csvData = result.csv_data;  // Base64 encoded CSV
         updateProgress(100, 'Validation complete');
         showResults();
       } else if (result.jobId && !result.status) {
@@ -531,13 +531,22 @@ const jsonLdSchema = [
 
   // Download results
   function downloadResults() {
-    if (!resultKey) {
+    if (!csvData) {
       alert('Download not available. Please try again.');
       return;
     }
 
-    // Download directly from CF Pages proxy (which proxies to DO backend)
-    window.open(`/api/email/download/${encodeURIComponent(resultKey)}`, '_blank');
+    // Decode base64 and create download
+    const csvContent = atob(csvData);
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `email-validation-${jobId || 'results'}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   // Reset
@@ -546,7 +555,7 @@ const jsonLdSchema = [
     r2Key = null;
     selectedColumnName = null;
     jobId = null;
-    resultKey = null;
+    csvData = null;
     jobStats = null;
     elements.fileInput.value = '';
     elements.progressFill.style.width = '0%';

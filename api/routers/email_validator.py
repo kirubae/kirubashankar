@@ -357,11 +357,15 @@ async def create_validation_job_with_file(
             'domains_checked': len(domains)
         }
 
-        # Store result in memory for download
+        # Generate CSV content
         csv_buffer = BytesIO()
         df.to_csv(csv_buffer, index=False)
         csv_buffer.seek(0)
-        _job_results[job_id] = csv_buffer.getvalue()
+        csv_content = csv_buffer.getvalue()
+
+        # Encode as base64 for transport in JSON
+        import base64
+        csv_base64 = base64.b64encode(csv_content).decode('utf-8')
 
         logger.info(f"Email validation job {job_id} completed: {stats}")
 
@@ -369,7 +373,7 @@ async def create_validation_job_with_file(
             "jobId": job_id,
             "status": "completed",
             "stats": stats,
-            "result_key": job_id
+            "csv_data": csv_base64  # Base64 encoded CSV for direct download
         }
 
     except HTTPException:
