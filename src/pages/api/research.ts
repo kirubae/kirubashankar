@@ -91,15 +91,17 @@ async function callPerplexity(
   }
 }
 
-const PERPLEXITY_API_KEY = import.meta.env.PERPLEXITY_API_KEY || '';
-
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const body: ResearchRequest = await request.json();
     const { companies, fields, apiKey: customApiKey } = body;
 
-    // Use custom API key if provided, otherwise use built-in key
-    const apiKey = customApiKey || PERPLEXITY_API_KEY;
+    // Get API key from Cloudflare runtime env (set in Pages dashboard)
+    const runtime = (locals as any).runtime;
+    const envApiKey = runtime?.env?.PERPLEXITY_API_KEY || '';
+
+    // Use custom API key if provided, otherwise use env key
+    const apiKey = customApiKey || envApiKey;
 
     if (!companies?.length || !fields?.length) {
       return new Response(
