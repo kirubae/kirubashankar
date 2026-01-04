@@ -88,6 +88,11 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       });
     }
 
+    // Increment view count on the root collection
+    await FILE_SHARE_DB.prepare(`
+      UPDATE collections SET view_count = view_count + 1 WHERE id = ?
+    `).bind(accessResult.rootCollectionId).run();
+
     // Generate access token (valid for 30 minutes)
     const timestamp = Date.now();
     const rootCollectionId = accessResult.rootCollectionId!;

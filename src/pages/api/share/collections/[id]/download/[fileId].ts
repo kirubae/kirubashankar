@@ -92,10 +92,14 @@ export const GET: APIRoute = async ({ params, url, locals, request }) => {
       location || null
     ).run();
 
-    // Increment download count on file
+    // Increment download count on file and root collection
     await FILE_SHARE_DB.prepare(`
       UPDATE files SET download_count = download_count + 1 WHERE id = ?
     `).bind(fileId).run();
+
+    await FILE_SHARE_DB.prepare(`
+      UPDATE collections SET download_count = download_count + 1 WHERE id = ?
+    `).bind(rootId).run();
 
     // Check if viewing inline or downloading
     const mode = url.searchParams.get('mode');

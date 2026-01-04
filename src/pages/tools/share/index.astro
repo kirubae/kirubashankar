@@ -1031,7 +1031,7 @@ const breadcrumbs = [
     margin: 0;
   }
 
-  .collection-card-meta {
+  .collection-card-stats {
     display: flex;
     gap: 16px;
     font-size: 12px;
@@ -1039,6 +1039,25 @@ const breadcrumbs = [
     margin-top: 12px;
     padding-top: 12px;
     border-top: 1px solid var(--color-border);
+  }
+
+  .collection-card-meta {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .collection-card-meta .badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #e8eaed;
+    color: #5f6368;
+  }
+
+  .collection-card-meta .badge.open {
+    background: #d1fae5;
+    color: #059669;
   }
 
   .collection-card-actions {
@@ -1877,6 +1896,8 @@ const breadcrumbs = [
       list.innerHTML = collections.map(c => {
         const hasPassword = !!c.password_hash;
         const hasEmailRestriction = c.allowed_emails && JSON.parse(c.allowed_emails).length > 0;
+        const viewCount = c.view_count || 0;
+        const downloadCount = c.download_count || 0;
 
         return `
           <div class="collection-card" onclick="viewCollection('${c.id}')">
@@ -1891,13 +1912,19 @@ const breadcrumbs = [
                 ${c.subtitle ? `<p class="collection-card-subtitle">${c.subtitle}</p>` : ''}
               </div>
             </div>
+            <div class="collection-card-stats">
+              <span title="Items">${c.item_count} item${c.item_count !== 1 ? 's' : ''}</span>
+              <span title="Views">${viewCount} view${viewCount !== 1 ? 's' : ''}</span>
+              <span title="Downloads">${downloadCount} download${downloadCount !== 1 ? 's' : ''}</span>
+            </div>
             <div class="collection-card-meta">
-              <span>${c.item_count} item${c.item_count !== 1 ? 's' : ''}</span>
-              ${hasPassword ? '<span>Password</span>' : ''}
-              ${hasEmailRestriction ? '<span>Email restricted</span>' : ''}
+              ${hasPassword ? '<span class="badge">Password</span>' : ''}
+              ${hasEmailRestriction ? '<span class="badge">Email restricted</span>' : ''}
+              ${!hasPassword && !hasEmailRestriction ? '<span class="badge open">Open</span>' : ''}
             </div>
             <div class="collection-card-actions" onclick="event.stopPropagation()">
               <button class="btn btn-secondary btn-sm" onclick="copyCollectionUrl('${c.id}')">Copy URL</button>
+              <button class="btn btn-secondary btn-sm" onclick="viewCollectionLogs('${c.id}')">Logs</button>
               <button class="btn btn-secondary btn-sm" onclick="editCollection('${c.id}')">Edit</button>
               <button class="btn btn-danger btn-sm" onclick="deleteCollection('${c.id}', '${c.title}')">Delete</button>
             </div>
@@ -2089,6 +2116,53 @@ const breadcrumbs = [
       alert(error.message);
     }
   });
+
+  // =====================
+  // VIEW COLLECTION LOGS
+  // =====================
+  window.viewCollectionLogs = async function(id) {
+    const modal = document.getElementById('logs-modal');
+    const loading = document.getElementById('logs-loading');
+    const empty = document.getElementById('logs-empty');
+    const list = document.getElementById('logs-list');
+    const tbody = document.getElementById('logs-tbody');
+
+    modal.style.display = 'flex';
+    loading.style.display = 'block';
+    empty.style.display = 'none';
+    list.style.display = 'none';
+
+    try {
+      const response = await fetch(`/api/share/collections/${id}/logs`);
+      const data = await response.json();
+      const logs = data.logs || [];
+
+      loading.style.display = 'none';
+
+      if (logs.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+
+      list.style.display = 'block';
+      tbody.innerHTML = logs.map(log => `
+        <tr>
+          <td>${log.email}</td>
+          <td>${formatDate(log.accessed_at)}</td>
+          <td>${log.location || '-'}</td>
+          <td style="font-family: monospace; font-size: 12px;">${log.ip_address || '-'}</td>
+          <td>
+            <span class="status-badge ${log.success ? 'success' : 'failed'}">
+              ${log.success ? (log.action === 'download_file' ? 'Download' : 'View') : log.failure_reason || 'Failed'}
+            </span>
+          </td>
+        </tr>
+      `).join('');
+
+    } catch (error) {
+      loading.textContent = 'Failed to load logs';
+    }
+  };
 
   // =====================
   // EDIT COLLECTION

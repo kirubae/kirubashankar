@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS collections (
   is_deleted INTEGER NOT NULL DEFAULT 0,
   depth INTEGER NOT NULL DEFAULT 1,
   item_count INTEGER NOT NULL DEFAULT 0,
+  view_count INTEGER NOT NULL DEFAULT 0,
+  download_count INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY (parent_id) REFERENCES collections(id) ON DELETE CASCADE
 );
 

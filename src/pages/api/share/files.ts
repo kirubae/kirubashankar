@@ -6,9 +6,10 @@ export const GET: APIRoute = async ({ locals }) => {
   try {
     const { FILE_SHARE_DB } = locals.runtime.env;
 
+    // Only return standalone files (not in collections)
     const result = await FILE_SHARE_DB.prepare(`
       SELECT * FROM files
-      WHERE is_deleted = 0
+      WHERE is_deleted = 0 AND collection_id IS NULL
       ORDER BY created_at DESC
     `).all();
 
