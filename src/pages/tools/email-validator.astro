@@ -264,14 +264,11 @@ const jsonLdSchema = [
 <script is:inline src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 
 <script is:inline>
-  const API_BASE = 'https://api.kirubashankar.com';
-
   // State
   let currentFile = null;
   let r2Key = null;
   let selectedColumnName = null;
-  let jobId = null;
-  let resultDownloadUrl = null;
+  let resultKey = null;
   let jobStats = null;
 
   // DOM Elements
@@ -407,66 +404,35 @@ const jsonLdSchema = [
   // Start validation job
   async function startValidationJob() {
     showStep('validating');
-    updateProgress(0, 'Starting validation...');
+    updateProgress(10, 'Validating emails...');
 
     try {
-      // Create background job
-      const jobRes = await fetch(`${API_BASE}/api/email/jobs`, {
+      // Call CF Pages validation endpoint
+      const res = await fetch('/api/email/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          r2_key: r2Key,
+          key: r2Key,
           email_column: selectedColumnName,
         }),
       });
 
-      if (!jobRes.ok) throw new Error('Failed to start validation job');
-
-      const { jobId: newJobId } = await jobRes.json();
-      jobId = newJobId;
-
-      // Poll for status
-      pollJobStatus();
-
-    } catch (error) {
-      console.error('Error starting job:', error);
-      alert('Error: ' + error.message);
-      showStep('upload');
-    }
-  }
-
-  // Poll job status
-  async function pollJobStatus() {
-    try {
-      const res = await fetch(`${API_BASE}/api/email/jobs/${jobId}`);
-      if (!res.ok) throw new Error('Failed to get job status');
-
-      const status = await res.json();
-
-      updateProgress(status.progress, status.message);
-
-      if (status.status === 'completed') {
-        jobStats = status.stats;
-
-        // Get download URL
-        const dlRes = await fetch(`${API_BASE}/api/email/results/${encodeURIComponent(status.result_key)}`);
-        if (dlRes.ok) {
-          const { downloadUrl } = await dlRes.json();
-          resultDownloadUrl = downloadUrl;
-        }
-
-        showResults();
-      } else if (status.status === 'failed') {
-        alert('Validation failed: ' + status.message);
-        showStep('upload');
-      } else {
-        // Continue polling
-        setTimeout(pollJobStatus, 1000);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Validation failed');
       }
 
+      const data = await res.json();
+      jobStats = data.stats;
+      resultKey = data.result_key;
+
+      updateProgress(100, 'Validation complete!');
+      showResults();
+
     } catch (error) {
-      console.error('Error polling status:', error);
-      setTimeout(pollJobStatus, 2000); // Retry after longer delay
+      console.error('Error validating:', error);
+      alert('Error: ' + error.message);
+      showStep('upload');
     }
   }
 
@@ -495,10 +461,10 @@ const jsonLdSchema = [
 
   // Download results
   function downloadResults() {
-    if (resultDownloadUrl) {
-      window.open(resultDownloadUrl, '_blank');
+    if (resultKey) {
+      window.open(`/api/email/download/${encodeURIComponent(resultKey)}`, '_blank');
     } else {
-      alert('Download URL not available. Please try again.');
+      alert('Download not available. Please try again.');
     }
   }
 
@@ -507,8 +473,7 @@ const jsonLdSchema = [
     currentFile = null;
     r2Key = null;
     selectedColumnName = null;
-    jobId = null;
-    resultDownloadUrl = null;
+    resultKey = null;
     jobStats = null;
     elements.fileInput.value = '';
     elements.progressFill.style.width = '0%';

@@ -1643,25 +1643,12 @@ const jsonLdSchema = [
     });
   }
 
-  // Get presigned upload URL from backend
-  async function getUploadUrl(filename) {
-    const params = new URLSearchParams({ filename });
-    const response = await fetch(`${BACKEND_URL}/r2/upload-url?${params}`, {
-      method: 'POST'
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Failed to get upload URL' }));
-      throw new Error(error.detail || 'Failed to get upload URL');
-    }
-
-    return await response.json();
-  }
-
-  // Upload file directly to R2 using presigned URL
-  async function uploadToR2Direct(file, uploadUrl, onProgress) {
+  // Upload file to R2 via CF Pages API with progress tracking
+  async function uploadFileToR2(file, onProgress) {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
+      const formData = new FormData();
+      formData.append('file', file);
 
       xhr.upload.addEventListener('progress', (e) => {
         if (e.lengthComputable && onProgress) {
@@ -1672,32 +1659,28 @@ const jsonLdSchema = [
 
       xhr.addEventListener('load', () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          resolve();
+          try {
+            const result = JSON.parse(xhr.responseText);
+            resolve({ key: result.key, filename: file.name, size: file.size });
+          } catch (e) {
+            reject(new Error('Invalid response from server'));
+          }
         } else {
-          console.error('R2 upload error:', xhr.status, xhr.responseText);
-          reject(new Error(`Upload failed: ${xhr.status}`));
+          try {
+            const error = JSON.parse(xhr.responseText);
+            reject(new Error(error.error || `Upload failed: ${xhr.status}`));
+          } catch {
+            reject(new Error(`Upload failed: ${xhr.status}`));
+          }
         }
       });
 
       xhr.addEventListener('error', () => reject(new Error('Network error during upload')));
       xhr.addEventListener('abort', () => reject(new Error('Upload cancelled')));
 
-      xhr.open('PUT', uploadUrl);
-      // Send file directly - don't set Content-Type to avoid signature mismatch
-      xhr.send(file);
+      xhr.open('POST', '/api/merge/upload');
+      xhr.send(formData);
     });
-  }
-
-  // Upload a single file to R2 (get URL, then upload directly)
-  async function uploadFileToR2(file, onProgress) {
-    // Step 1: Get presigned upload URL from backend
-    onProgress && onProgress(0, 0, file.size);
-    const { uploadUrl, key } = await getUploadUrl(file.name);
-
-    // Step 2: Upload directly to R2
-    await uploadToR2Direct(file, uploadUrl, onProgress);
-
-    return { key, filename: file.name, size: file.size };
   }
 
   // Handle multiple file uploads for a side
@@ -1954,17 +1937,17 @@ const jsonLdSchema = [
     }
   }
 
-  // Fetch preview from DO API
+  // Fetch preview from CF Pages API
   async function fetchPreview(keys) {
-    const response = await fetch(`${BACKEND_URL}/r2/preview`, {
+    const response = await fetch('/api/merge/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ keys })
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Preview failed' }));
-      throw new Error(error.detail || 'Preview failed');
+      const error = await response.json().catch(() => ({ error: 'Preview failed' }));
+      throw new Error(error.error || 'Preview failed');
     }
 
     return await response.json();
