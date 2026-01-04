@@ -94,7 +94,7 @@ const jsonLdSchema = [
     </header>
 
     <!-- Main content (hidden until authenticated) -->
-    <div id="main-content" style="display: none;">
+    <div id="research-content" style="display: none;">
 
       <!-- Step 1: Upload -->
       <section id="step-upload" class="step active">
@@ -669,7 +669,7 @@ const jsonLdSchema = [
     authApiBack: document.getElementById('auth-api-back'),
     authApiSubmit: document.getElementById('auth-api-submit'),
     authApiError: document.getElementById('auth-api-error'),
-    mainContent: document.getElementById('main-content'),
+    researchContent: document.getElementById('research-content'),
     uploadArea: document.getElementById('upload-area'),
     fileInput: document.getElementById('file-input'),
     uploadBtn: document.getElementById('upload-btn'),
@@ -787,7 +787,7 @@ const jsonLdSchema = [
       accessMode = 'maker';
       customApiKey = null; // Use built-in key
       elements.authModal.classList.add('hidden');
-      elements.mainContent.style.display = 'block';
+      elements.researchContent.style.display = 'block';
       showStep('upload');
       addField(); // Add first field
     } else {
@@ -804,7 +804,7 @@ const jsonLdSchema = [
       accessMode = 'guest';
       customApiKey = apiKey;
       elements.authModal.classList.add('hidden');
-      elements.mainContent.style.display = 'block';
+      elements.researchContent.style.display = 'block';
       showStep('upload');
       addField(); // Add first field
     } else {
