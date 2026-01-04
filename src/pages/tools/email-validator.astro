@@ -322,6 +322,45 @@ const jsonLdSchema = [
     if (message) elements.validationStatus.textContent = message;
   }
 
+  // Upload file with progress tracking using XMLHttpRequest
+  function uploadFileWithProgress(file, onProgress) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      const formData = new FormData();
+      formData.append('file', file);
+
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          onProgress(percent);
+        }
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            resolve(JSON.parse(xhr.responseText));
+          } catch {
+            reject(new Error('Invalid response from server'));
+          }
+        } else {
+          try {
+            const err = JSON.parse(xhr.responseText);
+            reject(new Error(err.error || `Upload failed: ${xhr.status}`));
+          } catch {
+            reject(new Error(`Upload failed: ${xhr.status}`));
+          }
+        }
+      });
+
+      xhr.addEventListener('error', () => reject(new Error('Network error during upload')));
+      xhr.addEventListener('abort', () => reject(new Error('Upload cancelled')));
+
+      xhr.open('POST', '/api/email/upload');
+      xhr.send(formData);
+    });
+  }
+
   // Handle file selection
   async function handleFile(file) {
     if (!file) return;
@@ -331,22 +370,14 @@ const jsonLdSchema = [
       showStep('validating');
       updateProgress(0, 'Uploading file...');
 
-      // Step 1: Upload file to R2 via CF Pages API
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const uploadRes = await fetch('/api/email/upload', {
-        method: 'POST',
-        body: formData,
+      // Step 1: Upload file to R2 with progress tracking
+      const uploadResult = await uploadFileWithProgress(file, (percent) => {
+        // Scale upload progress to 0-25%
+        const scaledPercent = Math.round(percent * 0.25);
+        updateProgress(scaledPercent, `Uploading file... ${percent}%`);
       });
 
-      if (!uploadRes.ok) {
-        const err = await uploadRes.json().catch(() => ({}));
-        throw new Error(err.error || 'Failed to upload file');
-      }
-
-      const { key } = await uploadRes.json();
-      r2Key = key;
+      r2Key = uploadResult.key;
 
       updateProgress(30, 'Analyzing file...');
 
