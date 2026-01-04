@@ -286,7 +286,22 @@ const breadcrumbs = [
           <div class="step-content" style="max-width:100%">
             <div id="collections-loading" class="progress-text">Loading collections...</div>
             <div id="collections-empty" style="display:none" class="help-text">No collections yet. Click "New Collection" to create your first folder.</div>
-            <div id="collections-list" class="collections-grid" style="display:none"></div>
+            <div id="collections-list" class="results-table-wrapper" style="display:none">
+              <table class="results-table">
+                <thead>
+                  <tr>
+                    <th>Collection</th>
+                    <th>Items</th>
+                    <th>Created</th>
+                    <th>Views</th>
+                    <th>Downloads</th>
+                    <th>Protection</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="collections-tbody"></tbody>
+              </table>
+            </div>
           </div>
         </section>
 
@@ -1875,6 +1890,7 @@ const breadcrumbs = [
     const loading = document.getElementById('collections-loading');
     const empty = document.getElementById('collections-empty');
     const list = document.getElementById('collections-list');
+    const tbody = document.getElementById('collections-tbody');
 
     loading.style.display = 'block';
     empty.style.display = 'none';
@@ -1892,43 +1908,38 @@ const breadcrumbs = [
         return;
       }
 
-      list.style.display = 'grid';
-      list.innerHTML = collections.map(c => {
+      list.style.display = 'block';
+      tbody.innerHTML = collections.map(c => {
         const hasPassword = !!c.password_hash;
         const hasEmailRestriction = c.allowed_emails && JSON.parse(c.allowed_emails).length > 0;
         const viewCount = c.view_count || 0;
         const downloadCount = c.download_count || 0;
 
+        let protectionBadges = '';
+        if (hasPassword) protectionBadges += '<span class="status-badge protected">Password</span> ';
+        if (hasEmailRestriction) protectionBadges += '<span class="status-badge protected">Email</span>';
+        if (!hasPassword && !hasEmailRestriction) protectionBadges = '<span class="status-badge open">Open</span>';
+
         return `
-          <div class="collection-card" onclick="viewCollection('${c.id}')">
-            <div class="collection-card-header">
-              <div class="collection-card-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-                </svg>
+          <tr>
+            <td>
+              <strong>${c.title}</strong>
+              ${c.subtitle ? `<br><span style="font-size: 12px; color: var(--color-ink-light);">${c.subtitle}</span>` : ''}
+            </td>
+            <td>${c.item_count}</td>
+            <td>${formatDate(c.created_at)}</td>
+            <td>${viewCount}</td>
+            <td>${downloadCount}</td>
+            <td>${protectionBadges}</td>
+            <td>
+              <div class="file-actions">
+                <button class="btn btn-secondary btn-icon" onclick="copyCollectionUrl('${c.id}')" title="Copy URL">Copy</button>
+                <button class="btn btn-secondary btn-icon" onclick="viewCollectionLogs('${c.id}')" title="View Logs">Logs</button>
+                <button class="btn btn-secondary btn-icon" onclick="editCollection('${c.id}')" title="Edit">Edit</button>
+                <button class="btn btn-danger btn-icon" onclick="deleteCollection('${c.id}', '${c.title}')" title="Delete">Del</button>
               </div>
-              <div>
-                <h3 class="collection-card-title">${c.title}</h3>
-                ${c.subtitle ? `<p class="collection-card-subtitle">${c.subtitle}</p>` : ''}
-              </div>
-            </div>
-            <div class="collection-card-stats">
-              <span title="Items">${c.item_count} item${c.item_count !== 1 ? 's' : ''}</span>
-              <span title="Views">${viewCount} view${viewCount !== 1 ? 's' : ''}</span>
-              <span title="Downloads">${downloadCount} download${downloadCount !== 1 ? 's' : ''}</span>
-            </div>
-            <div class="collection-card-meta">
-              ${hasPassword ? '<span class="badge">Password</span>' : ''}
-              ${hasEmailRestriction ? '<span class="badge">Email restricted</span>' : ''}
-              ${!hasPassword && !hasEmailRestriction ? '<span class="badge open">Open</span>' : ''}
-            </div>
-            <div class="collection-card-actions" onclick="event.stopPropagation()">
-              <button class="btn btn-secondary btn-sm" onclick="copyCollectionUrl('${c.id}')">Copy URL</button>
-              <button class="btn btn-secondary btn-sm" onclick="viewCollectionLogs('${c.id}')">Logs</button>
-              <button class="btn btn-secondary btn-sm" onclick="editCollection('${c.id}')">Edit</button>
-              <button class="btn btn-danger btn-sm" onclick="deleteCollection('${c.id}', '${c.title}')">Delete</button>
-            </div>
-          </div>
+            </td>
+          </tr>
         `;
       }).join('');
 
