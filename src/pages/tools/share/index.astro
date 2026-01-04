@@ -340,7 +340,19 @@ const breadcrumbs = [
           <div class="step-content" style="max-width:100%">
             <div id="collection-contents-loading" class="progress-text">Loading...</div>
             <div id="collection-contents-empty" style="display:none" class="help-text">This collection is empty. Add files or subfolders.</div>
-            <div id="collection-contents" class="collection-contents-grid" style="display:none"></div>
+            <div id="collection-contents" class="results-table-wrapper" style="display:none">
+              <table class="results-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Size/Items</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="collection-contents-tbody"></tbody>
+              </table>
+            </div>
           </div>
         </section>
       </div>
@@ -1413,11 +1425,13 @@ const breadcrumbs = [
   document.getElementById('btn-back-to-files').addEventListener('click', () => {
     uploadSection.style.display = 'none';
     filesSection.style.display = 'block';
+    loadFiles();
   });
 
   document.getElementById('btn-cancel-upload').addEventListener('click', () => {
     uploadSection.style.display = 'none';
     filesSection.style.display = 'block';
+    loadFiles();
   });
 
   document.getElementById('btn-back-to-files-success').addEventListener('click', () => {
@@ -1786,7 +1800,18 @@ const breadcrumbs = [
   });
 
   // Delete file
+  let deleteFileFromCollectionId = null; // Track if deleting from within a collection
+
   window.deleteFile = function(id, filename) {
+    deleteFileFromCollectionId = null; // Deleting from top-level files list
+    document.getElementById('delete-file-id').value = id;
+    document.getElementById('delete-filename').textContent = filename;
+    document.getElementById('delete-modal').style.display = 'flex';
+  };
+
+  // Delete file from within a collection
+  window.deleteFileFromCollection = function(id, filename) {
+    deleteFileFromCollectionId = currentCollectionId; // Deleting from within a collection
     document.getElementById('delete-file-id').value = id;
     document.getElementById('delete-filename').textContent = filename;
     document.getElementById('delete-modal').style.display = 'flex';
@@ -1813,7 +1838,13 @@ const breadcrumbs = [
       }
 
       document.getElementById('delete-modal').style.display = 'none';
-      loadFiles();
+
+      if (deleteFileFromCollectionId) {
+        loadCollectionContents(deleteFileFromCollectionId);
+      } else {
+        loadFiles();
+      }
+      deleteFileFromCollectionId = null;
 
     } catch (error) {
       alert(error.message);
@@ -2010,30 +2041,55 @@ const breadcrumbs = [
         return;
       }
 
-      contents.style.display = 'grid';
-      contents.innerHTML = children.map(child => {
+      contents.style.display = 'block';
+      const tbody = document.getElementById('collection-contents-tbody');
+      tbody.innerHTML = children.map(child => {
         if (child.type === 'collection') {
           return `
-            <div class="item-card" onclick="viewCollection('${child.id}')">
-              <div class="item-card-icon folder">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
-                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-                </svg>
-              </div>
-              <span class="item-card-name">${child.title}</span>
-              <span class="item-card-meta">${child.item_count} item${child.item_count !== 1 ? 's' : ''}</span>
-            </div>
+            <tr>
+              <td>
+                <a href="javascript:void(0)" onclick="viewCollection('${child.id}')" style="text-decoration: none; color: inherit;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" width="20" height="20">
+                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <strong style="color: var(--color-terracotta);">${child.title}</strong>
+                  </div>
+                </a>
+              </td>
+              <td>${child.item_count} item${child.item_count !== 1 ? 's' : ''}</td>
+              <td>${formatDate(child.created_at)}</td>
+              <td>
+                <div class="file-actions">
+                  <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); copyCollectionUrl('${child.id}')">Copy</button>
+                  <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); viewCollectionLogs('${child.id}')">Logs</button>
+                  <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); deleteSubCollection('${child.id}', '${child.title.replace(/'/g, "\\'")}')">Del</button>
+                </div>
+              </td>
+            </tr>
           `;
         } else {
-          const iconClass = getFileIconClass(child.mime_type);
           return `
-            <div class="item-card">
-              <div class="item-card-icon file ${iconClass}">
-                ${getFileIcon(child.mime_type)}
-              </div>
-              <span class="item-card-name">${child.filename}</span>
-              <span class="item-card-meta">${formatFileSize(child.file_size)}</span>
-            </div>
+            <tr>
+              <td>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--color-terracotta)" stroke-width="2" width="20" height="20">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                  </svg>
+                  ${child.filename}
+                </div>
+              </td>
+              <td>${formatFileSize(child.file_size)}</td>
+              <td>${formatDate(child.created_at)}</td>
+              <td>
+                <div class="file-actions">
+                  <button class="btn btn-secondary btn-sm" onclick="copyFileUrl('${child.id}')">Copy</button>
+                  <button class="btn btn-secondary btn-sm" onclick="viewLogs('${child.id}')">Logs</button>
+                  <button class="btn btn-secondary btn-sm" onclick="deleteFileFromCollection('${child.id}', '${child.filename.replace(/'/g, "\\'")}')">Del</button>
+                </div>
+              </td>
+            </tr>
           `;
         }
       }).join('');
@@ -2265,7 +2321,18 @@ const breadcrumbs = [
   // =====================
   // DELETE COLLECTION
   // =====================
+  let deleteCollectionFromParent = null; // Track if deleting from within a parent collection
+
   window.deleteCollection = function(id, title) {
+    deleteCollectionFromParent = null; // Deleting from top-level list
+    document.getElementById('delete-collection-id').value = id;
+    document.getElementById('delete-collection-name').textContent = title;
+    document.getElementById('delete-collection-modal').style.display = 'flex';
+  };
+
+  // Delete sub-collection from within a parent collection
+  window.deleteSubCollection = function(id, title) {
+    deleteCollectionFromParent = currentCollectionId; // Deleting from within a collection
     document.getElementById('delete-collection-id').value = id;
     document.getElementById('delete-collection-name').textContent = title;
     document.getElementById('delete-collection-modal').style.display = 'flex';
@@ -2287,7 +2354,13 @@ const breadcrumbs = [
       if (!response.ok) throw new Error('Failed to delete collection');
 
       document.getElementById('delete-collection-modal').style.display = 'none';
-      loadCollections();
+
+      if (deleteCollectionFromParent) {
+        loadCollectionContents(deleteCollectionFromParent);
+      } else {
+        loadCollections();
+      }
+      deleteCollectionFromParent = null;
 
     } catch (error) {
       alert(error.message);

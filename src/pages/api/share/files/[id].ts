@@ -109,10 +109,10 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
     const { FILE_SHARE_DB, FILE_SHARE_BUCKET } = locals.runtime.env;
     const { id } = params;
 
-    // Get file to find R2 key
+    // Get file to find R2 key and collection_id
     const file = await FILE_SHARE_DB.prepare(`
-      SELECT r2_key FROM files WHERE id = ? AND is_deleted = 0
-    `).bind(id).first<{ r2_key: string }>();
+      SELECT r2_key, collection_id FROM files WHERE id = ? AND is_deleted = 0
+    `).bind(id).first<{ r2_key: string; collection_id: string | null }>();
 
     if (!file) {
       return new Response(JSON.stringify({ error: 'File not found' }), {
@@ -128,6 +128,15 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
     await FILE_SHARE_DB.prepare(`
       UPDATE files SET is_deleted = 1, updated_at = datetime('now') WHERE id = ?
     `).bind(id).run();
+
+    // Decrement parent collection's item_count if file was in a collection
+    if (file.collection_id) {
+      await FILE_SHARE_DB.prepare(`
+        UPDATE collections
+        SET item_count = item_count - 1, updated_at = datetime('now')
+        WHERE id = ?
+      `).bind(file.collection_id).run();
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
