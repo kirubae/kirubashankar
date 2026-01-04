@@ -1,3 +1,5 @@
+import type { BreadcrumbItem } from '@/types/share';
+
 // Generate URL-safe unique ID (12 characters)
 export function generateFileId(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -104,8 +106,31 @@ export const DASHBOARD_PASSWORD_HASH = '8e9e26c2ef86ecd02ba5c84da8a0859a39b4181b
 export const MAX_FILE_SIZE = 100 * 1024 * 1024;
 export const GUEST_MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-// Allowed MIME types
-export const ALLOWED_MIME_TYPES = ['application/pdf'];
+// Allowed MIME types (expanded from PDF-only)
+export const ALLOWED_MIME_TYPES = [
+  'application/pdf',
+  'text/csv',
+  'application/vnd.ms-excel',                                              // .xls
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',     // .xlsx
+  'application/msword',                                                     // .doc
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  'image/jpeg',
+];
+
+// File extension to MIME type mapping
+export const EXTENSION_MIME_MAP: Record<string, string> = {
+  'pdf': 'application/pdf',
+  'csv': 'text/csv',
+  'xls': 'application/vnd.ms-excel',
+  'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'doc': 'application/msword',
+  'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'jpg': 'image/jpeg',
+  'jpeg': 'image/jpeg',
+};
+
+// Allowed file extensions
+export const ALLOWED_EXTENSIONS = Object.keys(EXTENSION_MIME_MAP);
 
 // Validate PDF by checking magic bytes (must start with %PDF-)
 export async function isValidPdf(file: File): Promise<boolean> {
@@ -120,5 +145,162 @@ export async function isValidPdf(file: File): Promise<boolean> {
   }
 }
 
+// Validate file by checking magic bytes for supported types
+export async function validateFileMagicBytes(file: File): Promise<boolean> {
+  try {
+    const buffer = await file.slice(0, 8).arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+
+    const ext = file.name.split('.').pop()?.toLowerCase();
+
+    switch (ext) {
+      case 'pdf':
+        // PDF: %PDF- (0x25 0x50 0x44 0x46 0x2D)
+        return bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46;
+      case 'jpg':
+      case 'jpeg':
+        // JPEG: FF D8 FF
+        return bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF;
+      case 'xls':
+      case 'doc':
+        // OLE Compound Document: D0 CF 11 E0 A1 B1 1A E1
+        return bytes[0] === 0xD0 && bytes[1] === 0xCF && bytes[2] === 0x11 && bytes[3] === 0xE0;
+      case 'xlsx':
+      case 'docx':
+        // ZIP (Office Open XML): 50 4B 03 04
+        return bytes[0] === 0x50 && bytes[1] === 0x4B && bytes[2] === 0x03 && bytes[3] === 0x04;
+      case 'csv':
+        // CSV: No magic bytes, text content - allow any
+        return true;
+      default:
+        return false;
+    }
+  } catch {
+    return false;
+  }
+}
+
+// Get file type icon name based on MIME type
+export function getFileTypeIcon(mimeType: string): string {
+  if (mimeType === 'application/pdf') return 'pdf';
+  if (mimeType === 'text/csv') return 'csv';
+  if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) return 'excel';
+  if (mimeType.includes('word')) return 'word';
+  if (mimeType.startsWith('image/')) return 'image';
+  return 'file';
+}
+
 // Download token validity: 5 minutes
 export const TOKEN_VALIDITY_MS = 5 * 60 * 1000;
+
+// Collection constants
+export const MAX_COLLECTION_DEPTH = 3;
+export const COLLECTION_TOKEN_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
+
+// Generate collection access token
+export async function generateCollectionToken(
+  collectionId: string,
+  email: string,
+  timestamp: number
+): Promise<string> {
+  return sha256(`${collectionId}:${email}:${timestamp}`);
+}
+
+// Validate collection access token
+export async function validateCollectionToken(
+  collectionId: string,
+  email: string,
+  token: string,
+  timestamp: number
+): Promise<boolean> {
+  const now = Date.now();
+  if (now - timestamp > COLLECTION_TOKEN_VALIDITY_MS) {
+    return false;
+  }
+  const expectedToken = await generateCollectionToken(collectionId, email, timestamp);
+  return token === expectedToken;
+}
+
+// Check if collection is expired
+export function isCollectionExpired(expiresAt: string | null): boolean {
+  if (!expiresAt) return false;
+  return new Date(expiresAt) < new Date();
+}
+
+// Build breadcrumb path for a collection (requires D1 database)
+export async function getCollectionBreadcrumbs(
+  db: D1Database,
+  collectionId: string
+): Promise<BreadcrumbItem[]> {
+  const breadcrumbs: BreadcrumbItem[] = [];
+  let currentId: string | null = collectionId;
+
+  while (currentId) {
+    const collection = await db.prepare(`
+      SELECT id, title, parent_id FROM collections WHERE id = ? AND is_deleted = 0
+    `).bind(currentId).first<{ id: string; title: string; parent_id: string | null }>();
+
+    if (!collection) break;
+
+    breadcrumbs.unshift({ id: collection.id, title: collection.title });
+    currentId = collection.parent_id;
+  }
+
+  return breadcrumbs;
+}
+
+// Check if user has access to collection (check ancestors for inherited permissions)
+export async function checkCollectionAccess(
+  db: D1Database,
+  collectionId: string,
+  email: string,
+  password: string | null
+): Promise<{ allowed: boolean; reason?: string; rootCollectionId?: string }> {
+  // Get collection and its ancestors to check permissions
+  const breadcrumbs = await getCollectionBreadcrumbs(db, collectionId);
+
+  if (breadcrumbs.length === 0) {
+    return { allowed: false, reason: 'Collection not found' };
+  }
+
+  // Get root collection (permissions are inherited from root)
+  const rootId = breadcrumbs[0].id;
+  const rootCollection = await db.prepare(`
+    SELECT id, expires_at, password_hash, allowed_emails FROM collections WHERE id = ? AND is_deleted = 0
+  `).bind(rootId).first<{
+    id: string;
+    expires_at: string | null;
+    password_hash: string | null;
+    allowed_emails: string | null;
+  }>();
+
+  if (!rootCollection) {
+    return { allowed: false, reason: 'Collection not found' };
+  }
+
+  // Check expiration
+  if (isCollectionExpired(rootCollection.expires_at)) {
+    return { allowed: false, reason: 'Collection has expired' };
+  }
+
+  // Check email restriction
+  if (rootCollection.allowed_emails) {
+    const allowedEmails = parseAllowedEmails(rootCollection.allowed_emails);
+    if (allowedEmails.length > 0 && !allowedEmails.map(e => e.toLowerCase()).includes(email.toLowerCase())) {
+      return { allowed: false, reason: 'Email not authorized' };
+    }
+  }
+
+  // Check password
+  if (rootCollection.password_hash) {
+    if (!password) {
+      return { allowed: false, reason: 'Password required' };
+    }
+    const hashedPassword = await sha256(password);
+    if (hashedPassword !== rootCollection.password_hash) {
+      return { allowed: false, reason: 'Invalid password' };
+    }
+  }
+
+  return { allowed: true, rootCollectionId: rootId };
+}

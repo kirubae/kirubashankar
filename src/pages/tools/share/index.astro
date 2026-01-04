@@ -14,7 +14,7 @@ const breadcrumbs = [
 
 <BaseLayout
   title="File Share"
-  description="Share PDF files securely with expiry dates and access controls"
+  description="Share files securely with expiry dates and access controls"
   noindex={true}
 >
   <!-- Auth Modal -->
@@ -68,7 +68,7 @@ const breadcrumbs = [
     <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
       <div>
         <h1>File Share</h1>
-        <p class="page-subtitle">Share PDFs with controlled access</p>
+        <p class="page-subtitle">Share files with controlled access</p>
       </div>
       <button id="btn-logout" class="btn btn-secondary" style="display: none;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -79,6 +79,23 @@ const breadcrumbs = [
         Logout
       </button>
     </header>
+
+    <!-- Tab Navigation (only shown in admin mode) -->
+    <div id="tab-nav" class="tab-nav" style="display: none;">
+      <button class="tab-btn active" data-tab="files">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+        </svg>
+        Files
+      </button>
+      <button class="tab-btn" data-tab="collections">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </svg>
+        Collections
+      </button>
+    </div>
 
     <!-- Dashboard (hidden until authenticated) -->
     <div id="dashboard" style="display: none;">
@@ -139,7 +156,7 @@ const breadcrumbs = [
           </div>
           <div style="flex: 1;">
             <h2>Upload File</h2>
-            <p class="step-subtitle" id="upload-subtitle">Share a new PDF file (max 100MB)</p>
+            <p class="step-subtitle" id="upload-subtitle">Share a new file (max 100MB)</p>
           </div>
           <button id="btn-back-to-files" class="btn btn-secondary">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
@@ -158,10 +175,10 @@ const breadcrumbs = [
                   <line x1="12" y1="3" x2="12" y2="15"></line>
                 </svg>
               </div>
-              <h3 style="margin: 0 0 8px; font-size: 18px;">Upload PDF</h3>
+              <h3 style="margin: 0 0 8px; font-size: 18px;">Upload File</h3>
               <p>Drop your file here or click to browse</p>
               <button type="button" class="btn btn-primary" id="upload-btn">Choose File</button>
-              <input type="file" id="file-input" accept=".pdf,application/pdf" style="display:none" />
+              <input type="file" id="file-input" accept=".pdf,.csv,.xls,.xlsx,.doc,.docx,.jpg,.jpeg" style="display:none" />
             </div>
 
             <div id="file-selected" class="info-card file-selected-card" style="display:none">
@@ -243,6 +260,75 @@ const breadcrumbs = [
           </div>
         </div>
       </section>
+
+      <!-- Collections Tab Content (hidden by default) -->
+      <div id="collections-tab" class="tab-content" style="display: none;">
+        <!-- Collections List Section -->
+        <section id="collections-section" class="step">
+          <div class="step-header">
+            <div class="step-badge" style="background: #dbeafe; color: #2563eb;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </div>
+            <div style="flex: 1;">
+              <h2>Collections</h2>
+              <p class="step-subtitle">Organize files into folders for data rooms</p>
+            </div>
+            <button id="btn-create-collection" class="btn btn-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              New Collection
+            </button>
+          </div>
+          <div class="step-content" style="max-width:100%">
+            <div id="collections-loading" class="progress-text">Loading collections...</div>
+            <div id="collections-empty" style="display:none" class="help-text">No collections yet. Click "New Collection" to create your first folder.</div>
+            <div id="collections-list" class="collections-grid" style="display:none"></div>
+          </div>
+        </section>
+
+        <!-- Collection Detail View (shown when viewing a collection) -->
+        <section id="collection-detail-section" class="step" style="display: none;">
+          <div class="step-header">
+            <div class="step-badge" style="background: #dbeafe; color: #2563eb;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </div>
+            <div style="flex: 1;">
+              <nav id="collection-breadcrumbs" class="breadcrumbs"></nav>
+              <h2 id="collection-title">Collection Name</h2>
+              <p class="step-subtitle" id="collection-subtitle"></p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button id="btn-add-subfolder" class="btn btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                  <line x1="12" y1="11" x2="12" y2="17"></line>
+                  <line x1="9" y1="14" x2="15" y2="14"></line>
+                </svg>
+                Add Subfolder
+              </button>
+              <button id="btn-add-file-to-collection" class="btn btn-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                Add File
+              </button>
+            </div>
+          </div>
+          <div class="step-content" style="max-width:100%">
+            <div id="collection-contents-loading" class="progress-text">Loading...</div>
+            <div id="collection-contents-empty" style="display:none" class="help-text">This collection is empty. Add files or subfolders.</div>
+            <div id="collection-contents" class="collection-contents-grid" style="display:none"></div>
+          </div>
+        </section>
+      </div>
     </div>
 
     <!-- Access Logs Modal -->
@@ -337,6 +423,215 @@ const breadcrumbs = [
             <button type="button" class="btn btn-secondary" id="btn-cancel-delete">Cancel</button>
             <button type="button" class="btn btn-danger" id="btn-confirm-delete">Delete</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create Collection Modal -->
+    <div id="create-collection-modal" class="modal" style="display:none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Create Collection</h3>
+          <button class="btn-close" id="close-create-collection">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="create-collection-form">
+            <div class="form-group">
+              <label class="form-label">Title *</label>
+              <input type="text" id="collection-title-input" class="form-input" placeholder="e.g., Q4 2024 Reports" required />
+            </div>
+
+            <div class="form-group" style="margin-top:16px">
+              <label class="form-label">Subtitle (optional)</label>
+              <input type="text" id="collection-subtitle-input" class="form-input" placeholder="e.g., Financial documents for investors" />
+            </div>
+
+            <div class="form-group" style="margin-top:20px">
+              <label class="form-label">Expiry</label>
+              <div class="radio-group">
+                <label class="radio-card">
+                  <input type="radio" name="collection_expiry_type" value="never" checked />
+                  <span class="radio-content">Never expires</span>
+                </label>
+                <label class="radio-card">
+                  <input type="radio" name="collection_expiry_type" value="date" />
+                  <span class="radio-content">Set expiry date</span>
+                </label>
+              </div>
+              <input type="datetime-local" id="collection-expiry-date" class="form-input" style="display:none; margin-top:12px" />
+            </div>
+
+            <div class="form-group" style="margin-top:20px">
+              <label class="form-label">Password Protection (optional)</label>
+              <input type="text" id="collection-password" class="form-input" placeholder="Leave empty for no password" autocomplete="off" />
+            </div>
+
+            <div class="form-group" style="margin-top:20px">
+              <label class="form-label">Restrict to Emails (optional)</label>
+              <textarea id="collection-allowed-emails" class="form-input" rows="3" placeholder="Enter emails, one per line. Leave empty to allow anyone."></textarea>
+            </div>
+
+            <div class="action-bar">
+              <button type="button" class="btn btn-secondary" id="btn-cancel-create-collection">Cancel</button>
+              <button type="submit" class="btn btn-primary">Create Collection</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Collection Modal -->
+    <div id="edit-collection-modal" class="modal" style="display:none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Edit Collection</h3>
+          <button class="btn-close" id="close-edit-collection">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="edit-collection-form">
+            <input type="hidden" id="edit-collection-id" />
+
+            <div class="form-group">
+              <label class="form-label">Title *</label>
+              <input type="text" id="edit-collection-title" class="form-input" required />
+            </div>
+
+            <div class="form-group" style="margin-top:16px">
+              <label class="form-label">Subtitle</label>
+              <input type="text" id="edit-collection-subtitle" class="form-input" />
+            </div>
+
+            <div class="form-group" style="margin-top:20px">
+              <label class="form-label">Expiry</label>
+              <div class="radio-group">
+                <label class="radio-card">
+                  <input type="radio" name="edit_collection_expiry_type" value="never" />
+                  <span class="radio-content">Never expires</span>
+                </label>
+                <label class="radio-card">
+                  <input type="radio" name="edit_collection_expiry_type" value="date" />
+                  <span class="radio-content">Set expiry date</span>
+                </label>
+              </div>
+              <input type="datetime-local" id="edit-collection-expiry-date" class="form-input" style="margin-top:12px" />
+            </div>
+
+            <div class="form-group" style="margin-top:20px">
+              <label class="form-label">New Password (leave empty to keep unchanged)</label>
+              <input type="text" id="edit-collection-password" class="form-input" placeholder="New password or empty" autocomplete="off" />
+              <label style="margin-top:8px; display:flex; align-items:center; gap:8px; font-size:14px; cursor:pointer;">
+                <input type="checkbox" id="edit-collection-remove-password" />
+                Remove password protection
+              </label>
+            </div>
+
+            <div class="form-group" style="margin-top:20px">
+              <label class="form-label">Allowed Emails</label>
+              <textarea id="edit-collection-allowed-emails" class="form-input" rows="3" placeholder="Enter emails, one per line. Leave empty to allow anyone."></textarea>
+            </div>
+
+            <div class="action-bar">
+              <button type="button" class="btn btn-secondary" id="btn-cancel-edit-collection">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Collection Modal -->
+    <div id="delete-collection-modal" class="modal" style="display:none">
+      <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+          <h3>Delete Collection</h3>
+          <button class="btn-close" id="close-delete-collection">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete "<span id="delete-collection-name"></span>"?</p>
+          <p style="color: var(--color-ink-light); font-size: 14px; margin-top: 8px;">All sub-collections will be deleted. Files will become standalone.</p>
+          <input type="hidden" id="delete-collection-id" />
+          <div class="action-bar">
+            <button type="button" class="btn btn-secondary" id="btn-cancel-delete-collection">Cancel</button>
+            <button type="button" class="btn btn-danger" id="btn-confirm-delete-collection">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Subfolder Modal -->
+    <div id="add-subfolder-modal" class="modal" style="display:none">
+      <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+          <h3>Add Subfolder</h3>
+          <button class="btn-close" id="close-add-subfolder">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="add-subfolder-form">
+            <input type="hidden" id="subfolder-parent-id" />
+            <div class="form-group">
+              <label class="form-label">Title *</label>
+              <input type="text" id="subfolder-title" class="form-input" placeholder="Subfolder name" required />
+            </div>
+            <div class="form-group" style="margin-top:16px">
+              <label class="form-label">Subtitle (optional)</label>
+              <input type="text" id="subfolder-subtitle" class="form-input" placeholder="Description" />
+            </div>
+            <div class="action-bar">
+              <button type="button" class="btn btn-secondary" id="btn-cancel-add-subfolder">Cancel</button>
+              <button type="submit" class="btn btn-primary">Create</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add File to Collection Modal -->
+    <div id="add-file-modal" class="modal" style="display:none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Add File to Collection</h3>
+          <button class="btn-close" id="close-add-file">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="add-file-form">
+            <input type="hidden" id="add-file-collection-id" />
+            <div class="upload-area" id="collection-upload-area">
+              <div class="upload-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+              </div>
+              <h3 style="margin: 0 0 8px; font-size: 18px;">Upload File</h3>
+              <p>PDF, CSV, XLS, XLSX, DOC, JPG, JPEG</p>
+              <button type="button" class="btn btn-primary" id="collection-upload-btn">Choose File</button>
+              <input type="file" id="collection-file-input" accept=".pdf,.csv,.xls,.xlsx,.doc,.docx,.jpg,.jpeg" style="display:none" />
+            </div>
+            <div id="collection-file-selected" class="info-card file-selected-card" style="display:none">
+              <div class="file-selected-info">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24" style="color: var(--color-terracotta);">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                <div>
+                  <p style="margin: 0; font-weight: 500;" id="collection-selected-filename"></p>
+                  <p style="margin: 4px 0 0; font-size: 13px; color: var(--color-ink-light);" id="collection-selected-size"></p>
+                </div>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-remove-collection-file">Remove</button>
+            </div>
+            <div id="collection-upload-progress" style="display:none; margin-top:16px;">
+              <div class="progress-bar">
+                <div class="progress-fill" id="collection-progress-fill"></div>
+              </div>
+              <p class="progress-text">Uploading...</p>
+            </div>
+            <div class="action-bar" id="add-file-actions" style="display:none">
+              <button type="button" class="btn btn-secondary" id="btn-cancel-add-file">Cancel</button>
+              <button type="submit" class="btn btn-primary">Upload</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
@@ -640,6 +935,222 @@ const breadcrumbs = [
     align-items: flex-start;
     gap: 16px;
   }
+
+  /* Tab Navigation */
+  .tab-nav {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    border-bottom: 2px solid var(--color-border);
+    padding-bottom: 0;
+  }
+
+  .tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-ink-light);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+  }
+
+  .tab-btn:hover {
+    color: var(--color-ink);
+  }
+
+  .tab-btn.active {
+    color: var(--color-terracotta);
+    border-bottom-color: var(--color-terracotta);
+  }
+
+  .tab-btn svg {
+    opacity: 0.7;
+  }
+
+  .tab-btn.active svg {
+    opacity: 1;
+  }
+
+  /* Collections Grid */
+  .collections-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .collection-card {
+    background: var(--color-cream);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .collection-card:hover {
+    border-color: var(--color-terracotta);
+    background: white;
+  }
+
+  .collection-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .collection-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: #dbeafe;
+    color: #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .collection-card-title {
+    font-weight: 600;
+    font-size: 16px;
+    margin: 0 0 4px;
+  }
+
+  .collection-card-subtitle {
+    font-size: 13px;
+    color: var(--color-ink-light);
+    margin: 0;
+  }
+
+  .collection-card-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--color-ink-light);
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .collection-card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  /* Collection Contents Grid */
+  .collection-contents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  .item-card {
+    background: var(--color-cream);
+    border: 2px solid transparent;
+    border-radius: 10px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+  }
+
+  .item-card:hover {
+    border-color: var(--color-terracotta);
+    background: white;
+  }
+
+  .item-card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .item-card-icon.folder {
+    background: #dbeafe;
+    color: #2563eb;
+  }
+
+  .item-card-icon.file {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  .item-card-icon.file.csv {
+    background: #d1fae5;
+    color: #059669;
+  }
+
+  .item-card-icon.file.excel {
+    background: #d1fae5;
+    color: #059669;
+  }
+
+  .item-card-icon.file.word {
+    background: #dbeafe;
+    color: #2563eb;
+  }
+
+  .item-card-icon.file.image {
+    background: #fef3c7;
+    color: #d97706;
+  }
+
+  .item-card-name {
+    font-weight: 500;
+    font-size: 13px;
+    word-break: break-word;
+    max-width: 100%;
+  }
+
+  .item-card-meta {
+    font-size: 11px;
+    color: var(--color-ink-light);
+  }
+
+  .item-card-download {
+    margin-top: 8px;
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  /* Breadcrumbs */
+  .breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+
+  .breadcrumbs a {
+    color: var(--color-ink-light);
+    text-decoration: none;
+  }
+
+  .breadcrumbs a:hover {
+    color: var(--color-terracotta);
+  }
+
+  .breadcrumbs .separator {
+    color: var(--color-ink-light);
+  }
 </style>
 
 <script is:inline>
@@ -772,14 +1283,24 @@ const breadcrumbs = [
 
     // Update upload subtitle based on mode
     const maxSize = mode === 'guest' ? '10MB' : '100MB';
-    uploadSubtitle.textContent = `Share a new PDF file (max ${maxSize})`;
+    uploadSubtitle.textContent = `Share a new file (max ${maxSize})`;
 
-    // For guests, go directly to upload section
+    // Show/hide tab navigation based on mode
+    const tabNavEl = document.getElementById('tab-nav');
+
+    // For guests, go directly to upload section (no tabs)
     if (mode === 'guest') {
+      tabNavEl.style.display = 'none';
       filesSection.style.display = 'none';
       uploadSection.style.display = 'block';
+      document.getElementById('collections-tab').style.display = 'none';
       resetUploadForm();
     } else {
+      // Admin mode: show tabs, start with files tab
+      tabNavEl.style.display = 'flex';
+      filesSection.style.display = 'block';
+      uploadSection.style.display = 'none';
+      document.getElementById('collections-tab').style.display = 'none';
       loadFiles();
     }
   }
@@ -899,9 +1420,13 @@ const breadcrumbs = [
     if (fileInput.files[0]) handleFileSelect(fileInput.files[0]);
   });
 
+  // Allowed file extensions
+  const ALLOWED_EXTENSIONS = ['pdf', 'csv', 'xls', 'xlsx', 'doc', 'docx', 'jpg', 'jpeg'];
+
   function handleFileSelect(file) {
-    if (file.type !== 'application/pdf') {
-      alert('Only PDF files are allowed');
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (!ext || !ALLOWED_EXTENSIONS.includes(ext)) {
+      alert('Unsupported file type. Allowed: PDF, CSV, XLS, XLSX, DOC, DOCX, JPG, JPEG');
       return;
     }
     const maxSize = getMaxFileSize();
@@ -1269,4 +1794,565 @@ const breadcrumbs = [
       }
     });
   });
+
+  // =====================
+  // TAB NAVIGATION
+  // =====================
+  const tabNav = document.getElementById('tab-nav');
+  const filesTab = document.getElementById('files-section');
+  const uploadSectionTab = document.getElementById('upload-section');
+  const collectionsTab = document.getElementById('collections-tab');
+  let currentTab = 'files';
+
+  function switchTab(tab) {
+    currentTab = tab;
+
+    // Update tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+
+    // Hide all content
+    filesTab.style.display = 'none';
+    uploadSectionTab.style.display = 'none';
+    collectionsTab.style.display = 'none';
+
+    // Show selected tab
+    if (tab === 'files') {
+      filesTab.style.display = 'block';
+      loadFiles();
+    } else if (tab === 'collections') {
+      collectionsTab.style.display = 'block';
+      showCollectionsList();
+      loadCollections();
+    }
+  }
+
+  // Tab click handlers
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      switchTab(btn.dataset.tab);
+    });
+  });
+
+  // =====================
+  // COLLECTIONS STATE
+  // =====================
+  let collections = [];
+  let currentCollectionId = null;
+  let currentCollectionData = null;
+  let collectionFileToUpload = null;
+
+  // =====================
+  // COLLECTIONS LIST
+  // =====================
+  function showCollectionsList() {
+    document.getElementById('collections-section').style.display = 'block';
+    document.getElementById('collection-detail-section').style.display = 'none';
+    currentCollectionId = null;
+  }
+
+  async function loadCollections() {
+    const loading = document.getElementById('collections-loading');
+    const empty = document.getElementById('collections-empty');
+    const list = document.getElementById('collections-list');
+
+    loading.style.display = 'block';
+    empty.style.display = 'none';
+    list.style.display = 'none';
+
+    try {
+      const response = await fetch('/api/share/collections');
+      const data = await response.json();
+      collections = data.collections || [];
+
+      loading.style.display = 'none';
+
+      if (collections.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+
+      list.style.display = 'grid';
+      list.innerHTML = collections.map(c => {
+        const hasPassword = !!c.password_hash;
+        const hasEmailRestriction = c.allowed_emails && JSON.parse(c.allowed_emails).length > 0;
+
+        return `
+          <div class="collection-card" onclick="viewCollection('${c.id}')">
+            <div class="collection-card-header">
+              <div class="collection-card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="collection-card-title">${c.title}</h3>
+                ${c.subtitle ? `<p class="collection-card-subtitle">${c.subtitle}</p>` : ''}
+              </div>
+            </div>
+            <div class="collection-card-meta">
+              <span>${c.item_count} item${c.item_count !== 1 ? 's' : ''}</span>
+              ${hasPassword ? '<span>Password</span>' : ''}
+              ${hasEmailRestriction ? '<span>Email restricted</span>' : ''}
+            </div>
+            <div class="collection-card-actions" onclick="event.stopPropagation()">
+              <button class="btn btn-secondary btn-sm" onclick="copyCollectionUrl('${c.id}')">Copy URL</button>
+              <button class="btn btn-secondary btn-sm" onclick="editCollection('${c.id}')">Edit</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteCollection('${c.id}', '${c.title}')">Delete</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+    } catch (error) {
+      loading.textContent = 'Failed to load collections';
+    }
+  }
+
+  window.copyCollectionUrl = function(id) {
+    const url = window.location.origin + '/c/' + id;
+    navigator.clipboard.writeText(url);
+    alert('URL copied to clipboard');
+  };
+
+  // =====================
+  // VIEW COLLECTION
+  // =====================
+  window.viewCollection = async function(id) {
+    currentCollectionId = id;
+    document.getElementById('collections-section').style.display = 'none';
+    document.getElementById('collection-detail-section').style.display = 'block';
+    await loadCollectionContents(id);
+  };
+
+  async function loadCollectionContents(id) {
+    const loading = document.getElementById('collection-contents-loading');
+    const empty = document.getElementById('collection-contents-empty');
+    const contents = document.getElementById('collection-contents');
+    const btnAddSubfolder = document.getElementById('btn-add-subfolder');
+
+    loading.style.display = 'block';
+    empty.style.display = 'none';
+    contents.style.display = 'none';
+
+    try {
+      const response = await fetch(`/api/share/collections/${id}`);
+      const data = await response.json();
+      currentCollectionData = data.collection;
+      const children = data.children || [];
+      const breadcrumbs = data.breadcrumbs || [];
+
+      // Update header
+      document.getElementById('collection-title').textContent = data.collection.title;
+      document.getElementById('collection-subtitle').textContent = data.collection.subtitle || '';
+
+      // Update breadcrumbs
+      const breadcrumbNav = document.getElementById('collection-breadcrumbs');
+      breadcrumbNav.innerHTML = `
+        <a href="javascript:showCollectionsList()">Collections</a>
+        ${breadcrumbs.map((b, i) => `
+          <span class="separator">/</span>
+          ${i === breadcrumbs.length - 1
+            ? `<span>${b.title}</span>`
+            : `<a href="javascript:viewCollection('${b.id}')">${b.title}</a>`
+          }
+        `).join('')}
+      `;
+
+      // Show/hide add subfolder based on depth
+      btnAddSubfolder.style.display = data.collection.depth < 3 ? 'flex' : 'none';
+
+      loading.style.display = 'none';
+
+      if (children.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+
+      contents.style.display = 'grid';
+      contents.innerHTML = children.map(child => {
+        if (child.type === 'collection') {
+          return `
+            <div class="item-card" onclick="viewCollection('${child.id}')">
+              <div class="item-card-icon folder">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </div>
+              <span class="item-card-name">${child.title}</span>
+              <span class="item-card-meta">${child.item_count} item${child.item_count !== 1 ? 's' : ''}</span>
+            </div>
+          `;
+        } else {
+          const iconClass = getFileIconClass(child.mime_type);
+          return `
+            <div class="item-card">
+              <div class="item-card-icon file ${iconClass}">
+                ${getFileIcon(child.mime_type)}
+              </div>
+              <span class="item-card-name">${child.filename}</span>
+              <span class="item-card-meta">${formatFileSize(child.file_size)}</span>
+            </div>
+          `;
+        }
+      }).join('');
+
+    } catch (error) {
+      loading.textContent = 'Failed to load collection';
+    }
+  }
+
+  function getFileIconClass(mimeType) {
+    if (mimeType === 'text/csv') return 'csv';
+    if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) return 'excel';
+    if (mimeType.includes('word')) return 'word';
+    if (mimeType.startsWith('image/')) return 'image';
+    return '';
+  }
+
+  function getFileIcon(mimeType) {
+    if (mimeType.startsWith('image/')) {
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+        <polyline points="21 15 16 10 5 21"></polyline>
+      </svg>`;
+    }
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+      <polyline points="14 2 14 8 20 8"></polyline>
+    </svg>`;
+  }
+
+  // =====================
+  // CREATE COLLECTION
+  // =====================
+  document.getElementById('btn-create-collection').addEventListener('click', () => {
+    document.getElementById('create-collection-modal').style.display = 'flex';
+    document.getElementById('collection-title-input').value = '';
+    document.getElementById('collection-subtitle-input').value = '';
+    document.getElementById('collection-password').value = '';
+    document.getElementById('collection-allowed-emails').value = '';
+    document.getElementById('collection-expiry-date').value = '';
+    document.querySelector('input[name="collection_expiry_type"][value="never"]').checked = true;
+    document.getElementById('collection-expiry-date').style.display = 'none';
+  });
+
+  document.querySelectorAll('input[name="collection_expiry_type"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      document.getElementById('collection-expiry-date').style.display = radio.value === 'date' ? 'block' : 'none';
+    });
+  });
+
+  document.getElementById('close-create-collection').addEventListener('click', () => {
+    document.getElementById('create-collection-modal').style.display = 'none';
+  });
+
+  document.getElementById('btn-cancel-create-collection').addEventListener('click', () => {
+    document.getElementById('create-collection-modal').style.display = 'none';
+  });
+
+  document.getElementById('create-collection-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const title = document.getElementById('collection-title-input').value.trim();
+    const subtitle = document.getElementById('collection-subtitle-input').value.trim();
+    const expiryType = document.querySelector('input[name="collection_expiry_type"]:checked').value;
+    const expiryDate = expiryType === 'date' ? document.getElementById('collection-expiry-date').value : null;
+    const password = document.getElementById('collection-password').value;
+    const allowedEmailsText = document.getElementById('collection-allowed-emails').value;
+    const allowedEmails = allowedEmailsText.split('\n').map(e => e.trim()).filter(e => e.length > 0);
+
+    try {
+      const response = await fetch('/api/share/collections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          subtitle: subtitle || null,
+          expires_at: expiryDate,
+          password: password || null,
+          allowed_emails: allowedEmails.length > 0 ? allowedEmails : null
+        })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to create collection');
+      }
+
+      document.getElementById('create-collection-modal').style.display = 'none';
+      loadCollections();
+
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+
+  // =====================
+  // EDIT COLLECTION
+  // =====================
+  window.editCollection = async function(id) {
+    const collection = collections.find(c => c.id === id);
+    if (!collection) return;
+
+    document.getElementById('edit-collection-id').value = id;
+    document.getElementById('edit-collection-title').value = collection.title;
+    document.getElementById('edit-collection-subtitle').value = collection.subtitle || '';
+
+    if (collection.expires_at) {
+      document.querySelector('input[name="edit_collection_expiry_type"][value="date"]').checked = true;
+      document.getElementById('edit-collection-expiry-date').value = collection.expires_at.slice(0, 16);
+    } else {
+      document.querySelector('input[name="edit_collection_expiry_type"][value="never"]').checked = true;
+      document.getElementById('edit-collection-expiry-date').value = '';
+    }
+
+    document.getElementById('edit-collection-password').value = '';
+    document.getElementById('edit-collection-remove-password').checked = false;
+
+    const emails = collection.allowed_emails ? JSON.parse(collection.allowed_emails) : [];
+    document.getElementById('edit-collection-allowed-emails').value = emails.join('\n');
+
+    document.getElementById('edit-collection-modal').style.display = 'flex';
+  };
+
+  document.querySelectorAll('input[name="edit_collection_expiry_type"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      document.getElementById('edit-collection-expiry-date').style.display = radio.value === 'date' ? 'block' : 'none';
+    });
+  });
+
+  document.getElementById('close-edit-collection').addEventListener('click', () => {
+    document.getElementById('edit-collection-modal').style.display = 'none';
+  });
+
+  document.getElementById('btn-cancel-edit-collection').addEventListener('click', () => {
+    document.getElementById('edit-collection-modal').style.display = 'none';
+  });
+
+  document.getElementById('edit-collection-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const id = document.getElementById('edit-collection-id').value;
+    const title = document.getElementById('edit-collection-title').value.trim();
+    const subtitle = document.getElementById('edit-collection-subtitle').value.trim();
+    const expiryType = document.querySelector('input[name="edit_collection_expiry_type"]:checked').value;
+    const expiryDate = expiryType === 'date' ? document.getElementById('edit-collection-expiry-date').value : null;
+    const password = document.getElementById('edit-collection-password').value;
+    const removePassword = document.getElementById('edit-collection-remove-password').checked;
+    const allowedEmailsText = document.getElementById('edit-collection-allowed-emails').value;
+    const allowedEmails = allowedEmailsText.split('\n').map(e => e.trim()).filter(e => e.length > 0);
+
+    const body = {
+      title,
+      subtitle: subtitle || null,
+      expires_at: expiryDate,
+      allowed_emails: allowedEmails
+    };
+
+    if (removePassword) {
+      body.remove_password = true;
+    } else if (password) {
+      body.password = password;
+    }
+
+    try {
+      const response = await fetch(`/api/share/collections/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) throw new Error('Failed to update collection');
+
+      document.getElementById('edit-collection-modal').style.display = 'none';
+      loadCollections();
+
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+
+  // =====================
+  // DELETE COLLECTION
+  // =====================
+  window.deleteCollection = function(id, title) {
+    document.getElementById('delete-collection-id').value = id;
+    document.getElementById('delete-collection-name').textContent = title;
+    document.getElementById('delete-collection-modal').style.display = 'flex';
+  };
+
+  document.getElementById('close-delete-collection').addEventListener('click', () => {
+    document.getElementById('delete-collection-modal').style.display = 'none';
+  });
+
+  document.getElementById('btn-cancel-delete-collection').addEventListener('click', () => {
+    document.getElementById('delete-collection-modal').style.display = 'none';
+  });
+
+  document.getElementById('btn-confirm-delete-collection').addEventListener('click', async () => {
+    const id = document.getElementById('delete-collection-id').value;
+
+    try {
+      const response = await fetch(`/api/share/collections/${id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete collection');
+
+      document.getElementById('delete-collection-modal').style.display = 'none';
+      loadCollections();
+
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+
+  // =====================
+  // ADD SUBFOLDER
+  // =====================
+  document.getElementById('btn-add-subfolder').addEventListener('click', () => {
+    document.getElementById('subfolder-parent-id').value = currentCollectionId;
+    document.getElementById('subfolder-title').value = '';
+    document.getElementById('subfolder-subtitle').value = '';
+    document.getElementById('add-subfolder-modal').style.display = 'flex';
+  });
+
+  document.getElementById('close-add-subfolder').addEventListener('click', () => {
+    document.getElementById('add-subfolder-modal').style.display = 'none';
+  });
+
+  document.getElementById('btn-cancel-add-subfolder').addEventListener('click', () => {
+    document.getElementById('add-subfolder-modal').style.display = 'none';
+  });
+
+  document.getElementById('add-subfolder-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const parentId = document.getElementById('subfolder-parent-id').value;
+    const title = document.getElementById('subfolder-title').value.trim();
+    const subtitle = document.getElementById('subfolder-subtitle').value.trim();
+
+    try {
+      const response = await fetch(`/api/share/collections/${parentId}/add-subcollection`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, subtitle: subtitle || null })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to create subfolder');
+      }
+
+      document.getElementById('add-subfolder-modal').style.display = 'none';
+      loadCollectionContents(parentId);
+
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+
+  // =====================
+  // ADD FILE TO COLLECTION
+  // =====================
+  const collectionUploadArea = document.getElementById('collection-upload-area');
+  const collectionFileInput = document.getElementById('collection-file-input');
+  const collectionFileSelected = document.getElementById('collection-file-selected');
+  const addFileActions = document.getElementById('add-file-actions');
+
+  document.getElementById('btn-add-file-to-collection').addEventListener('click', () => {
+    document.getElementById('add-file-collection-id').value = currentCollectionId;
+    collectionFileToUpload = null;
+    collectionUploadArea.style.display = 'block';
+    collectionFileSelected.style.display = 'none';
+    addFileActions.style.display = 'none';
+    document.getElementById('collection-upload-progress').style.display = 'none';
+    document.getElementById('add-file-modal').style.display = 'flex';
+  });
+
+  document.getElementById('collection-upload-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    collectionFileInput.click();
+  });
+
+  collectionUploadArea.addEventListener('click', () => collectionFileInput.click());
+
+  collectionFileInput.addEventListener('change', () => {
+    if (collectionFileInput.files[0]) {
+      const file = collectionFileInput.files[0];
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      if (!ext || !ALLOWED_EXTENSIONS.includes(ext)) {
+        alert('Unsupported file type');
+        return;
+      }
+      if (file.size > MAX_FILE_SIZE_ADMIN) {
+        alert('File too large (max 100MB)');
+        return;
+      }
+      collectionFileToUpload = file;
+      document.getElementById('collection-selected-filename').textContent = file.name;
+      document.getElementById('collection-selected-size').textContent = formatFileSize(file.size);
+      collectionUploadArea.style.display = 'none';
+      collectionFileSelected.style.display = 'flex';
+      addFileActions.style.display = 'flex';
+    }
+  });
+
+  document.getElementById('btn-remove-collection-file').addEventListener('click', () => {
+    collectionFileToUpload = null;
+    collectionFileInput.value = '';
+    collectionUploadArea.style.display = 'block';
+    collectionFileSelected.style.display = 'none';
+    addFileActions.style.display = 'none';
+  });
+
+  document.getElementById('close-add-file').addEventListener('click', () => {
+    document.getElementById('add-file-modal').style.display = 'none';
+  });
+
+  document.getElementById('btn-cancel-add-file').addEventListener('click', () => {
+    document.getElementById('add-file-modal').style.display = 'none';
+  });
+
+  document.getElementById('add-file-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!collectionFileToUpload) return;
+
+    const collectionId = document.getElementById('add-file-collection-id').value;
+
+    collectionFileSelected.style.display = 'none';
+    addFileActions.style.display = 'none';
+    document.getElementById('collection-upload-progress').style.display = 'block';
+    document.getElementById('collection-progress-fill').style.width = '50%';
+
+    const formData = new FormData();
+    formData.append('file', collectionFileToUpload);
+
+    try {
+      const response = await fetch(`/api/share/collections/${collectionId}/add-file`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to upload file');
+      }
+
+      document.getElementById('collection-progress-fill').style.width = '100%';
+
+      setTimeout(() => {
+        document.getElementById('add-file-modal').style.display = 'none';
+        loadCollectionContents(collectionId);
+      }, 500);
+
+    } catch (error) {
+      alert(error.message);
+      collectionUploadArea.style.display = 'block';
+      document.getElementById('collection-upload-progress').style.display = 'none';
+    }
+  });
+
+  // Make showCollectionsList available globally
+  window.showCollectionsList = showCollectionsList;
 </script>

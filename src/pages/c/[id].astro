@@ -1,0 +1,488 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import '@styles/tools.css';
+
+export const prerender = false;
+
+const { id } = Astro.params;
+
+// Fetch collection metadata (without sensitive data)
+const { FILE_SHARE_DB } = Astro.locals.runtime.env;
+
+interface CollectionInfo {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  created_at: string;
+  expires_at: string | null;
+  has_password: number;
+  has_email_restriction: number;
+  item_count: number;
+  depth: number;
+}
+
+interface BreadcrumbItem {
+  id: string;
+  title: string;
+}
+
+let collection: CollectionInfo | null = null;
+let breadcrumbs: BreadcrumbItem[] = [];
+let error: string | null = null;
+
+try {
+  collection = await FILE_SHARE_DB.prepare(`
+    SELECT id, title, subtitle,
+           created_at, expires_at, depth, item_count,
+           CASE WHEN password_hash IS NOT NULL THEN 1 ELSE 0 END as has_password,
+           CASE WHEN allowed_emails IS NOT NULL AND allowed_emails != '[]' THEN 1 ELSE 0 END as has_email_restriction
+    FROM collections
+    WHERE id = ? AND is_deleted = 0
+  `).bind(id).first<CollectionInfo>();
+
+  if (!collection) {
+    error = 'Collection not found';
+  } else if (collection.expires_at && new Date(collection.expires_at) < new Date()) {
+    error = 'This collection has expired';
+  } else {
+    // Build breadcrumbs
+    let currentId: string | null = id;
+    while (currentId) {
+      const item = await FILE_SHARE_DB.prepare(`
+        SELECT id, title, parent_id FROM collections WHERE id = ? AND is_deleted = 0
+      `).bind(currentId).first<{ id: string; title: string; parent_id: string | null }>();
+      if (!item) break;
+      breadcrumbs.unshift({ id: item.id, title: item.title });
+      currentId = item.parent_id;
+    }
+  }
+} catch (e) {
+  error = 'Failed to load collection';
+}
+---
+
+<BaseLayout
+  title={collection ? collection.title : 'Collection Not Found'}
+  description="View shared collection"
+  noindex={true}
+>
+  <div class="tool-container">
+    <header class="page-header" style="text-align:center">
+      <h1>File Share</h1>
+    </header>
+
+    {error ? (
+      <section class="step">
+        <div class="step-content" style="text-align:center; max-width: 100%;">
+          <div class="error-icon" style="margin-bottom:16px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="64" height="64" style="color:#ef4444; margin: 0 auto; display: block;">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <h2 style="margin: 0 0 8px;">{error}</h2>
+          <p class="step-subtitle">The collection you're looking for is not available.</p>
+          <div style="margin-top: 24px;">
+            <a href="/" class="btn btn-secondary">Go Home</a>
+          </div>
+        </div>
+      </section>
+    ) : (
+      <>
+        <!-- Access Form Section -->
+        <section id="access-section" class="step">
+          <div class="step-content" style="text-align:center; max-width: 100%;">
+            <div class="folder-icon" style="margin-bottom:20px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="64" height="64" style="color:#2563eb; margin: 0 auto; display: block;">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </div>
+
+            <h2 style="margin: 0 0 8px;">Kiruba has shared {collection.title} with you</h2>
+            {collection.subtitle && <p class="step-subtitle">{collection.subtitle}</p>}
+            <p class="step-subtitle" style="margin-top:8px">{collection.item_count} item{collection.item_count !== 1 ? 's' : ''}</p>
+
+            <p class="help-text" style="margin:16px auto; max-width:400px; text-align: center;">
+              Please enter your details to access the files.
+              {collection.has_email_restriction ? ' This collection is restricted to specific email addresses.' : ''}
+            </p>
+
+            <form id="access-form" style="max-width:400px; margin:24px auto 0; text-align:left">
+              <input type="hidden" id="collection-id" value={id} />
+
+              <div class="form-group">
+                <label class="form-label">Your Email</label>
+                <input type="email" id="access-email" class="form-input" placeholder="Enter your email" required />
+              </div>
+
+              {collection.has_password ? (
+                <div class="form-group" style="margin-top:16px">
+                  <label class="form-label">Password</label>
+                  <input type="password" id="access-password" class="form-input" placeholder="Enter password" />
+                </div>
+              ) : null}
+
+              <p id="access-error" class="auth-error" style="text-align:center; min-height: 20px;"></p>
+
+              <div style="text-align:center; margin-top:24px">
+                <button type="submit" id="btn-access" class="btn btn-primary btn-large">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                  Open Collection
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- Collection Viewer Section (hidden initially) -->
+        <section id="viewer-section" class="step" style="display: none;">
+          <div class="step-content" style="max-width: 100%;">
+            <!-- Breadcrumb Navigation -->
+            <nav id="breadcrumb-nav" class="collection-breadcrumbs"></nav>
+
+            <!-- Collection Header -->
+            <div class="collection-header">
+              <div class="collection-header-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </div>
+              <div>
+                <h2 id="viewer-title" style="margin:0">{collection.title}</h2>
+                <p id="viewer-subtitle" class="step-subtitle" style="margin:4px 0 0">{collection.subtitle || ''}</p>
+              </div>
+            </div>
+
+            <!-- Contents Loading -->
+            <div id="contents-loading" class="progress-text">Loading contents...</div>
+
+            <!-- Contents Empty -->
+            <div id="contents-empty" class="help-text" style="display:none; text-align:center; padding:40px 0;">
+              This collection is empty.
+            </div>
+
+            <!-- Contents Grid -->
+            <div id="contents-grid" class="contents-grid" style="display:none"></div>
+          </div>
+        </section>
+      </>
+    )}
+  </div>
+</BaseLayout>
+
+<style>
+  .auth-error {
+    color: #ef4444;
+    font-size: 14px;
+  }
+
+  .collection-breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .collection-breadcrumbs a {
+    color: var(--color-ink-light);
+    text-decoration: none;
+  }
+
+  .collection-breadcrumbs a:hover {
+    color: var(--color-terracotta);
+  }
+
+  .collection-breadcrumbs .separator {
+    color: var(--color-ink-light);
+  }
+
+  .collection-breadcrumbs .current {
+    color: var(--color-ink);
+    font-weight: 500;
+  }
+
+  .collection-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .collection-header-icon {
+    width: 56px;
+    height: 56px;
+    background: #dbeafe;
+    color: #2563eb;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .contents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+  }
+
+  .item-card {
+    background: var(--color-cream);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 20px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .item-card:hover {
+    border-color: var(--color-terracotta);
+    background: white;
+  }
+
+  .item-card-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 12px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .item-card-icon.folder {
+    background: #dbeafe;
+    color: #2563eb;
+  }
+
+  .item-card-icon.file {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  .item-card-icon.file.csv,
+  .item-card-icon.file.excel {
+    background: #d1fae5;
+    color: #059669;
+  }
+
+  .item-card-icon.file.word {
+    background: #dbeafe;
+    color: #2563eb;
+  }
+
+  .item-card-icon.file.image {
+    background: #fef3c7;
+    color: #d97706;
+  }
+
+  .item-card-name {
+    font-weight: 500;
+    font-size: 14px;
+    word-break: break-word;
+    margin-bottom: 4px;
+  }
+
+  .item-card-meta {
+    font-size: 12px;
+    color: var(--color-ink-light);
+  }
+
+  .item-card-download {
+    margin-top: 12px;
+    padding: 8px 16px;
+  }
+</style>
+
+<script is:inline>
+  const form = document.getElementById('access-form');
+  if (form) {
+    const btnAccess = document.getElementById('btn-access');
+    const originalBtnText = btnAccess.innerHTML;
+
+    // Token storage
+    let accessToken = null;
+    let accessTimestamp = null;
+    let accessEmail = null;
+    let rootCollectionId = null;
+
+    // Format file size
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // Get file type class
+    function getFileTypeClass(mimeType) {
+      if (mimeType === 'text/csv') return 'csv';
+      if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) return 'excel';
+      if (mimeType.includes('word')) return 'word';
+      if (mimeType.startsWith('image/')) return 'image';
+      return '';
+    }
+
+    // Get file icon SVG
+    function getFileIconSvg(mimeType) {
+      if (mimeType.startsWith('image/')) {
+        return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>`;
+      }
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+      </svg>`;
+    }
+
+    // Build token params
+    function getTokenParams() {
+      return `token=${accessToken}&t=${accessTimestamp}&email=${encodeURIComponent(accessEmail)}&root=${rootCollectionId}`;
+    }
+
+    // Load collection contents
+    async function loadContents(collectionId) {
+      const loading = document.getElementById('contents-loading');
+      const empty = document.getElementById('contents-empty');
+      const grid = document.getElementById('contents-grid');
+
+      loading.style.display = 'block';
+      empty.style.display = 'none';
+      grid.style.display = 'none';
+
+      try {
+        const response = await fetch(`/api/share/collections/${collectionId}/contents?${getTokenParams()}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load contents');
+        }
+
+        // Update header
+        document.getElementById('viewer-title').textContent = data.collection.title;
+        document.getElementById('viewer-subtitle').textContent = data.collection.subtitle || '';
+
+        // Update breadcrumbs
+        const breadcrumbNav = document.getElementById('breadcrumb-nav');
+        breadcrumbNav.innerHTML = data.breadcrumbs.map((b, i) => {
+          if (i === data.breadcrumbs.length - 1) {
+            return `<span class="current">${b.title}</span>`;
+          }
+          return `<a href="javascript:void(0)" onclick="navigateToCollection('${b.id}')">${b.title}</a><span class="separator">/</span>`;
+        }).join('');
+
+        loading.style.display = 'none';
+
+        if (data.children.length === 0) {
+          empty.style.display = 'block';
+          return;
+        }
+
+        grid.style.display = 'grid';
+        grid.innerHTML = data.children.map(child => {
+          if (child.type === 'collection') {
+            return `
+              <div class="item-card" onclick="navigateToCollection('${child.id}')">
+                <div class="item-card-icon folder">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                </div>
+                <div class="item-card-name">${child.title}</div>
+                <div class="item-card-meta">${child.item_count} item${child.item_count !== 1 ? 's' : ''}</div>
+              </div>
+            `;
+          } else {
+            const typeClass = getFileTypeClass(child.mime_type);
+            return `
+              <div class="item-card">
+                <div class="item-card-icon file ${typeClass}">
+                  ${getFileIconSvg(child.mime_type)}
+                </div>
+                <div class="item-card-name">${child.filename}</div>
+                <div class="item-card-meta">${formatSize(child.file_size)}</div>
+                <button class="btn btn-primary item-card-download" onclick="downloadFile('${collectionId}', '${child.id}')">
+                  Download
+                </button>
+              </div>
+            `;
+          }
+        }).join('');
+
+      } catch (error) {
+        loading.textContent = error.message || 'Failed to load contents';
+      }
+    }
+
+    // Navigate to collection
+    window.navigateToCollection = function(collectionId) {
+      loadContents(collectionId);
+    };
+
+    // Download file
+    window.downloadFile = function(collectionId, fileId) {
+      const url = `/api/share/collections/${collectionId}/download/${fileId}?${getTokenParams()}`;
+      window.location.href = url;
+    };
+
+    // Form submission
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const collectionId = document.getElementById('collection-id').value;
+      const email = document.getElementById('access-email').value;
+      const passwordInput = document.getElementById('access-password');
+      const password = passwordInput ? passwordInput.value : null;
+      const errorEl = document.getElementById('access-error');
+
+      errorEl.textContent = '';
+      btnAccess.disabled = true;
+      btnAccess.innerHTML = 'Validating...';
+
+      try {
+        const response = await fetch(`/api/share/collections/${collectionId}/access`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          errorEl.textContent = data.error || 'Access denied';
+          btnAccess.disabled = false;
+          btnAccess.innerHTML = originalBtnText;
+          return;
+        }
+
+        // Store access credentials
+        accessToken = data.token;
+        accessTimestamp = data.timestamp;
+        accessEmail = data.email;
+        rootCollectionId = data.root_collection_id;
+
+        // Show viewer section
+        document.getElementById('access-section').style.display = 'none';
+        document.getElementById('viewer-section').style.display = 'block';
+
+        // Load contents
+        await loadContents(collectionId);
+
+      } catch (err) {
+        errorEl.textContent = 'An error occurred. Please try again.';
+        btnAccess.disabled = false;
+        btnAccess.innerHTML = originalBtnText;
+      }
+    });
+  }
+</script>

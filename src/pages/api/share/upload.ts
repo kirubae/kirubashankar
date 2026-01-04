@@ -1,5 +1,13 @@
 import type { APIRoute } from 'astro';
-import { generateFileId, sha256, MAX_FILE_SIZE, GUEST_MAX_FILE_SIZE, ALLOWED_MIME_TYPES, isValidPdf } from '@utils/share';
+import {
+  generateFileId,
+  sha256,
+  MAX_FILE_SIZE,
+  GUEST_MAX_FILE_SIZE,
+  EXTENSION_MIME_MAP,
+  ALLOWED_EXTENSIONS,
+  validateFileMagicBytes
+} from '@utils/share';
 
 export const prerender = false;
 
@@ -26,20 +34,27 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-      return new Response(JSON.stringify({ error: 'Only PDF files are allowed' }), {
+    // Check file extension
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    if (!extension || !ALLOWED_EXTENSIONS.includes(extension)) {
+      return new Response(JSON.stringify({
+        error: `Unsupported file type. Allowed: ${ALLOWED_EXTENSIONS.join(', ').toUpperCase()}`
+      }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    // Validate PDF magic bytes (security check - prevents spoofed MIME types)
-    if (!await isValidPdf(file)) {
-      return new Response(JSON.stringify({ error: 'Invalid PDF file' }), {
+    // Validate file magic bytes (security check - prevents spoofed extensions)
+    if (!await validateFileMagicBytes(file)) {
+      return new Response(JSON.stringify({ error: 'Invalid file format' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
     }
+
+    // Get correct MIME type from extension
+    const mimeType = EXTENSION_MIME_MAP[extension] || file.type;
 
     if (file.size > maxFileSize) {
       const limitMB = maxFileSize / (1024 * 1024);
@@ -84,7 +99,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const arrayBuffer = await file.arrayBuffer();
     await FILE_SHARE_BUCKET.put(r2Key, arrayBuffer, {
       httpMetadata: {
-        contentType: file.type,
+        contentType: mimeType,
         contentDisposition: `attachment; filename="${file.name}"`
       }
     });
@@ -101,7 +116,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       file.name,
       r2Key,
       file.size,
-      file.type,
+      mimeType,
       expiresAt || null,
       passwordHash,
       allowedEmails.length > 0 ? JSON.stringify(allowedEmails) : null,
