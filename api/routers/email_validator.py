@@ -271,125 +271,45 @@ from fastapi import UploadFile, File, Form
 # In-memory storage for results (cleared after download)
 _job_results: Dict[str, bytes] = {}
 
-@router.post("/validate-file")
+@router.post("/validate-file", response_model=JobResponse)
 async def create_validation_job_with_file(
     file: UploadFile = File(...),
-    email_column: str = Form(...)
+    email_column: str = Form(...),
+    background_tasks: BackgroundTasks = None
 ):
-    """Validate emails in uploaded file (synchronous for reliability)"""
+    """Start a background email validation job with file upload"""
     # Read file content
     content = await file.read()
     filename = file.filename or "file.csv"
 
-    # Create job ID for tracking
+    # Create job
     job_id = str(uuid.uuid4())
+    job_manager.create_job(job_id, job_type="email_validation")
 
-    try:
-        # Read file
-        data = BytesIO(content)
-        if filename.endswith('.xlsx') or filename.endswith('.xls'):
-            df = pd.read_excel(data)
-        else:
-            df = pd.read_csv(data)
+    # Run validation in background
+    background_tasks.add_task(
+        run_validation_job_with_data,
+        job_id,
+        content,
+        filename,
+        email_column
+    )
 
-        if email_column not in df.columns:
-            raise HTTPException(status_code=400, detail=f"Column '{email_column}' not found in file")
-
-        total_rows = len(df)
-        logger.info(f"Processing {total_rows} emails for job {job_id}")
-
-        # Extract emails and validate format
-        email_regex = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
-        df['_format_valid'] = df[email_column].astype(str).str.match(email_regex, na=False)
-
-        # Get unique domains from valid emails
-        valid_emails = df[df['_format_valid']][email_column].astype(str)
-        domains = list(set(
-            email.split('@')[1].lower()
-            for email in valid_emails
-            if '@' in email
-        ))
-
-        logger.info(f"Validating {len(domains)} unique domains...")
-
-        # Validate MX records in batches
-        mx_results: Dict[str, bool] = {}
-        batch_size = 100
-
-        for i in range(0, len(domains), batch_size):
-            batch = domains[i:i + batch_size]
-            tasks = [check_mx_record_async(domain) for domain in batch]
-            batch_results = await asyncio.gather(*tasks)
-
-            for domain, has_mx in batch_results:
-                mx_results[domain] = has_mx
-
-        # Apply MX results to dataframe
-        def get_mx_status(row):
-            if not row['_format_valid']:
-                return False
-            email = str(row[email_column])
-            if '@' not in email:
-                return False
-            domain = email.split('@')[1].lower()
-            return mx_results.get(domain, True)
-
-        df['_mx_valid'] = df.apply(get_mx_status, axis=1)
-        df['_status'] = df.apply(
-            lambda r: 'Valid' if r['_format_valid'] and r['_mx_valid']
-            else ('Invalid Format' if not r['_format_valid'] else 'No MX Record'),
-            axis=1
-        )
-
-        # Rename columns for output
-        df = df.rename(columns={
-            '_format_valid': 'Format Valid',
-            '_mx_valid': 'MX Valid',
-            '_status': 'Status'
-        })
-
-        # Calculate stats
-        stats = {
-            'total': total_rows,
-            'valid': int((df['Status'] == 'Valid').sum()),
-            'invalid_format': int((df['Status'] == 'Invalid Format').sum()),
-            'no_mx': int((df['Status'] == 'No MX Record').sum()),
-            'domains_checked': len(domains)
-        }
-
-        # Generate CSV content
-        csv_buffer = BytesIO()
-        df.to_csv(csv_buffer, index=False)
-        csv_buffer.seek(0)
-        csv_content = csv_buffer.getvalue()
-
-        # Encode as base64 for transport in JSON
-        import base64
-        csv_base64 = base64.b64encode(csv_content).decode('utf-8')
-
-        logger.info(f"Email validation job {job_id} completed: {stats}")
-
-        return {
-            "jobId": job_id,
-            "status": "completed",
-            "stats": stats,
-            "csv_data": csv_base64  # Base64 encoded CSV for direct download
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Email validation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    return JobResponse(jobId=job_id)
 
 
 @router.get("/download/{job_id}")
 async def download_job_result(job_id: str):
     """Download validation results for a job"""
-    if job_id not in _job_results:
-        raise HTTPException(status_code=404, detail="Results not found or already downloaded")
+    import os
+    result_path = f"/tmp/results/{job_id}.csv"
 
-    csv_data = _job_results.pop(job_id)  # Remove after download
+    if not os.path.exists(result_path):
+        raise HTTPException(status_code=404, detail="Results not found or expired")
+
+    # Read CSV content
+    with open(result_path, 'rb') as f:
+        csv_data = f.read()
 
     return StreamingResponse(
         BytesIO(csv_data),
@@ -503,15 +423,20 @@ async def run_validation_job_with_data(job_id: str, file_data: bytes, filename: 
             'domains_checked': len(domains)
         }
 
-        # Store result in memory
+        # Store result in file (for multi-worker support)
         job_manager.update_job(job_id, message="Preparing download...", progress=95)
 
         csv_buffer = BytesIO()
         df.to_csv(csv_buffer, index=False)
         csv_buffer.seek(0)
 
-        # Store in memory for download
-        _job_results[job_id] = csv_buffer.getvalue()
+        # Save to file in /tmp/results (accessible by all workers)
+        import os
+        results_dir = "/tmp/results"
+        os.makedirs(results_dir, exist_ok=True)
+        result_path = f"{results_dir}/{job_id}.csv"
+        with open(result_path, 'wb') as f:
+            f.write(csv_buffer.getvalue())
 
         # Mark job complete
         job_manager.update_job(
@@ -519,7 +444,7 @@ async def run_validation_job_with_data(job_id: str, file_data: bytes, filename: 
             status="completed",
             progress=100,
             message="Validation complete",
-            result_key=job_id,  # Use job_id for download
+            result_key=job_id,
             stats=stats
         )
 

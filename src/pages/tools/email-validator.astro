@@ -108,6 +108,9 @@ const jsonLdSchema = [
           <div class="progress-fill" id="progress-fill"></div>
         </div>
         <p class="progress-text" id="progress-text">0%</p>
+        <p class="progress-hint" id="progress-hint" style="display: none;">
+          Checking MX records for each domain. This may take a few minutes for large files...
+        </p>
       </div>
     </section>
 
@@ -257,6 +260,23 @@ const jsonLdSchema = [
     .summary-cards {
       grid-template-columns: repeat(2, 1fr);
     }
+  }
+
+  .progress-hint {
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--color-ink-light);
+    text-align: center;
+  }
+
+  /* Pulsing animation for progress bar during validation */
+  .progress-fill.validating {
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
   }
 </style>
 
@@ -457,20 +477,14 @@ const jsonLdSchema = [
 
       const result = await jobRes.json();
 
-      // Handle synchronous response (new flow)
-      if (result.status === 'completed') {
-        jobId = result.jobId;
-        jobStats = result.stats;
-        csvData = result.csv_data;  // Base64 encoded CSV
-        updateProgress(100, 'Validation complete');
-        showResults();
-      } else if (result.jobId && !result.status) {
-        // Legacy async flow (fallback)
-        jobId = result.jobId;
-        pollJobStatus();
-      } else {
-        throw new Error('Unexpected response from server');
-      }
+      // Job created - start polling for status
+      jobId = result.jobId;
+
+      // Show hint and add pulsing animation
+      document.getElementById('progress-hint').style.display = 'block';
+      elements.progressFill.classList.add('validating');
+
+      pollJobStatus();
 
     } catch (error) {
       console.error('Error starting job:', error);
@@ -508,6 +522,10 @@ const jsonLdSchema = [
 
   // Show results
   function showResults() {
+    // Clean up validation state
+    elements.progressFill.classList.remove('validating');
+    document.getElementById('progress-hint').style.display = 'none';
+
     showStep('results');
 
     if (jobStats) {
@@ -531,22 +549,13 @@ const jsonLdSchema = [
 
   // Download results
   function downloadResults() {
-    if (!csvData) {
+    if (!jobId) {
       alert('Download not available. Please try again.');
       return;
     }
 
-    // Decode base64 and create download
-    const csvContent = atob(csvData);
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `email-validation-${jobId || 'results'}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // Download via proxy endpoint
+    window.open(`/api/email/download/${encodeURIComponent(jobId)}`, '_blank');
   }
 
   // Reset
@@ -555,11 +564,12 @@ const jsonLdSchema = [
     r2Key = null;
     selectedColumnName = null;
     jobId = null;
-    csvData = null;
     jobStats = null;
     elements.fileInput.value = '';
     elements.progressFill.style.width = '0%';
+    elements.progressFill.classList.remove('validating');
     elements.progressText.textContent = '0%';
+    document.getElementById('progress-hint').style.display = 'none';
     showStep('upload');
   }
 
