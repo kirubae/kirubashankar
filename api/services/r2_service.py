@@ -128,12 +128,12 @@ class R2Service:
             return None
 
         try:
+            # Don't include ContentType in signed headers to avoid signature mismatch
             url = self.client.generate_presigned_url(
                 'put_object',
                 Params={
                     'Bucket': settings.r2_bucket_name,
-                    'Key': key,
-                    'ContentType': content_type
+                    'Key': key
                 },
                 ExpiresIn=expires_in
             )
