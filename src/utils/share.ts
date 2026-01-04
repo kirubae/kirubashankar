@@ -28,31 +28,40 @@ export function isValidEmail(email: string): boolean {
 }
 
 // Check if domain has MX records (validates email domain can receive mail)
-export async function checkMxRecord(domain: string): Promise<boolean> {
-  try {
-    const response = await fetch(
-      `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=MX`,
-      {
-        headers: {
-          Accept: 'application/dns-json',
-        },
-      }
-    );
+async function checkMxRecordWithProvider(domain: string, provider: 'google' | 'cloudflare'): Promise<boolean> {
+  const url = provider === 'google'
+    ? `https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=MX`
+    : `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=MX`;
 
-    if (!response.ok) {
+  const response = await fetch(url, {
+    headers: { Accept: 'application/dns-json' },
+    signal: AbortSignal.timeout(5000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`DNS query failed: ${response.status}`);
+  }
+
+  const data = await response.json() as { Status: number; Answer?: { type: number }[] };
+
+  // Status 0 = NOERROR, MX record type is 15
+  if (data.Status === 0 && data.Answer) {
+    return data.Answer.some((record) => record.type === 15);
+  }
+
+  return false;
+}
+
+export async function checkMxRecord(domain: string): Promise<boolean> {
+  // Try Google DNS first, fallback to Cloudflare
+  try {
+    return await checkMxRecordWithProvider(domain, 'google');
+  } catch {
+    try {
+      return await checkMxRecordWithProvider(domain, 'cloudflare');
+    } catch {
       return false;
     }
-
-    const data = await response.json() as { Status: number; Answer?: { type: number }[] };
-
-    // Status 0 = NOERROR, check if MX records exist (type 15)
-    if (data.Status === 0 && data.Answer) {
-      return data.Answer.some((record) => record.type === 15);
-    }
-
-    return false;
-  } catch {
-    return false;
   }
 }
 
