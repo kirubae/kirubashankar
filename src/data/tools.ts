@@ -2,35 +2,35 @@ import type { Tool } from '@types/index';
 
 export const TOOLS: Tool[] = [
   {
+    slug: 'file-share',
+    name: 'vTransfer',
+    description: 'Move files like a pro, protect data like a bank. Simple transfers meet professional data rooms.',
+    category: 'utility',
+    url: '/tools/share',
+  },
+  {
     slug: 'image-resizer',
-    name: 'Image Resizer',
-    description: 'Resize, crop, and compress images online. Free, fast, and works entirely in your browser.',
+    name: 'Cropvas',
+    description: "It's the Canva for people who just need their images to fit. Resize, crop, and compress in your browser instantly. No account, no bloat, just the right size.",
     category: 'media',
   },
   {
-    slug: 'deep-search',
-    name: 'Companies Research',
-    description: 'AI-powered research tool. Upload a list of companies and get detailed research using Perplexity AI.',
-    category: 'research',
-  },
-  {
     slug: 'email-validator',
-    name: 'Email Validator',
-    description: 'Validate email addresses in bulk. Check format and verify MX records.',
+    name: 'MailSkimp',
+    description: 'For the user who wants to "skimp" on costs by removing dead emails before they send. Verify email addresses for free.',
     category: 'utility',
   },
   {
     slug: 'data-merge',
-    name: 'VLOOKUP for large files',
-    description: 'Merge and join large datasets quickly. Replace VLOOKUP with powerful join operations.',
+    name: 'vLookup',
+    description: 'VLOOKUPs that don\'t crash your computer. Search millions of rows in seconds, not minutes.',
     category: 'utility',
   },
   {
-    slug: 'file-share',
-    name: 'File Share',
-    description: 'Share PDF files securely with expiry dates, password protection, and access controls.',
-    category: 'utility',
-    url: '/tools/share',
+    slug: 'deep-search',
+    name: 'vDig',
+    description: 'Turns the messy web into a structured database. Get any intel you need about a company in a structured format.',
+    category: 'research',
   },
 ];
 
