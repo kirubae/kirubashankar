@@ -47,6 +47,27 @@ class R2Service:
         """Check if R2 is available"""
         return self.client is not None
 
+    def file_exists(self, key: str) -> bool:
+        """Check if a file exists in R2 without downloading it"""
+        if not self.client:
+            logger.error("R2 client not initialized")
+            return False
+
+        try:
+            self.client.head_object(
+                Bucket=settings.r2_bucket_name,
+                Key=key
+            )
+            return True
+        except self.client.exceptions.ClientError as e:
+            if e.response['Error']['Code'] == '404':
+                return False
+            logger.error(f"Error checking file existence: {key} - {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Error checking file existence: {key} - {e}")
+            return False
+
     def download_file(self, key: str) -> Optional[BytesIO]:
         """Download a file from R2 and return as BytesIO"""
         if not self.client:

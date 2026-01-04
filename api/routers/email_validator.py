@@ -210,8 +210,8 @@ async def create_validation_job(
     if not r2.is_available:
         raise HTTPException(status_code=503, detail="R2 storage not available")
 
-    # Verify file exists
-    if not r2.download_file(request.r2_key):
+    # Verify file exists (using head_object for speed)
+    if not r2.file_exists(request.r2_key):
         raise HTTPException(status_code=404, detail="File not found in R2")
 
     # Create job
