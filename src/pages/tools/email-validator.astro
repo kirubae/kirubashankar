@@ -463,7 +463,7 @@ const jsonLdSchema = [
     const total = emails.length;
 
     // Phase 1: Format validation
-    elements.validationStatus.textContent = 'Checking format...';
+    elements.validationStatus.textContent = 'Step 1: Checking email format...';
     const formatResults = emails.map((email) => ({
       email,
       formatValid: emailRegex.test(email),
@@ -475,33 +475,63 @@ const jsonLdSchema = [
     elements.progressFill.style.width = '30%';
     elements.progressText.textContent = '30%';
 
+    // Phase 1 complete - show 100%
+    elements.progressFill.style.width = '100%';
+    elements.progressText.textContent = '100%';
+
+    // Brief pause before starting phase 2
+    await new Promise(r => setTimeout(r, 300));
+
     // Phase 2: Extract unique domains for MX lookup
-    elements.validationStatus.textContent = 'Verifying MX records...';
     const validEmails = formatResults.filter((r) => r.formatValid);
     const domains = [...new Set(validEmails.map((r) => r.email.split('@')[1].toLowerCase()))];
 
+    elements.validationStatus.textContent = `Step 2: Validating ${domains.length.toLocaleString()} domains...`;
+    elements.progressFill.style.width = '0%';
+    elements.progressText.textContent = '0%';
+
     let mxResults = {};
     if (domains.length > 0) {
-      try {
-        // Use Python API with dnspython for reliable MX lookups
-        const response = await fetch('https://api.kirubashankar.com/api/email/validate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ domains }),
-        });
+      // Batch domains to avoid timeout (100 per request)
+      const batchSize = 100;
+      const totalBatches = Math.ceil(domains.length / batchSize);
 
-        if (response.ok) {
-          const data = await response.json();
-          mxResults = data.results || {};
+      for (let i = 0; i < domains.length; i += batchSize) {
+        const batch = domains.slice(i, i + batchSize);
+        const batchNum = Math.floor(i / batchSize) + 1;
+
+        elements.validationStatus.textContent = `Step 2: Validating domains... (batch ${batchNum}/${totalBatches})`;
+
+        try {
+          // Use Python API with dnspython for reliable MX lookups
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
+          const response = await fetch('https://api.kirubashankar.com/api/email/validate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ domains: batch }),
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeoutId);
+
+          if (response.ok) {
+            const data = await response.json();
+            Object.assign(mxResults, data.results || {});
+          }
+        } catch (error) {
+          console.error(`MX lookup error (batch ${batchNum}):`, error);
+          // On timeout/error, assume valid for this batch
+          batch.forEach(d => { mxResults[d] = true; });
         }
-      } catch (error) {
-        console.error('MX lookup error:', error);
+
+        // Update progress
+        const progress = Math.round((batchNum / totalBatches) * 100);
+        elements.progressFill.style.width = `${progress}%`;
+        elements.progressText.textContent = `${progress}%`;
       }
     }
-
-    // Update progress
-    elements.progressFill.style.width = '80%';
-    elements.progressText.textContent = '80%';
 
     // Combine results
     formatResults.forEach((result) => {
