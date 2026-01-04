@@ -70,8 +70,8 @@ def check_mx_record(domain: str) -> bool:
 
     try:
         resolver = dns.resolver.Resolver()
-        resolver.timeout = 5
-        resolver.lifetime = 10
+        resolver.timeout = 2  # 2 seconds per server
+        resolver.lifetime = 4  # 4 seconds total
 
         answers = resolver.resolve(domain_lower, 'MX')
         has_mx = len(answers) > 0
@@ -96,10 +96,15 @@ def check_mx_record(domain: str) -> bool:
         return True  # Benefit of the doubt
 
 
+from concurrent.futures import ThreadPoolExecutor
+
+# Dedicated executor with more workers for parallel DNS lookups
+_dns_executor = ThreadPoolExecutor(max_workers=50)
+
 async def check_mx_record_async(domain: str) -> tuple[str, bool]:
     """Async wrapper for MX check"""
     loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(None, check_mx_record, domain)
+    result = await loop.run_in_executor(_dns_executor, check_mx_record, domain)
     return (domain.lower().strip(), result)
 
 
