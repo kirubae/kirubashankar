@@ -335,7 +335,7 @@ const jsonLdSchema = [
 
       // Step 1: Get presigned upload URL
       const contentType = file.name.endsWith('.csv') ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      const urlRes = await fetch(`${API_BASE}/api/merge/r2/upload-url?filename=${encodeURIComponent(file.name)}&content_type=${encodeURIComponent(contentType)}`, {
+      const urlRes = await fetch(`${API_BASE}/api/email/upload-url?filename=${encodeURIComponent(file.name)}&content_type=${encodeURIComponent(contentType)}`, {
         method: 'POST',
       });
 
@@ -358,10 +358,8 @@ const jsonLdSchema = [
       updateProgress(30, 'Analyzing file...');
 
       // Step 3: Preview file to get columns
-      const previewRes = await fetch(`${API_BASE}/api/merge/r2/preview`, {
+      const previewRes = await fetch(`${API_BASE}/api/email/preview?r2_key=${encodeURIComponent(r2Key)}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keys: [r2Key] }),
       });
 
       if (!previewRes.ok) throw new Error('Failed to preview file');

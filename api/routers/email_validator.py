@@ -132,6 +132,70 @@ async def validate_domains(request: ValidateRequest):
 
 
 # ============================================
+# File upload endpoints
+# ============================================
+
+@router.post("/upload-url")
+async def get_upload_url(filename: str, content_type: str = "text/csv"):
+    """Generate a presigned URL for direct upload to R2"""
+    import time
+    import uuid
+
+    r2 = get_r2_service()
+
+    if not r2.is_available:
+        raise HTTPException(status_code=503, detail="R2 storage not available")
+
+    # Generate unique key
+    timestamp = int(time.time() * 1000)
+    random_id = str(uuid.uuid4())[:8]
+    key = f"email-validation/{timestamp}-{random_id}-{filename}"
+
+    # Generate presigned upload URL
+    upload_url = r2.generate_presigned_upload_url(key, content_type, expires_in=3600)
+
+    if not upload_url:
+        raise HTTPException(status_code=500, detail="Failed to generate upload URL")
+
+    return {
+        "uploadUrl": upload_url,
+        "key": key,
+        "expiresIn": 3600
+    }
+
+
+@router.post("/preview")
+async def preview_file(r2_key: str):
+    """Preview a file from R2 to get columns"""
+    r2 = get_r2_service()
+
+    if not r2.is_available:
+        raise HTTPException(status_code=503, detail="R2 storage not available")
+
+    try:
+        data = r2.download_file(r2_key)
+        if not data:
+            raise HTTPException(status_code=404, detail="File not found")
+
+        if r2_key.endswith('.xlsx') or r2_key.endswith('.xls'):
+            df = pd.read_excel(data)
+        else:
+            df = pd.read_csv(data)
+
+        return {
+            "columns": list(df.columns),
+            "rowCount": len(df),
+            "preview": df.head(5).to_dict(orient='records')
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Preview error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
 # Background job endpoints for large files
 # ============================================
 
