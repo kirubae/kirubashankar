@@ -17,6 +17,51 @@ const breadcrumbs = [
   description="Share PDF files securely with expiry dates and access controls"
   noindex={true}
 >
+  <!-- Auth Modal -->
+  <div class="auth-modal" id="auth-modal">
+    <div class="auth-modal-content">
+      <h2>Choose Access Level</h2>
+      <p class="auth-subtitle">Select how you want to use File Share</p>
+
+      <div class="auth-options" id="auth-options">
+        <button class="auth-option" id="auth-guest">
+          <div class="auth-option-icon guest">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <div class="auth-option-text">
+            <span class="auth-option-title">Continue as Guest</span>
+            <span class="auth-option-desc">1 file, max 10MB</span>
+          </div>
+        </button>
+
+        <button class="auth-option" id="auth-password-btn">
+          <div class="auth-option-icon pro">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+          <div class="auth-option-text">
+            <span class="auth-option-title">Enter Password</span>
+            <span class="auth-option-desc">Multiple files, up to 100MB each</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="auth-password-form" id="auth-password-form" style="display: none;">
+        <input type="password" id="auth-password-input" placeholder="Enter access password" />
+        <div class="auth-password-actions">
+          <button class="btn btn-secondary" id="auth-back">Back</button>
+          <button class="btn btn-primary" id="auth-submit">Unlock</button>
+        </div>
+        <p class="auth-error" id="auth-error" style="display: none;">Incorrect password</p>
+      </div>
+    </div>
+  </div>
+
   <div class="tool-container">
     <Breadcrumb items={breadcrumbs} />
 
@@ -34,66 +79,6 @@ const breadcrumbs = [
         Logout
       </button>
     </header>
-
-    <!-- Auth Step -->
-    <section id="auth-section" class="step">
-      <div class="step-header">
-        <div class="step-badge">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-          </svg>
-        </div>
-        <div>
-          <h2>Login</h2>
-          <p class="step-subtitle">Access restricted. Enter password to share files.</p>
-        </div>
-      </div>
-      <div class="step-content">
-        <div class="auth-input-group">
-          <input type="password" id="auth-password" class="form-input" placeholder="Enter password" autocomplete="off" />
-        </div>
-        <p id="auth-error" class="auth-error"></p>
-        <div class="action-bar" style="border-top: none; padding-top: 16px; margin-top: 16px; gap: 12px;">
-          <button id="btn-auth" class="btn btn-primary btn-large" style="margin-left: 0;">
-            Login
-          </button>
-          <button id="btn-guest" class="btn btn-secondary btn-large">
-            Continue as Guest
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Guest Email Step -->
-    <section id="guest-section" class="step" style="display: none;">
-      <div class="step-header">
-        <div class="step-badge">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-        </div>
-        <div>
-          <h2>Guest Access</h2>
-          <p class="step-subtitle">Enter your email to share a file (10MB limit, 1 file per email)</p>
-        </div>
-      </div>
-      <div class="step-content">
-        <div class="auth-input-group">
-          <input type="email" id="guest-email" class="form-input" placeholder="Enter your email" autocomplete="email" />
-        </div>
-        <p id="guest-error" class="auth-error"></p>
-        <div class="action-bar" style="border-top: none; padding-top: 16px; margin-top: 16px; gap: 12px;">
-          <button id="btn-guest-continue" class="btn btn-primary btn-large" style="margin-left: 0;">
-            Continue
-          </button>
-          <button id="btn-guest-back" class="btn btn-secondary btn-large">
-            Back
-          </button>
-        </div>
-      </div>
-    </section>
 
     <!-- Dashboard (hidden until authenticated) -->
     <div id="dashboard" style="display: none;">
@@ -359,6 +344,167 @@ const breadcrumbs = [
 </BaseLayout>
 
 <style is:global>
+  /* Auth Modal */
+  .auth-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+
+  .auth-modal.hidden {
+    display: none;
+  }
+
+  .auth-modal-content {
+    background: var(--color-paper);
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  }
+
+  .auth-modal-content h2 {
+    margin: 0 0 8px;
+    font-size: 24px;
+    color: var(--color-ink);
+  }
+
+  .auth-subtitle {
+    margin: 0 0 24px;
+    color: var(--color-ink-light);
+    font-size: 14px;
+  }
+
+  .auth-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .auth-option {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: var(--color-cream);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    font-family: inherit;
+  }
+
+  .auth-option:hover {
+    border-color: var(--color-terracotta);
+    background: white;
+  }
+
+  .auth-option-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .auth-option-icon.guest {
+    background: #e0e7ff;
+    color: #4f46e5;
+  }
+
+  .auth-option-icon.pro {
+    background: #fef3c7;
+    color: #d97706;
+  }
+
+  .auth-option-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .auth-option-title {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--color-ink);
+  }
+
+  .auth-option-desc {
+    font-size: 13px;
+    color: var(--color-ink-light);
+  }
+
+  .auth-password-form {
+    margin-top: 20px;
+  }
+
+  .auth-password-form input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: inherit;
+    margin-bottom: 12px;
+    box-sizing: border-box;
+  }
+
+  .auth-password-form input:focus {
+    outline: none;
+    border-color: var(--color-terracotta);
+  }
+
+  .auth-password-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .auth-password-actions .btn {
+    flex: 1;
+  }
+
+  .auth-password-form .auth-error {
+    color: #dc2626;
+    font-size: 13px;
+    margin: 12px 0 0;
+  }
+
+  /* Access Mode Badge */
+  .access-mode-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    margin-left: 12px;
+    vertical-align: middle;
+  }
+
+  .access-mode-badge.guest {
+    background: #e0e7ff;
+    color: #4f46e5;
+  }
+
+  .access-mode-badge.pro {
+    background: #fef3c7;
+    color: #d97706;
+  }
+
   /* Modal styles */
   .modal {
     position: fixed;
@@ -499,108 +645,55 @@ const breadcrumbs = [
 <script is:inline>
   // Session configuration
   const SESSION_KEY = 'fileshare_session';
-  const GUEST_SESSION_KEY = 'fileshare_guest';
   const SESSION_DURATION_MS = 60 * 60 * 1000; // 1 hour
-  const DASHBOARD_PASSWORD_HASH = '8e9e26c2ef86ecd02ba5c84da8a0859a39b4181b19f4c89312d6f1c1b78ccf15';
+  const ACCESS_PASSWORD = 'Florida';
   const MAX_FILE_SIZE_ADMIN = 100 * 1024 * 1024; // 100MB
   const MAX_FILE_SIZE_GUEST = 10 * 1024 * 1024;  // 10MB
 
   // Current mode: 'admin' or 'guest'
   let currentMode = null;
-  let guestEmail = null;
 
-  // Crypto utilities
-  async function sha256(message) {
-    const msgBuffer = new TextEncoder().encode(message);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-
-  // Generate encrypted session token
-  async function generateSessionToken() {
+  // Generate session token
+  async function generateSessionToken(mode) {
     const timestamp = Date.now();
     const randomBytes = new Uint8Array(16);
     crypto.getRandomValues(randomBytes);
     const random = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
-    const tokenData = `${DASHBOARD_PASSWORD_HASH}:${timestamp}:${random}`;
-    const token = await sha256(tokenData);
-    return { token, timestamp };
+    return { mode, timestamp, random };
   }
 
-  // Generate encrypted guest token (email-based)
-  async function generateGuestToken(email) {
-    const timestamp = Date.now();
-    const randomBytes = new Uint8Array(16);
-    crypto.getRandomValues(randomBytes);
-    const random = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
-    const tokenData = `guest:${email}:${timestamp}:${random}`;
-    const token = await sha256(tokenData);
-    return { token, timestamp, email: email.toLowerCase() };
-  }
-
-  // Verify admin session token
-  function isAdminSessionValid() {
+  // Verify session token
+  function getValidSession() {
     try {
       const sessionData = localStorage.getItem(SESSION_KEY);
-      if (!sessionData) return false;
+      if (!sessionData) return null;
 
-      const { token, timestamp } = JSON.parse(sessionData);
-      if (!token || !timestamp) return false;
+      const { mode, timestamp } = JSON.parse(sessionData);
+      if (!mode || !timestamp) return null;
 
       const now = Date.now();
       if (now - timestamp > SESSION_DURATION_MS) {
         localStorage.removeItem(SESSION_KEY);
-        return false;
-      }
-
-      return true;
-    } catch {
-      localStorage.removeItem(SESSION_KEY);
-      return false;
-    }
-  }
-
-  // Verify guest session
-  function getGuestSession() {
-    try {
-      const sessionData = localStorage.getItem(GUEST_SESSION_KEY);
-      if (!sessionData) return null;
-
-      const { token, timestamp, email } = JSON.parse(sessionData);
-      if (!token || !timestamp || !email) return null;
-
-      const now = Date.now();
-      if (now - timestamp > SESSION_DURATION_MS) {
-        localStorage.removeItem(GUEST_SESSION_KEY);
         return null;
       }
 
-      return { email };
+      return { mode };
     } catch {
-      localStorage.removeItem(GUEST_SESSION_KEY);
+      localStorage.removeItem(SESSION_KEY);
       return null;
     }
   }
 
-  // Save admin session
-  async function saveAdminSession() {
-    const { token, timestamp } = await generateSessionToken();
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ token, timestamp }));
+  // Save session
+  async function saveSession(mode) {
+    const session = await generateSessionToken(mode);
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   }
 
-  // Save guest session
-  async function saveGuestSession(email) {
-    const { token, timestamp, email: normalizedEmail } = await generateGuestToken(email);
-    localStorage.setItem(GUEST_SESSION_KEY, JSON.stringify({ token, timestamp, email: normalizedEmail }));
-  }
-
-  // Clear all sessions (logout)
+  // Clear session (logout)
   function clearSession() {
     localStorage.removeItem(SESSION_KEY);
-    localStorage.removeItem(GUEST_SESSION_KEY);
     currentMode = null;
-    guestEmail = null;
   }
 
   // Get current max file size
@@ -636,23 +729,18 @@ const breadcrumbs = [
   let files = [];
 
   // DOM elements
-  const authSection = document.getElementById('auth-section');
-  const guestSection = document.getElementById('guest-section');
-  const dashboard = document.getElementById('dashboard');
-  const authPassword = document.getElementById('auth-password');
+  const authModal = document.getElementById('auth-modal');
+  const authOptions = document.getElementById('auth-options');
+  const authPasswordForm = document.getElementById('auth-password-form');
+  const authPasswordInput = document.getElementById('auth-password-input');
   const authError = document.getElementById('auth-error');
-  const btnAuth = document.getElementById('btn-auth');
-  const btnGuest = document.getElementById('btn-guest');
-  const btnGuestContinue = document.getElementById('btn-guest-continue');
-  const btnGuestBack = document.getElementById('btn-guest-back');
-  const guestEmailInput = document.getElementById('guest-email');
-  const guestError = document.getElementById('guest-error');
+  const dashboard = document.getElementById('dashboard');
   const btnLogout = document.getElementById('btn-logout');
   const filesSection = document.getElementById('files-section');
   const uploadSection = document.getElementById('upload-section');
   const uploadSubtitle = document.getElementById('upload-subtitle');
 
-  // Upload form elements (needed before session check for resetUploadForm)
+  // Upload form elements
   const uploadArea = document.getElementById('upload-area');
   const fileInput = document.getElementById('file-input');
   const uploadBtn = document.getElementById('upload-btn');
@@ -662,15 +750,25 @@ const breadcrumbs = [
   const uploadProgress = document.getElementById('upload-progress');
   const uploadSuccess = document.getElementById('upload-success');
 
-  // Show dashboard (authenticated state)
-  function showDashboard(mode = 'admin', email = null) {
+  // Set access mode and show dashboard
+  function setAccessMode(mode) {
     currentMode = mode;
-    guestEmail = email;
-
-    authSection.style.display = 'none';
-    guestSection.style.display = 'none';
+    saveSession(mode);
+    authModal.classList.add('hidden');
     dashboard.style.display = 'block';
     btnLogout.style.display = 'flex';
+
+    // Add mode badge to title
+    const badge = document.createElement('span');
+    badge.className = `access-mode-badge ${mode === 'admin' ? 'pro' : 'guest'}`;
+    badge.innerHTML = mode === 'admin'
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Full Access'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Guest';
+
+    const pageTitle = document.querySelector('.page-header h1');
+    if (pageTitle && !pageTitle.querySelector('.access-mode-badge')) {
+      pageTitle.appendChild(badge);
+    }
 
     // Update upload subtitle based on mode
     const maxSize = mode === 'guest' ? '10MB' : '100MB';
@@ -686,91 +784,68 @@ const breadcrumbs = [
     }
   }
 
-  // Show login (unauthenticated state)
-  function showLogin() {
+  // Show auth modal
+  function showAuthModal() {
     currentMode = null;
-    guestEmail = null;
-    authSection.style.display = 'block';
-    guestSection.style.display = 'none';
+    authModal.classList.remove('hidden');
     dashboard.style.display = 'none';
     btnLogout.style.display = 'none';
-    authPassword.value = '';
-    authError.textContent = '';
-    guestEmailInput.value = '';
-    guestError.textContent = '';
-  }
-
-  // Show guest email input
-  function showGuestInput() {
-    authSection.style.display = 'none';
-    guestSection.style.display = 'block';
-    guestEmailInput.focus();
+    authOptions.style.display = 'flex';
+    authPasswordForm.style.display = 'none';
+    authPasswordInput.value = '';
+    authError.style.display = 'none';
   }
 
   // Check session on page load
-  if (isAdminSessionValid()) {
-    showDashboard('admin');
+  const session = getValidSession();
+  if (session) {
+    setAccessMode(session.mode);
   } else {
-    const guestSession = getGuestSession();
-    if (guestSession) {
-      showDashboard('guest', guestSession.email);
-    } else {
-      showLogin();
-    }
+    showAuthModal();
   }
 
-  // Auth - admin login
-  btnAuth.addEventListener('click', async () => {
-    const password = authPassword.value;
-    if (!password) {
-      authError.textContent = 'Please enter password';
-      return;
-    }
+  // Auth modal - Guest button
+  document.getElementById('auth-guest').addEventListener('click', () => {
+    setAccessMode('guest');
+  });
 
-    const hash = await sha256(password);
-    if (hash === DASHBOARD_PASSWORD_HASH) {
-      await saveAdminSession();
-      showDashboard('admin');
+  // Auth modal - Password button
+  document.getElementById('auth-password-btn').addEventListener('click', () => {
+    authOptions.style.display = 'none';
+    authPasswordForm.style.display = 'block';
+    authPasswordInput.focus();
+  });
+
+  // Auth modal - Back button
+  document.getElementById('auth-back').addEventListener('click', () => {
+    authOptions.style.display = 'flex';
+    authPasswordForm.style.display = 'none';
+    authPasswordInput.value = '';
+    authError.style.display = 'none';
+  });
+
+  // Auth modal - Submit password
+  document.getElementById('auth-submit').addEventListener('click', () => {
+    if (authPasswordInput.value === ACCESS_PASSWORD) {
+      setAccessMode('admin');
     } else {
-      authError.textContent = 'Invalid password';
+      authError.style.display = 'block';
+      authPasswordInput.value = '';
+      authPasswordInput.focus();
     }
   });
 
-  authPassword.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') btnAuth.click();
-  });
-
-  // Guest mode flow
-  btnGuest.addEventListener('click', showGuestInput);
-
-  btnGuestBack.addEventListener('click', showLogin);
-
-  btnGuestContinue.addEventListener('click', async () => {
-    const email = guestEmailInput.value.trim();
-    if (!email) {
-      guestError.textContent = 'Please enter your email';
-      return;
-    }
-
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      guestError.textContent = 'Please enter a valid email address';
-      return;
-    }
-
-    await saveGuestSession(email);
-    showDashboard('guest', email.toLowerCase());
-  });
-
-  guestEmailInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') btnGuestContinue.click();
+  authPasswordInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('auth-submit').click();
   });
 
   // Logout
   btnLogout.addEventListener('click', () => {
     clearSession();
-    showLogin();
+    // Remove badge
+    const badge = document.querySelector('.access-mode-badge');
+    if (badge) badge.remove();
+    showAuthModal();
   });
 
   // Show/hide upload section
@@ -896,9 +971,9 @@ const breadcrumbs = [
     if (expiryDate) formData.append('expires_at', expiryDate);
     if (password) formData.append('password', password);
     if (allowedEmails.length > 0) formData.append('allowed_emails', JSON.stringify(allowedEmails));
-    // Add uploader email for guest mode
-    if (currentMode === 'guest' && guestEmail) {
-      formData.append('uploader_email', guestEmail);
+    // Add uploader info for guest mode
+    if (currentMode === 'guest') {
+      formData.append('uploader_email', 'Guest');
     }
 
     uploadOptions.style.display = 'none';
