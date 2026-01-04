@@ -264,8 +264,6 @@ const jsonLdSchema = [
 <script is:inline src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 
 <script is:inline>
-  const API_BASE = 'https://api.kirubashankar.com';
-
   // State
   let currentFile = null;
   let r2Key = null;
@@ -410,8 +408,8 @@ const jsonLdSchema = [
     updateProgress(5, 'Starting validation...');
 
     try {
-      // Create job on DO backend (uses Python dnspython for MX lookups)
-      const jobRes = await fetch(`${API_BASE}/api/email/jobs`, {
+      // Create job via CF Pages proxy (proxies to DO backend with Python dnspython)
+      const jobRes = await fetch('/api/email/jobs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -438,10 +436,10 @@ const jsonLdSchema = [
     }
   }
 
-  // Poll job status from DO backend
+  // Poll job status via CF Pages proxy
   async function pollJobStatus() {
     try {
-      const res = await fetch(`${API_BASE}/api/email/jobs/${jobId}`);
+      const res = await fetch(`/api/email/jobs/${jobId}`);
       if (!res.ok) throw new Error('Failed to get job status');
 
       const status = await res.json();
@@ -496,8 +494,8 @@ const jsonLdSchema = [
     }
 
     try {
-      // Get presigned download URL from DO backend
-      const res = await fetch(`${API_BASE}/api/email/results/${encodeURIComponent(resultKey)}`);
+      // Get presigned download URL via CF Pages proxy
+      const res = await fetch(`/api/email/results/${encodeURIComponent(resultKey)}`);
       if (res.ok) {
         const { downloadUrl } = await res.json();
         window.open(downloadUrl, '_blank');
