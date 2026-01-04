@@ -331,38 +331,38 @@ const jsonLdSchema = [
 
     try {
       showStep('validating');
-      updateProgress(0, 'Uploading file to cloud...');
+      updateProgress(0, 'Uploading file...');
 
-      // Step 1: Get presigned upload URL
-      const contentType = file.name.endsWith('.csv') ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      const urlRes = await fetch(`${API_BASE}/api/email/upload-url?filename=${encodeURIComponent(file.name)}&content_type=${encodeURIComponent(contentType)}`, {
+      // Step 1: Upload file to R2 via CF Pages API
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploadRes = await fetch('/api/email/upload', {
         method: 'POST',
+        body: formData,
       });
 
-      if (!urlRes.ok) throw new Error('Failed to get upload URL');
+      if (!uploadRes.ok) {
+        const err = await uploadRes.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to upload file');
+      }
 
-      const { uploadUrl, key } = await urlRes.json();
+      const { key } = await uploadRes.json();
       r2Key = key;
-
-      updateProgress(10, 'Uploading file...');
-
-      // Step 2: Upload file to R2
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': contentType },
-      });
-
-      if (!uploadRes.ok) throw new Error('Failed to upload file');
 
       updateProgress(30, 'Analyzing file...');
 
-      // Step 3: Preview file to get columns
-      const previewRes = await fetch(`${API_BASE}/api/email/preview?r2_key=${encodeURIComponent(r2Key)}`, {
+      // Step 2: Preview file to get columns via CF Pages API
+      const previewRes = await fetch('/api/email/preview', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: r2Key }),
       });
 
-      if (!previewRes.ok) throw new Error('Failed to preview file');
+      if (!previewRes.ok) {
+        const err = await previewRes.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to preview file');
+      }
 
       const preview = await previewRes.json();
 
