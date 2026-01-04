@@ -113,14 +113,19 @@ function parseCSVLine(line: string): string[] {
 }
 
 export const POST: APIRoute = async ({ request, locals }) => {
+  console.log('[validate] Starting email validation request');
+
   try {
     const env = locals.runtime.env as Env;
     const bucket = env.DATA_MERGE_BUCKET;
 
+    console.log('[validate] R2 bucket available:', !!bucket);
+
     if (!bucket) {
+      console.error('[validate] R2 bucket not configured');
       return new Response(
         JSON.stringify({ error: 'Storage not configured' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
