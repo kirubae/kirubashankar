@@ -518,26 +518,14 @@ const jsonLdSchema = [
   }
 
   // Download results
-  async function downloadResults() {
+  function downloadResults() {
     if (!resultKey) {
       alert('Download not available. Please try again.');
       return;
     }
 
-    try {
-      // Get presigned download URL via CF Pages proxy
-      const res = await fetch(`/api/email/results/${encodeURIComponent(resultKey)}`);
-      if (res.ok) {
-        const { downloadUrl } = await res.json();
-        window.open(downloadUrl, '_blank');
-      } else {
-        // Fallback to CF Pages download
-        window.open(`/api/email/download/${encodeURIComponent(resultKey)}`, '_blank');
-      }
-    } catch {
-      // Fallback to CF Pages download
-      window.open(`/api/email/download/${encodeURIComponent(resultKey)}`, '_blank');
-    }
+    // Download directly from CF Pages proxy (which proxies to DO backend)
+    window.open(`/api/email/download/${encodeURIComponent(resultKey)}`, '_blank');
   }
 
   // Reset
