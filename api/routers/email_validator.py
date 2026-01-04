@@ -98,8 +98,8 @@ def check_mx_record(domain: str) -> bool:
 
 from concurrent.futures import ThreadPoolExecutor
 
-# Dedicated executor with more workers for parallel DNS lookups
-_dns_executor = ThreadPoolExecutor(max_workers=50)
+# Dedicated executor with many workers for parallel DNS lookups
+_dns_executor = ThreadPoolExecutor(max_workers=200)
 
 async def check_mx_record_async(domain: str) -> tuple[str, bool]:
     """Async wrapper for MX check"""
@@ -363,35 +363,19 @@ async def run_validation_job_with_data(job_id: str, file_data: bytes, filename: 
             if '@' in email
         ))
 
+        # Validate all domains in parallel (200 concurrent workers)
         job_manager.update_job(
             job_id,
             message=f"Validating {len(domains):,} unique domains...",
-            progress=20
+            progress=25
         )
 
-        # Validate MX records in batches
         mx_results: Dict[str, bool] = {}
-        batch_size = 100
-        total_batches = max(1, len(domains) // batch_size + (1 if len(domains) % batch_size else 0))
+        tasks = [check_mx_record_async(domain) for domain in domains]
+        all_results = await asyncio.gather(*tasks)
 
-        for i in range(0, len(domains), batch_size):
-            batch = domains[i:i + batch_size]
-            batch_num = i // batch_size + 1
-
-            # Check MX for batch
-            tasks = [check_mx_record_async(domain) for domain in batch]
-            batch_results = await asyncio.gather(*tasks)
-
-            for domain, has_mx in batch_results:
-                mx_results[domain] = has_mx
-
-            # Update progress (20-80% for MX validation)
-            progress = 20 + int((batch_num / total_batches) * 60)
-            job_manager.update_job(
-                job_id,
-                message=f"Validating domains... ({batch_num}/{total_batches})",
-                progress=progress
-            )
+        for domain, has_mx in all_results:
+            mx_results[domain] = has_mx
 
         # Apply MX results to dataframe
         job_manager.update_job(job_id, message="Generating results...", progress=85)
@@ -511,35 +495,19 @@ async def run_validation_job(job_id: str, r2_key: str, email_column: str):
             if '@' in email
         ))
 
+        # Validate all domains in parallel (200 concurrent workers)
         job_manager.update_job(
             job_id,
             message=f"Validating {len(domains):,} unique domains...",
-            progress=20
+            progress=25
         )
 
-        # Validate MX records in batches
         mx_results: Dict[str, bool] = {}
-        batch_size = 100
-        total_batches = max(1, len(domains) // batch_size + (1 if len(domains) % batch_size else 0))
+        tasks = [check_mx_record_async(domain) for domain in domains]
+        all_results = await asyncio.gather(*tasks)
 
-        for i in range(0, len(domains), batch_size):
-            batch = domains[i:i + batch_size]
-            batch_num = i // batch_size + 1
-
-            # Check MX for batch
-            tasks = [check_mx_record_async(domain) for domain in batch]
-            batch_results = await asyncio.gather(*tasks)
-
-            for domain, has_mx in batch_results:
-                mx_results[domain] = has_mx
-
-            # Update progress (20-80% for MX validation)
-            progress = 20 + int((batch_num / total_batches) * 60)
-            job_manager.update_job(
-                job_id,
-                message=f"Validating domains... ({batch_num}/{total_batches})",
-                progress=progress
-            )
+        for domain, has_mx in all_results:
+            mx_results[domain] = has_mx
 
         # Apply MX results to dataframe
         job_manager.update_job(job_id, message="Generating results...", progress=85)
