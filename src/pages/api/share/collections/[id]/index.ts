@@ -196,7 +196,7 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
       WHERE id IN (SELECT id FROM descendants)
     `).bind(id).run();
 
-    // Detach files from deleted collections (set collection_id to NULL)
+    // Soft delete files in deleted collections
     await FILE_SHARE_DB.prepare(`
       WITH RECURSIVE descendants AS (
         SELECT id FROM collections WHERE id = ?
@@ -205,7 +205,7 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
         INNER JOIN descendants d ON c.parent_id = d.id
       )
       UPDATE files
-      SET collection_id = NULL, updated_at = datetime('now')
+      SET is_deleted = 1, updated_at = datetime('now')
       WHERE collection_id IN (SELECT id FROM descendants)
     `).bind(id).run();
 
