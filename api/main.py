@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
-from routers import health, data_merge, deep_search
+from routers import health, data_merge, deep_search, email_validator
 from services.file_service import cleanup_old_files
 
 # Setup logging
@@ -70,6 +70,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(data_merge.router, prefix="/api/merge", tags=["Data Merge"])
 app.include_router(deep_search.router, prefix="/api/research", tags=["Deep Search"])
+app.include_router(email_validator.router, prefix="/api/email", tags=["Email Validator"])
 
 
 if __name__ == "__main__":

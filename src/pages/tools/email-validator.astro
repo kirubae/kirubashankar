@@ -483,7 +483,12 @@ const jsonLdSchema = [
     let mxResults = {};
     if (domains.length > 0) {
       try {
-        const response = await fetch('/api/validate-emails', {
+        // Use Python API with dnspython for reliable MX lookups
+        const apiUrl = import.meta.env.DEV
+          ? 'http://localhost:8000/api/email/validate'
+          : 'https://api.kirubashankar.com/api/email/validate';
+
+        const response = await fetch(apiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ domains }),
