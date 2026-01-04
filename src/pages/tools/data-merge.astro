@@ -28,6 +28,51 @@ const jsonLdSchema = [
   description="Replace Excel VLOOKUP with powerful merge operations for large files. Support for CSV and Excel files up to 500MB, multiple join types, and handle multiple files at once."
   jsonLd={jsonLdSchema}
 >
+  <!-- Auth Modal -->
+  <div class="auth-modal" id="auth-modal">
+    <div class="auth-modal-content">
+      <h2>Choose Access Level</h2>
+      <p class="auth-subtitle">Select how you want to use the merge tool</p>
+
+      <div class="auth-options">
+        <button class="auth-option" id="auth-guest">
+          <div class="auth-option-icon guest">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <div class="auth-option-text">
+            <span class="auth-option-title">Continue as Guest</span>
+            <span class="auth-option-desc">1 file per side, max 10MB each</span>
+          </div>
+        </button>
+
+        <button class="auth-option" id="auth-password">
+          <div class="auth-option-icon pro">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+          <div class="auth-option-text">
+            <span class="auth-option-title">Enter Password</span>
+            <span class="auth-option-desc">Multiple files, up to 500MB each</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="auth-password-form" id="auth-password-form" style="display: none;">
+        <input type="password" id="auth-password-input" placeholder="Enter access password" />
+        <div class="auth-password-actions">
+          <button class="btn btn-secondary" id="auth-back">Back</button>
+          <button class="btn btn-primary" id="auth-submit">Unlock</button>
+        </div>
+        <p class="auth-error" id="auth-error" style="display: none;">Incorrect password</p>
+      </div>
+    </div>
+  </div>
+
   <div class="merge-container">
     <Breadcrumb items={breadcrumbs} />
 
@@ -62,6 +107,12 @@ const jsonLdSchema = [
             <input type="file" id="file-input-a" accept=".csv,.xlsx,.xls" multiple />
           </div>
           <div class="files-list" id="files-list-a"></div>
+          <button class="btn-add-more" id="add-more-a" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Add more files
+          </button>
           <div class="files-summary" id="files-summary-a" style="display: none;">
             <span class="summary-text" id="summary-text-a"></span>
             <button class="btn-clear" id="clear-a">Clear All</button>
@@ -82,6 +133,12 @@ const jsonLdSchema = [
             <input type="file" id="file-input-b" accept=".csv,.xlsx,.xls" multiple />
           </div>
           <div class="files-list" id="files-list-b"></div>
+          <button class="btn-add-more" id="add-more-b" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Add more files
+          </button>
           <div class="files-summary" id="files-summary-b" style="display: none;">
             <span class="summary-text" id="summary-text-b"></span>
             <button class="btn-clear" id="clear-b">Clear All</button>
@@ -378,6 +435,166 @@ const jsonLdSchema = [
 </BaseLayout>
 
 <style is:global>
+  /* Auth Modal */
+  .auth-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+
+  .auth-modal.hidden {
+    display: none;
+  }
+
+  .auth-modal-content {
+    background: var(--color-paper);
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  }
+
+  .auth-modal-content h2 {
+    margin: 0 0 8px;
+    font-size: 24px;
+    color: var(--color-ink);
+  }
+
+  .auth-subtitle {
+    margin: 0 0 24px;
+    color: var(--color-ink-light);
+    font-size: 14px;
+  }
+
+  .auth-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .auth-option {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: var(--color-cream);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    font-family: inherit;
+  }
+
+  .auth-option:hover {
+    border-color: var(--color-terracotta);
+    background: white;
+  }
+
+  .auth-option-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .auth-option-icon.guest {
+    background: #e0e7ff;
+    color: #4f46e5;
+  }
+
+  .auth-option-icon.pro {
+    background: #fef3c7;
+    color: #d97706;
+  }
+
+  .auth-option-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .auth-option-title {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--color-ink);
+  }
+
+  .auth-option-desc {
+    font-size: 13px;
+    color: var(--color-ink-light);
+  }
+
+  .auth-password-form {
+    margin-top: 20px;
+  }
+
+  .auth-password-form input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: inherit;
+    margin-bottom: 12px;
+  }
+
+  .auth-password-form input:focus {
+    outline: none;
+    border-color: var(--color-terracotta);
+  }
+
+  .auth-password-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .auth-password-actions .btn {
+    flex: 1;
+  }
+
+  .auth-error {
+    color: #dc2626;
+    font-size: 13px;
+    margin: 12px 0 0;
+  }
+
+  /* Access Mode Badge */
+  .access-mode-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    margin-left: 12px;
+    vertical-align: middle;
+  }
+
+  .access-mode-badge.guest {
+    background: #e0e7ff;
+    color: #4f46e5;
+  }
+
+  .access-mode-badge.pro {
+    background: #fef3c7;
+    color: #d97706;
+  }
+
   /* Merge Container - Full width with max */
   .merge-container {
     max-width: 1400px;
@@ -578,6 +795,58 @@ const jsonLdSchema = [
 
   .btn-clear:hover {
     background: #d1fae5;
+  }
+
+  .btn-add-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 16px;
+    margin-top: 8px;
+    background: var(--color-paper);
+    border: 2px dashed var(--color-border);
+    border-radius: 8px;
+    color: var(--color-ink-light);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-add-more:hover {
+    border-color: var(--color-terracotta);
+    color: var(--color-terracotta);
+    background: var(--color-cream);
+  }
+
+  .btn-add-more:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-add-more:disabled:hover {
+    border-color: var(--color-border);
+    color: var(--color-ink-light);
+    background: var(--color-paper);
+  }
+
+  .upload-area.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .upload-box.disabled .upload-area,
+  .upload-box.disabled .btn-add-more {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .upload-box.disabled .files-list {
+    opacity: 0.7;
   }
 
   .upload-status {
@@ -1118,6 +1387,15 @@ const jsonLdSchema = [
 <script is:inline src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 
 <script is:inline>
+  // Auth state
+  let accessMode = null; // 'guest' or 'pro'
+  const ACCESS_PASSWORD = 'Florida'; // Simple password check
+
+  // Limits based on access mode
+  const GUEST_FILE_SIZE_LIMIT = 10 * 1024 * 1024; // 10MB
+  const PRO_FILE_SIZE_LIMIT = 500 * 1024 * 1024; // 500MB
+  const GUEST_MAX_FILES_PER_SIDE = 1;
+
   // State - now supports multiple files per side
   let primaryFiles = []; // Array of { file, r2Key, filename, size, status, columns, rowCount }
   let secondaryFiles = [];
@@ -1126,9 +1404,19 @@ const jsonLdSchema = [
   let mergeResult = null;
   let currentStep = 'upload';
   let resultKey = null; // R2 key for result file
+  let isUploading = false; // Track if any upload is in progress
 
-  // File size limit (500MB per file)
-  const FILE_SIZE_LIMIT = 500 * 1024 * 1024;
+  // Get current file size limit based on access mode
+  function getFileSizeLimit() {
+    return accessMode === 'pro' ? PRO_FILE_SIZE_LIMIT : GUEST_FILE_SIZE_LIMIT;
+  }
+
+  // Check if can add more files (guest = 1 per side)
+  function canAddMoreFiles(side) {
+    if (accessMode === 'pro') return true;
+    const filesList = side === 'primary' ? primaryFiles : secondaryFiles;
+    return filesList.length < GUEST_MAX_FILES_PER_SIDE;
+  }
 
   // API URLs
   const R2_UPLOAD_URL = '/api/merge/upload'; // CF Pages API -> R2
@@ -1160,6 +1448,10 @@ const jsonLdSchema = [
     summaryTextB: document.getElementById('summary-text-b'),
     clearA: document.getElementById('clear-a'),
     clearB: document.getElementById('clear-b'),
+    addMoreA: document.getElementById('add-more-a'),
+    addMoreB: document.getElementById('add-more-b'),
+    uploadBoxA: document.getElementById('upload-area-a').parentElement,
+    uploadBoxB: document.getElementById('upload-area-b').parentElement,
     uploadStatus: document.getElementById('upload-status'),
     uploadProgressBar: document.getElementById('upload-progress-bar'),
     uploadStatusText: document.getElementById('upload-status-text'),
@@ -1273,6 +1565,84 @@ const jsonLdSchema = [
   // File Upload to R2 (Direct with Presigned URL)
   // =====================
 
+  // Update upload box disabled states
+  function updateUploadDisabledStates(uploadingSide) {
+    if (uploadingSide) {
+      isUploading = true;
+      // Disable the OTHER side while uploading
+      if (uploadingSide === 'primary') {
+        elements.uploadBoxB.classList.add('disabled');
+        elements.addMoreB.disabled = true;
+      } else {
+        elements.uploadBoxA.classList.add('disabled');
+        elements.addMoreA.disabled = true;
+      }
+    } else {
+      isUploading = false;
+      elements.uploadBoxA.classList.remove('disabled');
+      elements.uploadBoxB.classList.remove('disabled');
+      elements.addMoreA.disabled = false;
+      elements.addMoreB.disabled = false;
+    }
+  }
+
+  // Parse file locally to extract column names (for validation)
+  async function extractColumnsFromFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+
+      reader.onload = (e) => {
+        try {
+          if (isExcel) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array', sheetRows: 1 });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            if (json.length > 0) {
+              resolve(json[0].map(c => String(c)));
+            } else {
+              resolve([]);
+            }
+          } else {
+            // CSV - just read the first line
+            const text = e.target.result;
+            const firstLine = text.split('\n')[0].trim();
+            // Simple CSV header parsing (handles basic cases)
+            const cols = [];
+            let current = '';
+            let inQuotes = false;
+            for (let i = 0; i < firstLine.length; i++) {
+              const char = firstLine[i];
+              if (char === '"') {
+                inQuotes = !inQuotes;
+              } else if (char === ',' && !inQuotes) {
+                cols.push(current.trim());
+                current = '';
+              } else {
+                current += char;
+              }
+            }
+            cols.push(current.trim());
+            resolve(cols);
+          }
+        } catch (err) {
+          reject(err);
+        }
+      };
+
+      reader.onerror = () => reject(new Error('Failed to read file'));
+
+      if (isExcel) {
+        reader.readAsArrayBuffer(file);
+      } else {
+        // For CSV, just read the first 10KB to get headers
+        reader.readAsText(file.slice(0, 10240));
+      }
+    });
+  }
+
   // Get presigned upload URL from backend
   async function getUploadUrl(filename) {
     const params = new URLSearchParams({ filename });
@@ -1335,11 +1705,28 @@ const jsonLdSchema = [
     const filesList = side === 'primary' ? primaryFiles : secondaryFiles;
     const filesListEl = side === 'primary' ? elements.filesListA : elements.filesListB;
     const uploadArea = side === 'primary' ? elements.uploadAreaA : elements.uploadAreaB;
+    const addMoreBtn = side === 'primary' ? elements.addMoreA : elements.addMoreB;
+
+    // Get reference columns from existing uploaded files on this side
+    const existingUploaded = filesList.filter(f => f.status === 'uploaded' && f.columns);
+    const referenceColumns = existingUploaded.length > 0 ? existingUploaded[0].columns : null;
+
+    // Disable the other side while uploading
+    updateUploadDisabledStates(side);
+
+    const fileSizeLimit = getFileSizeLimit();
+    const fileSizeLimitText = accessMode === 'pro' ? '500MB' : '10MB';
 
     for (const file of files) {
+      // Check if can add more files (guest mode limit)
+      if (!canAddMoreFiles(side)) {
+        alert(`Guest mode allows only 1 file per side. Enter password for multiple files.`);
+        break;
+      }
+
       // Validate file size
-      if (file.size > FILE_SIZE_LIMIT) {
-        alert(`File "${file.name}" is too large (${formatFileSize(file.size)}). Maximum is 500MB per file.`);
+      if (file.size > fileSizeLimit) {
+        alert(`File "${file.name}" is too large (${formatFileSize(file.size)}). Maximum is ${fileSizeLimitText} per file${accessMode === 'guest' ? ' in guest mode' : ''}.`);
         continue;
       }
 
@@ -1350,6 +1737,29 @@ const jsonLdSchema = [
         continue;
       }
 
+      // Extract columns from file for validation
+      let fileColumns;
+      try {
+        fileColumns = await extractColumnsFromFile(file);
+      } catch (err) {
+        alert(`Could not read headers from "${file.name}": ${err.message}`);
+        continue;
+      }
+
+      // Validate columns match existing files on this side
+      if (referenceColumns) {
+        if (fileColumns.length !== referenceColumns.length) {
+          alert(`File "${file.name}" has ${fileColumns.length} columns, but existing files have ${referenceColumns.length} columns. All files on the same side must have matching column headers.`);
+          continue;
+        }
+
+        const mismatched = fileColumns.filter((c, i) => c !== referenceColumns[i]);
+        if (mismatched.length > 0) {
+          alert(`File "${file.name}" has different column headers than existing files.\n\nMismatched: ${mismatched.slice(0, 3).join(', ')}${mismatched.length > 3 ? '...' : ''}\n\nAll files on the same side must have matching column headers.`);
+          continue;
+        }
+      }
+
       // Add file to list with "uploading" status
       const fileEntry = {
         file,
@@ -1358,13 +1768,15 @@ const jsonLdSchema = [
         status: 'uploading',
         progress: 0,
         r2Key: null,
+        columns: fileColumns,
         error: null
       };
       filesList.push(fileEntry);
       renderFilesList(side);
 
-      // Hide upload area if we have files
+      // Hide upload area, show add more button
       uploadArea.classList.add('has-file');
+      addMoreBtn.style.display = 'flex';
 
       try {
         // Upload to R2 with progress tracking
@@ -1388,6 +1800,9 @@ const jsonLdSchema = [
       }
     }
 
+    // Re-enable both sides after upload completes
+    updateUploadDisabledStates(null);
+
     // Check if we can proceed to preview
     checkFilesReady();
   }
@@ -1399,12 +1814,22 @@ const jsonLdSchema = [
     const summaryEl = side === 'primary' ? elements.filesSummaryA : elements.filesSummaryB;
     const summaryTextEl = side === 'primary' ? elements.summaryTextA : elements.summaryTextB;
     const uploadArea = side === 'primary' ? elements.uploadAreaA : elements.uploadAreaB;
+    const addMoreBtn = side === 'primary' ? elements.addMoreA : elements.addMoreB;
 
     if (filesList.length === 0) {
       filesListEl.innerHTML = '';
       summaryEl.style.display = 'none';
+      addMoreBtn.style.display = 'none';
       uploadArea.classList.remove('has-file');
       return;
+    }
+
+    // Show add more button if we have files (only in pro mode or if under limit)
+    uploadArea.classList.add('has-file');
+    if (accessMode === 'pro' || filesList.length < GUEST_MAX_FILES_PER_SIDE) {
+      addMoreBtn.style.display = 'flex';
+    } else {
+      addMoreBtn.style.display = 'none';
     }
 
     // Render each file
@@ -1916,6 +2341,14 @@ const jsonLdSchema = [
   elements.clearA.addEventListener('click', () => clearFiles('primary'));
   elements.clearB.addEventListener('click', () => clearFiles('secondary'));
 
+  // Add more buttons
+  elements.addMoreA.addEventListener('click', () => {
+    if (!isUploading) elements.fileInputA.click();
+  });
+  elements.addMoreB.addEventListener('click', () => {
+    if (!isUploading) elements.fileInputB.click();
+  });
+
   // Navigation buttons
   document.getElementById('back-to-upload').addEventListener('click', () => showStep('upload'));
   document.getElementById('continue-to-config').addEventListener('click', showConfig);
@@ -1934,6 +2367,80 @@ const jsonLdSchema = [
 
   document.getElementById('deselect-all-columns').addEventListener('click', () => {
     document.querySelectorAll('input[name="column"]').forEach(cb => cb.checked = false);
+  });
+
+  // =====================
+  // Auth Modal Handling
+  // =====================
+
+  const authModal = document.getElementById('auth-modal');
+  const authGuestBtn = document.getElementById('auth-guest');
+  const authPasswordBtn = document.getElementById('auth-password');
+  const authPasswordForm = document.getElementById('auth-password-form');
+  const authOptions = document.querySelector('.auth-options');
+  const authPasswordInput = document.getElementById('auth-password-input');
+  const authBackBtn = document.getElementById('auth-back');
+  const authSubmitBtn = document.getElementById('auth-submit');
+  const authError = document.getElementById('auth-error');
+
+  function setAccessMode(mode) {
+    accessMode = mode;
+    authModal.classList.add('hidden');
+
+    // Update UI to show access mode
+    const badge = document.createElement('span');
+    badge.className = `access-mode-badge ${mode}`;
+    badge.innerHTML = mode === 'pro'
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Full Access'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Guest';
+
+    const pageTitle = document.querySelector('.page-header h1');
+    if (pageTitle && !pageTitle.querySelector('.access-mode-badge')) {
+      pageTitle.appendChild(badge);
+    }
+
+    // Update help text based on mode
+    const helpText = document.querySelector('.help-text');
+    if (helpText) {
+      if (mode === 'guest') {
+        helpText.textContent = 'Guest mode: 1 file per side, max 10MB each. Enter password for full access.';
+      } else {
+        helpText.textContent = 'Supports CSV and Excel files up to 500MB each. All files on the same side must have matching column headers.';
+      }
+    }
+  }
+
+  authGuestBtn.addEventListener('click', () => {
+    setAccessMode('guest');
+  });
+
+  authPasswordBtn.addEventListener('click', () => {
+    authOptions.style.display = 'none';
+    authPasswordForm.style.display = 'block';
+    authPasswordInput.focus();
+  });
+
+  authBackBtn.addEventListener('click', () => {
+    authOptions.style.display = 'flex';
+    authPasswordForm.style.display = 'none';
+    authPasswordInput.value = '';
+    authError.style.display = 'none';
+  });
+
+  authSubmitBtn.addEventListener('click', () => {
+    if (authPasswordInput.value === ACCESS_PASSWORD) {
+      setAccessMode('pro');
+    } else {
+      authError.style.display = 'block';
+      authPasswordInput.value = '';
+      authPasswordInput.focus();
+    }
+  });
+
+  authPasswordInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      authSubmitBtn.click();
+    }
   });
 
   // Initialize
