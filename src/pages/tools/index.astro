@@ -8,7 +8,7 @@ const tools = getAllTools();
 
 const breadcrumbs = [
   { name: 'Home', url: '/' },
-  { name: 'Things', url: '/tools' },
+  { name: 'My Tools', url: '/tools' },
 ];
 
 const jsonLdSchema = generateBreadcrumbSchema(breadcrumbs);
@@ -26,7 +26,7 @@ const jsonLdSchema = generateBreadcrumbSchema(breadcrumbs);
         <Icon name="home" size={16} />
       </a>
       <span class="text-border">/</span>
-      <span class="text-ink font-medium">Things</span>
+      <span class="text-ink font-medium">My Tools</span>
     </nav>
 
     <header class="mb-6">
