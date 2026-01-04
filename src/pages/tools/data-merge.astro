@@ -8,13 +8,13 @@ import '@styles/tools.css';
 const breadcrumbs = [
   { name: 'Home', url: '/' },
   { name: 'My Tools', url: '/tools' },
-  { name: 'VLOOKUP for Large Files', url: '/tools/data-merge' },
+  { name: 'Bulk VLookup', url: '/tools/data-merge' },
 ];
 
 const jsonLdSchema = [
   generateBreadcrumbSchema(breadcrumbs),
   generateWebApplicationSchema({
-    name: 'VLOOKUP for Large Files',
+    name: 'Bulk VLookup',
     description: 'Merge and join large datasets quickly. Replace Excel VLOOKUP with powerful join operations for files up to 500MB.',
     slug: 'data-merge',
     category: 'UtilityApplication',
@@ -24,7 +24,7 @@ const jsonLdSchema = [
 ---
 
 <BaseLayout
-  title="VLOOKUP for Large Files - Merge Datasets Online"
+  title="Bulk VLookup - Merge Datasets Online"
   description="Replace Excel VLOOKUP with powerful merge operations for large files. Support for CSV and Excel files up to 500MB, multiple join types, and handle multiple files at once."
   jsonLd={jsonLdSchema}
 >
@@ -78,7 +78,7 @@ const jsonLdSchema = [
 
     <!-- Page Heading -->
     <header class="page-header">
-      <h1>VLOOKUP for Large Files</h1>
+      <h1>Bulk VLookup</h1>
       <p class="page-subtitle">Merge and join large datasets with powerful operations</p>
     </header>
 

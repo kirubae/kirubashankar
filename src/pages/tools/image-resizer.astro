@@ -9,13 +9,13 @@ import '@styles/tools.css';
 const breadcrumbs = [
   { name: 'Home', url: '/' },
   { name: 'My Tools', url: '/tools' },
-  { name: 'Image Resizer', url: '/tools/image-resizer' },
+  { name: 'Image Editor', url: '/tools/image-resizer' },
 ];
 
 const jsonLdSchema = [
   generateBreadcrumbSchema(breadcrumbs),
   generateWebApplicationSchema({
-    name: 'Image Resizer, Cropper & Compressor',
+    name: 'Image Editor',
     description: 'Resize, crop, and compress images online. Free, fast, and works entirely in your browser. No uploads to servers.',
     slug: 'image-resizer',
     category: 'MultimediaApplication',
@@ -25,7 +25,7 @@ const jsonLdSchema = [
 ---
 
 <BaseLayout
-  title="Image Resizer, Cropper & Compressor"
+  title="Image Editor"
   description="Free online image resizer, cropper, and compressor. Resize images to exact dimensions, crop with aspect ratio presets, compress to reduce file size. Works in browser, no uploads."
   jsonLd={jsonLdSchema}
 >
@@ -34,7 +34,7 @@ const jsonLdSchema = [
 
     <!-- Page Heading -->
     <header class="page-header">
-      <h1>Image Resizer</h1>
+      <h1>Image Editor</h1>
       <p class="page-subtitle">Resize, crop, and compress images in your browser</p>
     </header>
 

@@ -9,13 +9,13 @@ import '@styles/tools.css';
 const breadcrumbs = [
   { name: 'Home', url: '/' },
   { name: 'My Tools', url: '/tools' },
-  { name: 'Companies Research', url: '/tools/deep-search' },
+  { name: 'Research Companies', url: '/tools/deep-search' },
 ];
 
 const jsonLdSchema = [
   generateBreadcrumbSchema(breadcrumbs),
   generateWebApplicationSchema({
-    name: 'Companies Research',
+    name: 'Research Companies',
     description: 'AI-powered research tool. Upload a list of companies and get detailed research using Perplexity AI.',
     slug: 'deep-search',
     category: 'BusinessApplication',
@@ -25,7 +25,7 @@ const jsonLdSchema = [
 ---
 
 <BaseLayout
-  title="Companies Research - AI-Powered Company Research"
+  title="Research Companies - AI-Powered Company Research"
   description="Research companies at scale using AI. Upload a CSV of company names, define custom research fields, and get detailed insights powered by Perplexity AI."
   jsonLd={jsonLdSchema}
 >
@@ -33,7 +33,7 @@ const jsonLdSchema = [
   <div class="auth-modal" id="auth-modal">
     <div class="auth-modal-content">
       <h2>Choose your mode</h2>
-      <p class="auth-subtitle">Select how you want to use Companies Research</p>
+      <p class="auth-subtitle">Select how you want to use Research Companies</p>
 
       <div class="auth-options" id="auth-options">
         <button class="auth-option" id="auth-guest">
@@ -89,7 +89,7 @@ const jsonLdSchema = [
 
     <!-- Page Heading -->
     <header class="page-header">
-      <h1>Companies Research</h1>
+      <h1>Research Companies</h1>
       <p class="page-subtitle">AI-powered company research using Perplexity</p>
     </header>
 
