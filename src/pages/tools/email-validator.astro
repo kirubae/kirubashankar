@@ -436,10 +436,11 @@ const jsonLdSchema = [
   // Start validation job on DO backend
   async function startValidationJob() {
     showStep('validating');
-    updateProgress(5, 'Starting validation...');
+    updateProgress(30, 'Validating emails...');
 
     try {
       // Create job via CF Pages proxy (proxies to DO backend with Python dnspython)
+      // The endpoint now processes synchronously and returns results directly
       const jobRes = await fetch('/api/email/jobs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -451,14 +452,25 @@ const jsonLdSchema = [
 
       if (!jobRes.ok) {
         const err = await jobRes.json().catch(() => ({}));
-        throw new Error(err.detail || err.error || 'Failed to start validation');
+        throw new Error(err.detail || err.error || 'Failed to validate emails');
       }
 
-      const { jobId: newJobId } = await jobRes.json();
-      jobId = newJobId;
+      const result = await jobRes.json();
 
-      // Poll for status
-      pollJobStatus();
+      // Handle synchronous response (new flow)
+      if (result.status === 'completed') {
+        jobId = result.jobId;
+        jobStats = result.stats;
+        resultKey = result.result_key;
+        updateProgress(100, 'Validation complete');
+        showResults();
+      } else if (result.jobId && !result.status) {
+        // Legacy async flow (fallback)
+        jobId = result.jobId;
+        pollJobStatus();
+      } else {
+        throw new Error('Unexpected response from server');
+      }
 
     } catch (error) {
       console.error('Error starting job:', error);
@@ -467,7 +479,7 @@ const jsonLdSchema = [
     }
   }
 
-  // Poll job status via CF Pages proxy
+  // Poll job status (fallback for legacy async flow)
   async function pollJobStatus() {
     try {
       const res = await fetch(`/api/email/jobs/${jobId}`);

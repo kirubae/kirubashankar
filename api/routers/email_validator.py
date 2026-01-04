@@ -271,31 +271,112 @@ from fastapi import UploadFile, File, Form
 # In-memory storage for results (cleared after download)
 _job_results: Dict[str, bytes] = {}
 
-@router.post("/validate-file", response_model=JobResponse)
+@router.post("/validate-file")
 async def create_validation_job_with_file(
     file: UploadFile = File(...),
-    email_column: str = Form(...),
-    background_tasks: BackgroundTasks = None
+    email_column: str = Form(...)
 ):
-    """Start a background email validation job with file upload"""
+    """Validate emails in uploaded file (synchronous for reliability)"""
     # Read file content
     content = await file.read()
     filename = file.filename or "file.csv"
 
-    # Create job
+    # Create job ID for tracking
     job_id = str(uuid.uuid4())
-    job_manager.create_job(job_id, job_type="email_validation")
 
-    # Run validation in background
-    background_tasks.add_task(
-        run_validation_job_with_data,
-        job_id,
-        content,
-        filename,
-        email_column
-    )
+    try:
+        # Read file
+        data = BytesIO(content)
+        if filename.endswith('.xlsx') or filename.endswith('.xls'):
+            df = pd.read_excel(data)
+        else:
+            df = pd.read_csv(data)
 
-    return JobResponse(jobId=job_id)
+        if email_column not in df.columns:
+            raise HTTPException(status_code=400, detail=f"Column '{email_column}' not found in file")
+
+        total_rows = len(df)
+        logger.info(f"Processing {total_rows} emails for job {job_id}")
+
+        # Extract emails and validate format
+        email_regex = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
+        df['_format_valid'] = df[email_column].astype(str).str.match(email_regex, na=False)
+
+        # Get unique domains from valid emails
+        valid_emails = df[df['_format_valid']][email_column].astype(str)
+        domains = list(set(
+            email.split('@')[1].lower()
+            for email in valid_emails
+            if '@' in email
+        ))
+
+        logger.info(f"Validating {len(domains)} unique domains...")
+
+        # Validate MX records in batches
+        mx_results: Dict[str, bool] = {}
+        batch_size = 100
+
+        for i in range(0, len(domains), batch_size):
+            batch = domains[i:i + batch_size]
+            tasks = [check_mx_record_async(domain) for domain in batch]
+            batch_results = await asyncio.gather(*tasks)
+
+            for domain, has_mx in batch_results:
+                mx_results[domain] = has_mx
+
+        # Apply MX results to dataframe
+        def get_mx_status(row):
+            if not row['_format_valid']:
+                return False
+            email = str(row[email_column])
+            if '@' not in email:
+                return False
+            domain = email.split('@')[1].lower()
+            return mx_results.get(domain, True)
+
+        df['_mx_valid'] = df.apply(get_mx_status, axis=1)
+        df['_status'] = df.apply(
+            lambda r: 'Valid' if r['_format_valid'] and r['_mx_valid']
+            else ('Invalid Format' if not r['_format_valid'] else 'No MX Record'),
+            axis=1
+        )
+
+        # Rename columns for output
+        df = df.rename(columns={
+            '_format_valid': 'Format Valid',
+            '_mx_valid': 'MX Valid',
+            '_status': 'Status'
+        })
+
+        # Calculate stats
+        stats = {
+            'total': total_rows,
+            'valid': int((df['Status'] == 'Valid').sum()),
+            'invalid_format': int((df['Status'] == 'Invalid Format').sum()),
+            'no_mx': int((df['Status'] == 'No MX Record').sum()),
+            'domains_checked': len(domains)
+        }
+
+        # Store result in memory for download
+        csv_buffer = BytesIO()
+        df.to_csv(csv_buffer, index=False)
+        csv_buffer.seek(0)
+        _job_results[job_id] = csv_buffer.getvalue()
+
+        logger.info(f"Email validation job {job_id} completed: {stats}")
+
+        return {
+            "jobId": job_id,
+            "status": "completed",
+            "stats": stats,
+            "result_key": job_id
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Email validation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/download/{job_id}")
