@@ -68,12 +68,26 @@ export const GET: APIRoute = async ({ params, url, locals, request }) => {
 
     // Get file from R2
     const r2Object = await FILE_SHARE_BUCKET.get(file.r2_key);
+    const ipAddress = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || 'unknown';
+    const userAgent = request.headers.get('user-agent') || 'unknown';
 
     if (!r2Object) {
+      // Log missing file to audit log
+      await FILE_SHARE_DB.prepare(`
+        INSERT INTO file_audit_log (file_id, operation, r2_key, status, error_message, ip_address, user_agent)
+        VALUES (?, 'download', ?, 'missing', 'File not found in R2 storage (collection download)', ?, ?)
+      `).bind(fileId, file.r2_key, ipAddress, userAgent).run();
+
       return new Response('File not found in storage', { status: 404 });
     }
 
-    // Log download
+    // Log successful download to file audit log
+    await FILE_SHARE_DB.prepare(`
+      INSERT INTO file_audit_log (file_id, operation, r2_key, file_size, status, ip_address, user_agent)
+      VALUES (?, 'download', ?, ?, 'success', ?, ?)
+    `).bind(fileId, file.r2_key, r2Object.size, ipAddress, userAgent).run();
+
+    // Log download to collection access logs
     const cfHeaders = request.headers;
     const location = [
       cfHeaders.get('cf-ipcity'),

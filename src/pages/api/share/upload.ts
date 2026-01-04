@@ -95,6 +95,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
       }
     }
 
+    // Get request metadata for audit log
+    const ipAddress = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || 'unknown';
+    const userAgent = request.headers.get('user-agent') || 'unknown';
+
     // Upload to R2
     const arrayBuffer = await file.arrayBuffer();
     await FILE_SHARE_BUCKET.put(r2Key, arrayBuffer, {
@@ -103,6 +107,44 @@ export const POST: APIRoute = async ({ request, locals }) => {
         contentDisposition: `attachment; filename="${file.name}"`
       }
     });
+
+    // Verify file exists in R2 after upload
+    const verification = await FILE_SHARE_BUCKET.head(r2Key);
+    if (!verification) {
+      // Log failed verification
+      await FILE_SHARE_DB.prepare(`
+        INSERT INTO file_audit_log (file_id, operation, r2_key, file_size, status, error_message, ip_address, user_agent)
+        VALUES (?, 'upload', ?, ?, 'failed', 'R2 verification failed - file not found after upload', ?, ?)
+      `).bind(fileId, r2Key, file.size, ipAddress, userAgent).run();
+
+      return new Response(JSON.stringify({ error: 'Upload verification failed. Please try again.' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Verify size matches
+    if (verification.size !== file.size) {
+      // Log size mismatch
+      await FILE_SHARE_DB.prepare(`
+        INSERT INTO file_audit_log (file_id, operation, r2_key, file_size, status, error_message, ip_address, user_agent)
+        VALUES (?, 'upload', ?, ?, 'failed', ?, ?, ?)
+      `).bind(fileId, r2Key, file.size, `Size mismatch: expected ${file.size}, got ${verification.size}`, ipAddress, userAgent).run();
+
+      // Delete the corrupted file
+      await FILE_SHARE_BUCKET.delete(r2Key);
+
+      return new Response(JSON.stringify({ error: 'Upload verification failed - size mismatch. Please try again.' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Log successful upload
+    await FILE_SHARE_DB.prepare(`
+      INSERT INTO file_audit_log (file_id, operation, r2_key, file_size, status, ip_address, user_agent)
+      VALUES (?, 'upload', ?, ?, 'success', ?, ?)
+    `).bind(fileId, r2Key, file.size, ipAddress, userAgent).run();
 
     // Create database record
     const stmt = FILE_SHARE_DB.prepare(`

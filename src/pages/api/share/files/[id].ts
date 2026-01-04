@@ -104,15 +104,19 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
 };
 
 // DELETE: Soft delete file and remove from R2
-export const DELETE: APIRoute = async ({ params, locals }) => {
+export const DELETE: APIRoute = async ({ params, locals, request }) => {
   try {
     const { FILE_SHARE_DB, FILE_SHARE_BUCKET } = locals.runtime.env;
     const { id } = params;
 
+    // Get request metadata for audit log
+    const ipAddress = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || 'unknown';
+    const userAgent = request.headers.get('user-agent') || 'unknown';
+
     // Get file to find R2 key and collection_id
     const file = await FILE_SHARE_DB.prepare(`
-      SELECT r2_key, collection_id FROM files WHERE id = ? AND is_deleted = 0
-    `).bind(id).first<{ r2_key: string; collection_id: string | null }>();
+      SELECT r2_key, collection_id, file_size FROM files WHERE id = ? AND is_deleted = 0
+    `).bind(id).first<{ r2_key: string; collection_id: string | null; file_size: number }>();
 
     if (!file) {
       return new Response(JSON.stringify({ error: 'File not found' }), {
@@ -123,6 +127,12 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
 
     // Delete from R2
     await FILE_SHARE_BUCKET.delete(file.r2_key);
+
+    // Log the delete operation
+    await FILE_SHARE_DB.prepare(`
+      INSERT INTO file_audit_log (file_id, operation, r2_key, file_size, status, ip_address, user_agent)
+      VALUES (?, 'delete', ?, ?, 'success', ?, ?)
+    `).bind(id, file.r2_key, file.file_size, ipAddress, userAgent).run();
 
     // Soft delete in DB
     await FILE_SHARE_DB.prepare(`

@@ -3,10 +3,14 @@ import { sha256, TOKEN_VALIDITY_MS } from '@utils/share';
 
 export const prerender = false;
 
-export const GET: APIRoute = async ({ params, url, locals }) => {
+export const GET: APIRoute = async ({ params, url, locals, request }) => {
   try {
     const { FILE_SHARE_BUCKET, FILE_SHARE_DB } = locals.runtime.env;
     const { id } = params;
+
+    // Get request metadata for audit log
+    const ipAddress = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || 'unknown';
+    const userAgent = request.headers.get('user-agent') || 'unknown';
 
     const token = url.searchParams.get('token');
     const timestamp = url.searchParams.get('t');
@@ -43,8 +47,20 @@ export const GET: APIRoute = async ({ params, url, locals }) => {
     const r2Object = await FILE_SHARE_BUCKET.get(file.r2_key);
 
     if (!r2Object) {
+      // Log missing file
+      await FILE_SHARE_DB.prepare(`
+        INSERT INTO file_audit_log (file_id, operation, r2_key, status, error_message, ip_address, user_agent)
+        VALUES (?, 'download', ?, 'missing', 'File not found in R2 storage', ?, ?)
+      `).bind(id, file.r2_key, ipAddress, userAgent).run();
+
       return new Response('File not found in storage', { status: 404 });
     }
+
+    // Log successful download
+    await FILE_SHARE_DB.prepare(`
+      INSERT INTO file_audit_log (file_id, operation, r2_key, file_size, status, ip_address, user_agent)
+      VALUES (?, 'download', ?, ?, 'success', ?, ?)
+    `).bind(id, file.r2_key, r2Object.size, ipAddress, userAgent).run();
 
     // Check if viewing inline or downloading
     const mode = url.searchParams.get('mode');
