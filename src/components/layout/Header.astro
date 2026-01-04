@@ -12,8 +12,7 @@ const currentPath = Astro.url.pathname;
 <header class="border-b border-border">
   <div class="max-w-3xl mx-auto px-5 py-4">
     <nav class="flex items-center justify-between" aria-label="Main navigation">
-      <a href="/" class="flex items-center gap-2 text-lg font-semibold text-ink hover:text-terracotta transition-colors">
-        <img src="/images/favicon.svg" alt="" class="h-5 w-auto" />
+      <a href="/" class="text-lg font-semibold text-ink hover:text-terracotta transition-colors">
         {SITE.name.split(' ')[0]}
       </a>
       {showNav && (
