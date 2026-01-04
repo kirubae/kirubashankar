@@ -1923,8 +1923,10 @@ const breadcrumbs = [
         return `
           <tr>
             <td>
-              <strong>${c.title}</strong>
-              ${c.subtitle ? `<br><span style="font-size: 12px; color: var(--color-ink-light);">${c.subtitle}</span>` : ''}
+              <a href="javascript:void(0)" onclick="viewCollection('${c.id}')" style="text-decoration: none; color: inherit;">
+                <strong style="color: var(--color-terracotta);">${c.title}</strong>
+                ${c.subtitle ? `<br><span style="font-size: 12px; color: var(--color-ink-light);">${c.subtitle}</span>` : ''}
+              </a>
             </td>
             <td>${c.item_count}</td>
             <td>${formatDate(c.created_at)}</td>
