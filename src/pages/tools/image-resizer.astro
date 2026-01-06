@@ -181,6 +181,37 @@ const jsonLdSchema = [
             </div>
 
             <div class="control-group">
+              <label>Social Media Sizes</label>
+              <div class="social-platform-group">
+                <span class="platform-label">LinkedIn</span>
+                <div class="social-presets">
+                  <button class="social-preset-btn" data-width="1200" data-height="1200">Post</button>
+                  <button class="social-preset-btn" data-width="1200" data-height="628">Article</button>
+                  <button class="social-preset-btn" data-width="1584" data-height="396">Cover</button>
+                  <button class="social-preset-btn" data-width="1080" data-height="1920">Story</button>
+                </div>
+              </div>
+              <div class="social-platform-group">
+                <span class="platform-label">Facebook</span>
+                <div class="social-presets">
+                  <button class="social-preset-btn" data-width="1200" data-height="630">Post</button>
+                  <button class="social-preset-btn" data-width="1080" data-height="1080">Square</button>
+                  <button class="social-preset-btn" data-width="820" data-height="312">Cover</button>
+                  <button class="social-preset-btn" data-width="1080" data-height="1920">Story</button>
+                </div>
+              </div>
+              <div class="social-platform-group">
+                <span class="platform-label">Instagram</span>
+                <div class="social-presets">
+                  <button class="social-preset-btn" data-width="1080" data-height="1080">Square</button>
+                  <button class="social-preset-btn" data-width="1080" data-height="1350">Portrait</button>
+                  <button class="social-preset-btn" data-width="1080" data-height="566">Landscape</button>
+                  <button class="social-preset-btn" data-width="1080" data-height="1920">Story/Reel</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="control-group">
               <label>Crop Area (px)</label>
               <div class="input-row">
                 <div class="input-group">
@@ -814,6 +845,54 @@ const jsonLdSchema = [
     color: white;
   }
 
+  /* Social Media Presets */
+  .social-platform-group {
+    margin-bottom: 12px;
+  }
+
+  .social-platform-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .platform-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-ink-light);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 6px;
+  }
+
+  .social-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .social-preset-btn {
+    padding: 6px 10px;
+    border: 1px solid var(--color-border);
+    background: var(--color-paper);
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    color: var(--color-ink);
+  }
+
+  .social-preset-btn:hover {
+    border-color: var(--color-terracotta);
+    color: var(--color-terracotta);
+  }
+
+  .social-preset-btn.active {
+    background: var(--color-terracotta);
+    border-color: var(--color-terracotta);
+    color: white;
+  }
+
   /* Slider */
   .slider-container {
     margin-top: 8px;
@@ -1172,6 +1251,7 @@ const jsonLdSchema = [
   document.querySelectorAll('#crop-tab .preset-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#crop-tab .preset-btn').forEach((b) => b.classList.remove('active'));
+      document.querySelectorAll('.social-preset-btn').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
       const ratio = btn.dataset.ratio;
       state.cropRatio = ratio;
@@ -1187,6 +1267,32 @@ const jsonLdSchema = [
           cropAspectRatio = w / h;
         }
       }
+      initializeCrop();
+      updateOutputInfo();
+    });
+  });
+
+  // Social Media Presets
+  document.querySelectorAll('.social-preset-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      // Deselect all aspect ratio presets and other social presets
+      document.querySelectorAll('#crop-tab .preset-btn').forEach((b) => b.classList.remove('active'));
+      document.querySelectorAll('.social-preset-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      elements.customRatioInputs.style.display = 'none';
+
+      // Get dimensions and calculate aspect ratio
+      const width = parseInt(btn.dataset.width);
+      const height = parseInt(btn.dataset.height);
+      cropAspectRatio = width / height;
+      state.cropRatio = `${width}:${height}`;
+
+      // Enable resize output and set dimensions
+      elements.cropResizeEnabled.checked = true;
+      elements.cropResizeOptions.style.display = 'block';
+      elements.cropOutputWidth.value = width;
+      elements.cropOutputHeight.value = height;
+
       initializeCrop();
       updateOutputInfo();
     });
