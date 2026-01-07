@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Eleos B2B - Settings</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding: 40px;
+      max-width: 700px;
+      margin: 0 auto;
+      background-color: #f5f5f5;
+    }
+
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .header h1 {
+      background: linear-gradient(135deg, #FF5C35 0%, #FF9776 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-size: 28px;
+      margin: 0;
+    }
+
+    .subtitle {
+      color: #5f6368;
+      font-size: 14px;
+      margin-bottom: 30px;
+    }
+
+    .section {
+      margin-bottom: 30px;
+      padding-bottom: 30px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #202124;
+      margin-bottom: 16px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 500;
+      color: #202124;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #FF5C35;
+      box-shadow: 0 0 0 2px rgba(255, 92, 53, 0.1);
+    }
+
+    .help-text {
+      font-size: 12px;
+      color: #5f6368;
+      margin-top: 6px;
+    }
+
+    button {
+      background-color: #FF5C35;
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: #e65530;
+    }
+
+    button:active {
+      background-color: #cc4c2a;
+    }
+
+    .status {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .status.success {
+      background-color: #e6f4ea;
+      color: #137333;
+      border: 1px solid #c3e6cb;
+      display: block;
+    }
+
+    .status.error {
+      background-color: #fce8e6;
+      color: #c5221f;
+      border: 1px solid #f5c6cb;
+      display: block;
+    }
+
+    .example {
+      background-color: #f8f9fa;
+      padding: 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #5f6368;
+      margin-top: 20px;
+      border-left: 3px solid #FF5C35;
+    }
+
+    .example-title {
+      font-weight: 500;
+      color: #202124;
+      margin-bottom: 4px;
+    }
+
+    .meeting-links-container {
+      margin-bottom: 20px;
+    }
+
+    .meeting-link-item {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+      align-items: flex-start;
+    }
+
+    .meeting-link-item input {
+      flex: 1;
+    }
+
+    .meeting-link-item .link-name {
+      width: 150px;
+      flex: none;
+    }
+
+    .meeting-link-item .link-url {
+      flex: 2;
+    }
+
+    .btn-secondary {
+      background-color: #fff;
+      color: #5f6368;
+      border: 1px solid #dadce0;
+    }
+
+    .btn-secondary:hover {
+      background-color: #f8f9fa;
+      border-color: #c6c6c6;
+    }
+
+    .btn-remove {
+      background-color: #fff;
+      color: #d93025;
+      border: 1px solid #dadce0;
+      padding: 10px 16px;
+      min-width: auto;
+    }
+
+    .btn-remove:hover {
+      background-color: #fce8e6;
+      border-color: #d93025;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Eleos B2B</h1>
+    </div>
+    <p class="subtitle">Configure your Eleos B2B extension settings</p>
+
+    <div class="section">
+      <div class="section-title">Authentication</div>
+
+      <div id="authStatus" style="background: #e6f4ea; padding: 16px; border-radius: 8px; margin-bottom: 16px; display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <span id="authStatusText" style="font-weight: 500; color: #137333;"></span>
+          </div>
+          <button type="button" id="logoutBtn" class="btn-secondary">Logout</button>
+        </div>
+      </div>
+
+      <div id="loginSection">
+        <p class="help-text" style="margin-bottom: 16px;">Choose one of the following options to activate contact enrichment:</p>
+
+        <!-- Option 1: Master Password -->
+        <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+          <div style="font-weight: 500; margin-bottom: 8px;">Option 1: Master Password</div>
+          <p class="help-text" style="margin-bottom: 12px;">Use the shared team password for quick access.</p>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="password" id="masterPasswordInput" placeholder="Enter master password"
+              style="padding: 10px 12px; border: 1px solid #dadce0; border-radius: 4px; font-size: 14px; flex: 1;">
+            <button type="button" id="loginBtn">Activate</button>
+          </div>
+          <div id="loginError" class="status error" style="display: none; margin-top: 12px;">Incorrect password</div>
+        </div>
+
+        <!-- Option 2: Custom API Keys -->
+        <div style="background: #f8f9fa; padding: 16px; border-radius: 8px;">
+          <div style="font-weight: 500; margin-bottom: 8px;">Option 2: Your Own API Keys</div>
+          <p class="help-text" style="margin-bottom: 12px;">Enter your personal Apollo and SalesQL API keys.</p>
+          <div style="margin-bottom: 12px;">
+            <label style="display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px;">Apollo API Key</label>
+            <input type="password" id="apolloKeyInput" placeholder="Enter Apollo API key"
+              style="width: 100%; padding: 10px 12px; border: 1px solid #dadce0; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label style="display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px;">SalesQL API Key</label>
+            <input type="password" id="salesqlKeyInput" placeholder="Enter SalesQL API key"
+              style="width: 100%; padding: 10px 12px; border: 1px solid #dadce0; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
+          </div>
+          <button type="button" id="saveKeysBtn">Save API Keys</button>
+          <div id="keysError" class="status error" style="display: none; margin-top: 12px;">Please enter both API keys</div>
+          <div id="keysSuccess" class="status success" style="display: none; margin-top: 12px;">API keys saved successfully!</div>
+        </div>
+      </div>
+    </div>
+
+    <form id="settingsForm">
+      <div class="section">
+        <div class="section-title">Gmail Meeting Links</div>
+        <p class="help-text" style="margin-bottom: 16px;">
+          Add your Calendly or other meeting links. These will appear as a button in Gmail's compose window for quick insertion.
+        </p>
+
+        <div class="form-group">
+          <label>Your Meeting Links</label>
+          <div id="meetingLinksContainer" class="meeting-links-container">
+            <!-- Meeting links will be added here dynamically -->
+          </div>
+          <button type="button" id="addLinkBtn" class="btn-secondary">+ Add Meeting Link</button>
+        </div>
+
+        <div class="example">
+          <div class="example-title">How to find your Calendly link:</div>
+          1. Log in to Calendly<br>
+          2. Go to your event type<br>
+          3. Copy the link (e.g., https://calendly.com/your-name/30min)
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button type="submit">Save Settings</button>
+      </div>
+
+      <div id="status" class="status"></div>
+    </form>
+
+    <div class="section" style="margin-top: 30px; border-top: 1px solid #e0e0e0; padding-top: 30px;">
+      <div class="section-title">Enrichment Cache</div>
+      <p class="help-text" style="margin-bottom: 16px;">
+        Contact data is cached locally for 30 days to reduce API costs. Each LinkedIn profile is only queried once per month.
+      </p>
+
+      <div class="cache-stats" style="background: #f8f9fa; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+          <span style="color: #5f6368;">Cached Profiles:</span>
+          <span id="cacheCount" style="font-weight: 500;">Loading...</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #5f6368;">Storage Used:</span>
+          <span id="cacheSize" style="font-weight: 500;">Loading...</span>
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button type="button" id="clearCacheBtn" class="btn-secondary">Clear Cache</button>
+        <button type="button" id="exportCacheBtn" class="btn-secondary">Export to CSV</button>
+      </div>
+
+      <div id="cacheStatus" class="status"></div>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

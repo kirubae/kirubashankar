@@ -9,9 +9,9 @@ export const TOOLS: Tool[] = [
     url: '/tools/share',
   },
   {
-    slug: 'image-resizer',
-    name: 'Image Editor',
-    description: "It's the Canva for people who just need their images to fit. Resize, crop, and compress in your browser instantly. No account, no bloat, just the right size.",
+    slug: 'image-canvas',
+    name: 'Image Canvas',
+    description: "Create social media posts with text and images, or resize, crop, and compress images. It's the Canva for people who just need to get things done.",
     category: 'media',
   },
   {
@@ -31,6 +31,12 @@ export const TOOLS: Tool[] = [
     name: 'Research Companies',
     description: 'Turns the messy web into a structured database. Get any intel you need about a company in a structured format.',
     category: 'research',
+  },
+  {
+    slug: 'contact-enrichment-plugin',
+    name: 'Contact Enrichment for LinkedIn',
+    description: 'Chrome extension that enriches LinkedIn profiles with contact information for B2B sales.',
+    category: 'utility',
   },
 ];
 

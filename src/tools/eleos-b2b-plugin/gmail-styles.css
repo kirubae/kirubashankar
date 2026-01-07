@@ -1,0 +1,90 @@
+/* Eleos B2B - Gmail Calendly Button Styles */
+
+.meeka-calendly-btn {
+  cursor: pointer;
+}
+
+.meeka-calendly-btn svg {
+  fill: #5f6368;
+}
+
+.meeka-calendly-btn:hover svg {
+  fill: #202124;
+}
+
+/* Meeting link menu styling */
+.meeka-calendly-menu {
+  position: fixed;
+  background: white;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  min-width: 180px;
+  overflow: hidden;
+  animation: meekaMenuFadeIn 0.15s ease-out;
+}
+
+@keyframes meekaMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.meeka-calendly-menu-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  font-family: 'Google Sans', Roboto, Arial, sans-serif;
+  font-size: 14px;
+  color: #202124;
+  transition: background-color 0.1s ease;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.meeka-calendly-menu-item:last-child {
+  border-bottom: none;
+}
+
+.meeka-calendly-menu-item:hover {
+  background-color: #f1f3f4;
+}
+
+.meeka-calendly-menu-item:active {
+  background-color: #e8eaed;
+}
+
+/* Notification styling */
+.meeka-gmail-notification {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  padding: 12px 20px;
+  background-color: #323232;
+  color: white;
+  border-radius: 4px;
+  font-family: 'Google Sans', Roboto, Arial, sans-serif;
+  font-size: 14px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s ease;
+}
+
+.meeka-gmail-notification.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.meeka-gmail-notification-success {
+  background-color: #2e7d32;
+}
+
+.meeka-gmail-notification-error {
+  background-color: #c62828;
+}

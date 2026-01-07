@@ -1,0 +1,169 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import { generateBreadcrumbSchema } from '@components/seo/schemas/BreadcrumbSchema';
+import Breadcrumb from '@components/ui/Breadcrumb.astro';
+import '@styles/tools.css';
+
+const breadcrumbs = [
+  { name: 'Home', url: '/' },
+  { name: 'My Tools', url: '/tools' },
+  { name: 'Contact Enrichment for LinkedIn', url: '/tools/contact-enrichment-plugin' },
+];
+
+const jsonLdSchema = [
+  generateBreadcrumbSchema(breadcrumbs),
+];
+---
+
+<BaseLayout
+  title="Contact Enrichment for LinkedIn"
+  description="Chrome extension that enriches LinkedIn profiles with verified contact information. Aggregates data from Apollo and SalesQL for B2B sales teams."
+  jsonLd={jsonLdSchema}
+>
+  <div class="tool-container">
+    <Breadcrumb items={breadcrumbs} />
+
+    <header class="page-header">
+      <h1>Contact Enrichment for LinkedIn</h1>
+      <p class="page-subtitle">Chrome extension for B2B sales teams</p>
+    </header>
+
+    <section class="download-section">
+      <a href="/downloads/contact-enrichment-linkedin.zip" class="btn btn-primary download-btn" download>
+        Download Extension
+      </a>
+    </section>
+
+    <section class="features">
+      <h2>Features</h2>
+      <ul class="feature-list">
+        <li>Automatically displays contact info when visiting LinkedIn profiles</li>
+        <li>Aggregates emails and phone numbers from Apollo and SalesQL</li>
+        <li>See which data sources found each email or phone number</li>
+      </ul>
+    </section>
+
+    <section class="install">
+      <h2>Installation</h2>
+      <ol class="install-steps">
+        <li>Download the extension using the button above</li>
+        <li>Unzip the downloaded file</li>
+        <li>Open Chrome and go to <code>chrome://extensions</code></li>
+        <li>Enable "Developer mode" in the top right</li>
+        <li>Click "Load unpacked" and select the unzipped folder</li>
+        <li>The extension icon will appear in your toolbar</li>
+      </ol>
+    </section>
+
+    <section class="auth">
+      <h2>Authentication</h2>
+      <p>The extension requires authentication to access the enrichment API. You have two options:</p>
+      <div class="auth-options">
+        <div class="auth-option">
+          <h3>Master Password</h3>
+          <p>Enter the shared password in the extension settings to use the default API keys.</p>
+        </div>
+        <div class="auth-option">
+          <h3>Custom API Keys</h3>
+          <p>Provide your own Apollo and SalesQL API keys for independent usage.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="usage">
+      <h2>Usage</h2>
+      <ol class="usage-steps">
+        <li>Navigate to any LinkedIn profile page</li>
+        <li>The extension automatically detects the profile and fetches contact info</li>
+        <li>A card appears with available emails and phone numbers</li>
+        <li>Click any contact to copy it to your clipboard</li>
+      </ol>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .download-section {
+    margin-top: 24px;
+    text-align: center;
+  }
+
+  .download-btn {
+    display: inline-block;
+    padding: 12px 32px;
+    font-size: 16px;
+    text-decoration: none;
+  }
+
+  .features, .install, .auth, .usage {
+    margin-top: 32px;
+  }
+
+  h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--color-ink);
+  }
+
+  .feature-list {
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .feature-list li {
+    color: var(--color-ink);
+    line-height: 1.6;
+  }
+
+  .install-steps, .usage-steps {
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .install-steps li, .usage-steps li {
+    color: var(--color-ink);
+    line-height: 1.6;
+  }
+
+  code {
+    background: var(--color-cream);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+
+  .auth p {
+    color: var(--color-ink-light);
+    margin-bottom: 16px;
+  }
+
+  .auth-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+
+  .auth-option {
+    background: var(--color-cream);
+    padding: 16px;
+    border-radius: 8px;
+  }
+
+  .auth-option h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--color-ink);
+  }
+
+  .auth-option p {
+    font-size: 13px;
+    color: var(--color-ink-light);
+    margin: 0;
+  }
+</style>

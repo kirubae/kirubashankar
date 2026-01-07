@@ -1,0 +1,10 @@
+name = "eleos-b2b-enrichment"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+[vars]
+ENVIRONMENT = "production"
+
+# Secrets (set via: wrangler secret put APOLLO_API_KEY)
+# APOLLO_API_KEY - Apollo.io API key
+# SALESQL_API_KEY - SalesQL API key
