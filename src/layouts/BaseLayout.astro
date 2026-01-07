@@ -12,6 +12,9 @@ interface Props extends SEOProps {
 }
 
 const { title, description, canonical, image, type, noindex, jsonLd, showNav } = Astro.props;
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || '';
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
 ---
 
 <!doctype html>
@@ -48,5 +51,45 @@ const { title, description, canonical, image, type, noindex, jsonLd, showNav } =
       <slot />
     </main>
     <Footer />
+
+    <!-- Handle Supabase auth -->
+    <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script is:inline define:vars={{ supabaseUrl, supabaseKey }}>
+      (function() {
+        if (!supabaseUrl || !supabaseKey) return;
+
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // Handle hash tokens from OAuth callback
+        if (window.location.hash && window.location.hash.includes('access_token')) {
+          supabase.auth.getSession().then(function(result) {
+            if (result.data.session) {
+              window.history.replaceState(null, '', window.location.pathname);
+              window.location.reload();
+            }
+          });
+          return;
+        }
+
+        // Update auth UI based on session
+        supabase.auth.getSession().then(function(result) {
+          var authContainer = document.getElementById('auth-container');
+          if (!authContainer) return;
+
+          var session = result.data.session;
+          if (session && session.user) {
+            var user = session.user;
+            var avatarUrl = user.user_metadata?.avatar_url || '';
+            var html = '<div class="flex items-center gap-3">';
+            if (avatarUrl) {
+              html += '<img src="' + avatarUrl + '" alt="" class="w-7 h-7 rounded-full" />';
+            }
+            html += '<a href="/api/auth/logout" class="text-ink-light hover:text-terracotta transition-colors">Logout</a>';
+            html += '</div>';
+            authContainer.innerHTML = html;
+          }
+        });
+      })();
+    </script>
   </body>
 </html>

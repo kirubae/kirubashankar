@@ -4,6 +4,8 @@ import { getAllTools } from '@data/tools';
 import { generateBreadcrumbSchema } from '@components/seo/schemas/BreadcrumbSchema';
 import Icon from '@components/ui/Icon.astro';
 
+export const prerender = false;
+
 const tools = getAllTools();
 
 const breadcrumbs = [
