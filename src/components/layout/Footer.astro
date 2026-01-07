@@ -7,7 +7,12 @@ const currentYear = new Date().getFullYear();
 <footer class="border-t border-border mt-auto">
   <div class="max-w-3xl mx-auto px-5 py-6">
     <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-ink-light">
-      <p>&copy; {currentYear} Kiruba Shankar Eswaran</p>
+      <div class="flex items-center gap-4">
+        <p>&copy; {currentYear} Kiruba Shankar Eswaran</p>
+        <span class="hidden sm:inline">·</span>
+        <a href="/terms" class="hover:text-terracotta transition-colors">Terms</a>
+        <a href="/privacy" class="hover:text-terracotta transition-colors">Privacy</a>
+      </div>
       <ul class="flex items-center gap-4">
         {SOCIAL_LINKS.map((link) => (
           <li>

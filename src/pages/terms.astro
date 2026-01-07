@@ -1,0 +1,130 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import { SITE } from '@data/site';
+---
+
+<BaseLayout title="Terms of Service">
+  <article class="max-w-2xl mx-auto px-5 py-16">
+    <h1 class="text-3xl font-semibold mb-2">Terms of Service</h1>
+    <p class="text-ink-light mb-8">Last updated: January 2026</p>
+
+    <div class="prose">
+      <section class="mb-8">
+        <h2>The Short Version</h2>
+        <p>
+          This is a personal website with free tools. Use them responsibly.
+          Don't do anything illegal or harmful. That's pretty much it.
+        </p>
+      </section>
+
+      <section class="mb-8">
+        <h2>What This Site Does</h2>
+        <p>
+          {SITE.name.split(' ')[0]}'s website offers various free tools for
+          productivity and data processing. Some tools require you to sign in
+          with Google to access them.
+        </p>
+      </section>
+
+      <section class="mb-8">
+        <h2>Your Account</h2>
+        <p>
+          When you sign in with Google, we create an account for you. Keep your
+          Google account secure — that's your responsibility. If you notice any
+          weird activity, let me know.
+        </p>
+      </section>
+
+      <section class="mb-8">
+        <h2>Using the Tools</h2>
+        <ul>
+          <li>Use the tools for their intended purpose</li>
+          <li>Don't try to break things or hack the system</li>
+          <li>Don't use automated scripts to abuse the service</li>
+          <li>Don't do anything illegal</li>
+        </ul>
+        <p>
+          Pretty standard stuff. Just be a good person.
+        </p>
+      </section>
+
+      <section class="mb-8">
+        <h2>Your Data</h2>
+        <p>
+          Any files you upload are processed and then deleted. I don't keep copies
+          of your data longer than necessary. Check the <a href="/privacy">Privacy Policy</a>
+          for more details on how data is handled.
+        </p>
+      </section>
+
+      <section class="mb-8">
+        <h2>No Warranties</h2>
+        <p>
+          These tools are provided "as is". They work well, but I can't guarantee
+          100% uptime or that they'll work perfectly for every edge case. If
+          something breaks, I'll do my best to fix it.
+        </p>
+      </section>
+
+      <section class="mb-8">
+        <h2>Limitation of Liability</h2>
+        <p>
+          I'm not liable for any damages that might result from using these tools.
+          If you're processing important data, always keep backups.
+        </p>
+      </section>
+
+      <section class="mb-8">
+        <h2>Changes</h2>
+        <p>
+          I might update these terms occasionally. If there are major changes,
+          I'll update the date at the top. Continued use of the site means you
+          accept any changes.
+        </p>
+      </section>
+
+      <section class="mb-8">
+        <h2>Contact</h2>
+        <p>
+          Questions? Reach out via the contact info on the homepage.
+        </p>
+      </section>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .prose h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--color-ink);
+  }
+
+  .prose p {
+    color: var(--color-ink-light);
+    line-height: 1.7;
+    margin-bottom: 1rem;
+  }
+
+  .prose ul {
+    color: var(--color-ink-light);
+    line-height: 1.7;
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+    list-style-type: disc;
+  }
+
+  .prose li {
+    margin-bottom: 0.5rem;
+  }
+
+  .prose a {
+    color: var(--color-terracotta);
+    text-decoration: underline;
+  }
+
+  .prose a:hover {
+    opacity: 0.8;
+  }
+</style>

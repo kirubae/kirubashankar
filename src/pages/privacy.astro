@@ -1,0 +1,174 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import { SITE } from '@data/site';
+---
+
+<BaseLayout title="Privacy Policy">
+  <article class="max-w-2xl mx-auto px-5 py-16">
+    <h1 class="text-3xl font-semibold mb-2">Privacy Policy</h1>
+    <p class="text-ink-light mb-8">Last updated: January 2026</p>
+
+    <div class="prose">
+      <section class="mb-8">
+        <h2>The Short Version</h2>
+        <p>
+          I collect minimal data, only what's needed to make the tools work.
+          I don't sell your data or share it with third parties. Your files
+          are processed and deleted — I don't keep them.
+        </p>
+      </section>
+
+      <section class="mb-8">
+        <h2>What I Collect</h2>
+
+        <h3>When You Sign In</h3>
+        <p>
+          If you sign in with Google, I receive your name, email, and profile
+          picture from Google. This creates your account and lets you access
+          the tools.
+        </p>
+
+        <h3>When You Use Tools</h3>
+        <p>
+          I log which tools you use and when. This helps me understand which
+          tools are popular and identify issues. I don't log the actual content
+          of your files.
+        </p>
+
+        <h3>Files You Upload</h3>
+        <p>
+          Files you upload are processed temporarily and then automatically
+          deleted. I don't store your files permanently or look at their contents.
+        </p>
+      </section>
+
+      <section class="mb-8">
+        <h2>How I Use Your Data</h2>
+        <ul>
+          <li>To provide and improve the tools</li>
+          <li>To authenticate you and manage your account</li>
+          <li>To understand usage patterns and fix bugs</li>
+        </ul>
+        <p>
+          That's it. No marketing, no selling data, no creepy stuff.
+        </p>
+      </section>
+
+      <section class="mb-8">
+        <h2>Third-Party Services</h2>
+        <p>This site uses:</p>
+        <ul>
+          <li><strong>Supabase</strong> — For authentication and database (stores your account info)</li>
+          <li><strong>Google OAuth</strong> — For signing in with your Google account</li>
+          <li><strong>Cloudflare</strong> — For hosting and file storage</li>
+        </ul>
+        <p>
+          Each of these has their own privacy policies. They're all reputable
+          services with strong privacy practices.
+        </p>
+      </section>
+
+      <section class="mb-8">
+        <h2>Cookies</h2>
+        <p>
+          I use cookies only for authentication — to keep you logged in.
+          No tracking cookies, no analytics cookies. Just the essentials.
+        </p>
+      </section>
+
+      <section class="mb-8">
+        <h2>Data Retention</h2>
+        <ul>
+          <li><strong>Account data:</strong> Kept while your account is active</li>
+          <li><strong>Usage logs:</strong> Kept for up to 90 days</li>
+          <li><strong>Uploaded files:</strong> Deleted within 24 hours of processing</li>
+        </ul>
+      </section>
+
+      <section class="mb-8">
+        <h2>Your Rights</h2>
+        <p>You can:</p>
+        <ul>
+          <li>Request a copy of your data</li>
+          <li>Ask me to delete your account and data</li>
+          <li>Stop using the service anytime</li>
+        </ul>
+        <p>
+          Just reach out and I'll help you out.
+        </p>
+      </section>
+
+      <section class="mb-8">
+        <h2>Security</h2>
+        <p>
+          I take reasonable measures to protect your data. All connections are
+          encrypted (HTTPS), and I use trusted services for authentication and
+          storage. But no system is 100% secure — that's just how the internet works.
+        </p>
+      </section>
+
+      <section class="mb-8">
+        <h2>Changes</h2>
+        <p>
+          If I make significant changes to this policy, I'll update the date
+          at the top. Feel free to check back occasionally.
+        </p>
+      </section>
+
+      <section class="mb-8">
+        <h2>Contact</h2>
+        <p>
+          Questions about privacy? Reach out via the contact info on the homepage.
+        </p>
+      </section>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .prose h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--color-ink);
+  }
+
+  .prose h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    margin-top: 1rem;
+    color: var(--color-ink);
+  }
+
+  .prose p {
+    color: var(--color-ink-light);
+    line-height: 1.7;
+    margin-bottom: 1rem;
+  }
+
+  .prose ul {
+    color: var(--color-ink-light);
+    line-height: 1.7;
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+    list-style-type: disc;
+  }
+
+  .prose li {
+    margin-bottom: 0.5rem;
+  }
+
+  .prose li strong {
+    color: var(--color-ink);
+  }
+
+  .prose a {
+    color: var(--color-terracotta);
+    text-decoration: underline;
+  }
+
+  .prose a:hover {
+    opacity: 0.8;
+  }
+</style>
