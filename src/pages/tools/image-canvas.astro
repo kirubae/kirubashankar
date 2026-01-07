@@ -9,24 +9,24 @@ import '@styles/tools.css';
 const breadcrumbs = [
   { name: 'Home', url: '/' },
   { name: 'My Tools', url: '/tools' },
-  { name: 'Image Editor', url: '/tools/image-resizer' },
+  { name: 'Image Canvas', url: '/tools/image-canvas' },
 ];
 
 const jsonLdSchema = [
   generateBreadcrumbSchema(breadcrumbs),
   generateWebApplicationSchema({
-    name: 'Image Editor',
-    description: 'Resize, crop, and compress images online. Free, fast, and works entirely in your browser. No uploads to servers.',
-    slug: 'image-resizer',
+    name: 'Image Canvas',
+    description: 'Create social media posts, resize, crop, and compress images. Canva-style design tool that works entirely in your browser.',
+    slug: 'image-canvas',
     category: 'MultimediaApplication',
-    featureList: ['Image resizing', 'Image cropping', 'Image compression', 'Format conversion'],
+    featureList: ['Image design', 'Add text', 'Image resizing', 'Image cropping', 'Image compression'],
   }),
 ];
 ---
 
 <BaseLayout
-  title="Image Editor"
-  description="Free online image resizer, cropper, and compressor. Resize images to exact dimensions, crop with aspect ratio presets, compress to reduce file size. Works in browser, no uploads."
+  title="Image Canvas"
+  description="Create social media posts with text and images. Resize, crop, and compress images. Free Canva-style design tool that works in your browser."
   jsonLd={jsonLdSchema}
 >
   <div class="tool-container">
@@ -34,8 +34,16 @@ const jsonLdSchema = [
 
     <!-- Page Heading -->
     <header class="page-header">
-      <h1>Image Editor</h1>
-      <p class="page-subtitle">Resize, crop, and compress images in your browser</p>
+      <div class="header-row">
+        <div>
+          <h1>Image Canvas</h1>
+          <p class="page-subtitle">Design posts or edit images in your browser</p>
+        </div>
+        <div class="mode-switcher">
+          <button class="mode-btn active" data-mode="tools">Tools</button>
+          <button class="mode-btn" data-mode="design">Design</button>
+        </div>
+      </div>
     </header>
 
     <!-- Upload Area -->
@@ -53,54 +61,10 @@ const jsonLdSchema = [
       <input type="file" id="file-input" accept="image/*" />
     </div>
 
-    <!-- Editor -->
+    <!-- Tools Mode Editor -->
     <div class="editor" id="editor">
       <div class="editor-main">
-        <!-- Preview Section -->
-        <div class="preview-section">
-          <div class="preview-header">
-            <h2>Preview</h2>
-            <div class="zoom-controls">
-              <button id="zoom-out">−</button>
-              <span id="zoom-level">100%</span>
-              <button id="zoom-in">+</button>
-              <button id="zoom-fit">Fit</button>
-            </div>
-          </div>
-          <div class="preview-container" id="preview-container">
-            <div class="preview-wrapper" id="preview-wrapper">
-              <img id="preview-image" src="" alt="Preview" />
-              <div class="crop-overlay" id="crop-overlay">
-                <div class="crop-box" id="crop-box">
-                  <div class="crop-handle nw" data-handle="nw"></div>
-                  <div class="crop-handle n" data-handle="n"></div>
-                  <div class="crop-handle ne" data-handle="ne"></div>
-                  <div class="crop-handle w" data-handle="w"></div>
-                  <div class="crop-handle e" data-handle="e"></div>
-                  <div class="crop-handle sw" data-handle="sw"></div>
-                  <div class="crop-handle s" data-handle="s"></div>
-                  <div class="crop-handle se" data-handle="se"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="original-info">
-            <div class="info-item">
-              <label>Format</label>
-              <span id="info-format">-</span>
-            </div>
-            <div class="info-item">
-              <label>Dimensions</label>
-              <span id="info-dimensions">-</span>
-            </div>
-            <div class="info-item">
-              <label>File Size</label>
-              <span id="info-size">-</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Controls Section -->
+        <!-- Controls Section (LEFT) -->
         <div class="controls-section">
           <div class="tabs">
             <button class="tab active" data-tab="resize">Resize</button>
@@ -295,6 +259,50 @@ const jsonLdSchema = [
             </div>
           </div>
         </div>
+
+        <!-- Preview Section (RIGHT) -->
+        <div class="preview-section">
+          <div class="preview-header">
+            <h2>Preview</h2>
+            <div class="zoom-controls">
+              <button id="zoom-out">−</button>
+              <span id="zoom-level">100%</span>
+              <button id="zoom-in">+</button>
+              <button id="zoom-fit">Fit</button>
+            </div>
+          </div>
+          <div class="preview-container" id="preview-container">
+            <div class="preview-wrapper" id="preview-wrapper">
+              <img id="preview-image" src="" alt="Preview" />
+              <div class="crop-overlay" id="crop-overlay">
+                <div class="crop-box" id="crop-box">
+                  <div class="crop-handle nw" data-handle="nw"></div>
+                  <div class="crop-handle n" data-handle="n"></div>
+                  <div class="crop-handle ne" data-handle="ne"></div>
+                  <div class="crop-handle w" data-handle="w"></div>
+                  <div class="crop-handle e" data-handle="e"></div>
+                  <div class="crop-handle sw" data-handle="sw"></div>
+                  <div class="crop-handle s" data-handle="s"></div>
+                  <div class="crop-handle se" data-handle="se"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="original-info">
+            <div class="info-item">
+              <label>Format</label>
+              <span id="info-format">-</span>
+            </div>
+            <div class="info-item">
+              <label>Dimensions</label>
+              <span id="info-dimensions">-</span>
+            </div>
+            <div class="info-item">
+              <label>File Size</label>
+              <span id="info-size">-</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Bottom Bar -->
@@ -321,6 +329,159 @@ const jsonLdSchema = [
     </div>
   </div>
 
+    <!-- Design Mode Editor -->
+    <div class="design-editor" id="design-editor">
+      <div class="editor-main">
+        <!-- Design Controls (LEFT) -->
+        <div class="controls-section">
+          <!-- Canvas Size -->
+          <div class="control-group">
+            <label>Canvas Size</label>
+            <div class="social-platform-group">
+              <span class="platform-label">LinkedIn</span>
+              <div class="social-presets">
+                <button class="canvas-size-btn" data-width="1200" data-height="1200">Post</button>
+                <button class="canvas-size-btn" data-width="1200" data-height="628">Article</button>
+                <button class="canvas-size-btn" data-width="1584" data-height="396">Cover</button>
+                <button class="canvas-size-btn active" data-width="1080" data-height="1920">Story</button>
+              </div>
+            </div>
+            <div class="social-platform-group">
+              <span class="platform-label">Facebook</span>
+              <div class="social-presets">
+                <button class="canvas-size-btn" data-width="1200" data-height="630">Post</button>
+                <button class="canvas-size-btn" data-width="1080" data-height="1080">Square</button>
+                <button class="canvas-size-btn" data-width="820" data-height="312">Cover</button>
+                <button class="canvas-size-btn" data-width="1080" data-height="1920">Story</button>
+              </div>
+            </div>
+            <div class="social-platform-group">
+              <span class="platform-label">Instagram</span>
+              <div class="social-presets">
+                <button class="canvas-size-btn" data-width="1080" data-height="1080">Square</button>
+                <button class="canvas-size-btn" data-width="1080" data-height="1350">Portrait</button>
+                <button class="canvas-size-btn" data-width="1080" data-height="566">Landscape</button>
+                <button class="canvas-size-btn" data-width="1080" data-height="1920">Story/Reel</button>
+              </div>
+            </div>
+            <div class="social-platform-group">
+              <span class="platform-label">Custom</span>
+              <div class="input-row" style="margin-top: 6px;">
+                <div class="input-group">
+                  <label>Width</label>
+                  <input type="number" id="design-canvas-width" min="100" max="4000" value="1080" />
+                </div>
+                <div class="input-group">
+                  <label>Height</label>
+                  <input type="number" id="design-canvas-height" min="100" max="4000" value="1920" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Background Color -->
+          <div class="control-group">
+            <label>Background</label>
+            <div class="color-picker-row">
+              <input type="color" id="design-bg-color" value="#ffffff" />
+              <span id="design-bg-color-label">#ffffff</span>
+            </div>
+          </div>
+
+          <!-- Add Elements -->
+          <div class="control-group">
+            <label>Add Elements</label>
+            <div class="add-element-btns">
+              <button class="btn btn-secondary" id="add-text-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                  <path d="M4 7V4h16v3M9 20h6M12 4v16"/>
+                </svg>
+                Add Text
+              </button>
+              <button class="btn btn-secondary" id="add-image-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                Add Image
+              </button>
+              <input type="file" id="design-image-input" accept="image/*" style="display: none;" />
+            </div>
+          </div>
+
+          <!-- Element Properties (shown when element selected) -->
+          <div class="control-group" id="element-properties" style="display: none;">
+            <label>Element Properties</label>
+            <div id="text-properties" style="display: none;">
+              <div class="input-group" style="margin-bottom: 12px;">
+                <label>Font</label>
+                <select id="text-font">
+                  <option value="Inter">Inter</option>
+                  <option value="Playfair Display">Playfair Display</option>
+                  <option value="Roboto Mono">Roboto Mono</option>
+                </select>
+              </div>
+              <div class="input-row" style="margin-bottom: 12px;">
+                <div class="input-group">
+                  <label>Size</label>
+                  <input type="number" id="text-size" min="12" max="200" value="48" />
+                </div>
+                <div class="input-group">
+                  <label>Color</label>
+                  <input type="color" id="text-color" value="#000000" />
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-secondary" id="delete-element-btn" style="width: 100%; color: #dc2626;">
+              Delete Element
+            </button>
+          </div>
+
+          <!-- Layers Panel -->
+          <div class="control-group">
+            <label>Layers</label>
+            <div class="layers-panel" id="layers-panel">
+              <div class="layer-empty">No elements yet</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Design Canvas (RIGHT) -->
+        <div class="preview-section">
+          <div class="preview-header">
+            <h2>Canvas</h2>
+            <div class="canvas-size-display">
+              <span id="design-size-display">1080 × 1920</span>
+            </div>
+          </div>
+          <div class="design-canvas-container" id="design-canvas-container">
+            <div class="design-canvas" id="design-canvas">
+              <!-- Design elements will be rendered here -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="bottom-bar">
+        <div class="output-summary">
+          <div class="info-item">
+            <label>Canvas Size</label>
+            <span id="design-output-size">1080 × 1920</span>
+          </div>
+          <div class="info-item">
+            <label>Elements</label>
+            <span id="design-element-count">0</span>
+          </div>
+        </div>
+        <div class="action-buttons">
+          <button class="btn btn-secondary" id="design-reset-btn">Clear All</button>
+          <button class="btn btn-primary" id="design-download-btn">Download</button>
+        </div>
+      </div>
+    </div>
+
   <!-- Loading Overlay -->
   <div class="loading-overlay" id="loading">
     <div class="spinner"></div>
@@ -328,6 +489,8 @@ const jsonLdSchema = [
 </BaseLayout>
 
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap');
+
   .tool-container {
     max-width: 1200px;
     margin: 0 auto;
@@ -379,6 +542,43 @@ const jsonLdSchema = [
   .page-subtitle {
     color: var(--color-ink-light);
     margin: 0;
+  }
+
+  /* Header Row with Mode Switcher */
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .mode-switcher {
+    display: flex;
+    background: var(--color-cream);
+    border-radius: 8px;
+    padding: 4px;
+  }
+
+  .mode-btn {
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-ink-light);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+
+  .mode-btn:hover {
+    color: var(--color-ink);
+  }
+
+  .mode-btn.active {
+    background: var(--color-terracotta);
+    color: white;
   }
 
   /* Upload Area */
@@ -466,7 +666,7 @@ const jsonLdSchema = [
 
   .editor-main {
     display: grid;
-    grid-template-columns: 1fr 340px;
+    grid-template-columns: 340px 1fr;
     min-height: 500px;
   }
 
@@ -627,10 +827,12 @@ const jsonLdSchema = [
   /* Controls Section */
   .controls-section {
     padding: 24px;
-    border-left: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-border);
     display: flex;
     flex-direction: column;
     background: var(--color-paper);
+    overflow-y: auto;
+    max-height: 600px;
   }
 
   /* Tabs */
@@ -893,6 +1095,220 @@ const jsonLdSchema = [
     color: white;
   }
 
+  /* Design Mode */
+  .design-editor {
+    display: none;
+    background: var(--color-paper);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+  }
+
+  .design-editor.active {
+    display: block;
+  }
+
+  .canvas-size-btn {
+    padding: 6px 10px;
+    border: 1px solid var(--color-border);
+    background: var(--color-paper);
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    color: var(--color-ink);
+  }
+
+  .canvas-size-btn:hover {
+    border-color: var(--color-terracotta);
+    color: var(--color-terracotta);
+  }
+
+  .canvas-size-btn.active {
+    background: var(--color-terracotta);
+    border-color: var(--color-terracotta);
+    color: white;
+  }
+
+  .color-picker-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .color-picker-row input[type="color"] {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .color-picker-row span {
+    font-size: 14px;
+    font-family: monospace;
+    color: var(--color-ink-light);
+  }
+
+  .add-element-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .add-element-btns .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .layers-panel {
+    background: var(--color-cream);
+    border-radius: 8px;
+    padding: 8px;
+    min-height: 100px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .layer-empty {
+    text-align: center;
+    color: var(--color-ink-light);
+    font-size: 13px;
+    padding: 20px;
+  }
+
+  .layer-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    background: var(--color-paper);
+    border-radius: 6px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .layer-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .layer-item:hover {
+    background: var(--color-border);
+  }
+
+  .layer-item.selected {
+    outline: 2px solid var(--color-terracotta);
+  }
+
+  .layer-item svg {
+    width: 16px;
+    height: 16px;
+    stroke: var(--color-ink-light);
+  }
+
+  .layer-item span {
+    flex: 1;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .layer-delete {
+    padding: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+  }
+
+  .layer-delete:hover {
+    opacity: 1;
+  }
+
+  .design-canvas-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+    background: repeating-conic-gradient(var(--color-border) 0% 25%, white 0% 50%) 50% / 20px 20px;
+    border-radius: 8px;
+    padding: 20px;
+  }
+
+  .design-canvas {
+    position: relative;
+    background: white;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .design-element {
+    position: absolute;
+    cursor: move;
+    user-select: none;
+  }
+
+  .design-element.selected {
+    outline: 2px solid var(--color-terracotta);
+    outline-offset: 2px;
+  }
+
+  .design-element.selected::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border: 1px dashed var(--color-terracotta);
+    pointer-events: none;
+  }
+
+  .design-text {
+    padding: 4px 8px;
+    min-width: 50px;
+    min-height: 30px;
+  }
+
+  .design-text[contenteditable="true"] {
+    outline: 1px dashed var(--color-terracotta);
+  }
+
+  .design-image {
+    max-width: 100%;
+    display: block;
+  }
+
+  .design-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .resize-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: white;
+    border: 2px solid var(--color-terracotta);
+    border-radius: 2px;
+  }
+
+  .resize-handle.se {
+    right: -5px;
+    bottom: -5px;
+    cursor: se-resize;
+  }
+
+  .canvas-size-display {
+    font-size: 13px;
+    color: var(--color-ink-light);
+  }
+
   /* Slider */
   .slider-container {
     margin-top: 8px;
@@ -1041,8 +1457,9 @@ const jsonLdSchema = [
     }
 
     .controls-section {
-      border-left: none;
-      border-top: 1px solid var(--color-border);
+      border-right: none;
+      border-bottom: 1px solid var(--color-border);
+      max-height: none;
     }
 
     .bottom-bar {
@@ -1066,7 +1483,10 @@ const jsonLdSchema = [
 </style>
 
 <script is:inline>
-  // State
+  // Current Mode
+  let currentMode = 'tools';
+
+  // Tools State
   const state = {
     originalImage: null,
     originalFile: null,
@@ -1082,6 +1502,17 @@ const jsonLdSchema = [
     crop: { x: 0, y: 0, width: 100, height: 100 },
     quality: 80,
     outputFormat: 'original',
+  };
+
+  // Design State
+  const designState = {
+    canvasWidth: 1080,
+    canvasHeight: 1920,
+    backgroundColor: '#ffffff',
+    elements: [],
+    selectedId: null,
+    nextId: 1,
+    scale: 1,
   };
 
   // DOM Elements
@@ -1132,6 +1563,55 @@ const jsonLdSchema = [
     zoomLevel: document.getElementById('zoom-level'),
     loading: document.getElementById('loading'),
   };
+
+  // Design Mode DOM Elements
+  const designElements = {
+    editor: document.getElementById('design-editor'),
+    canvas: document.getElementById('design-canvas'),
+    canvasContainer: document.getElementById('design-canvas-container'),
+    canvasWidth: document.getElementById('design-canvas-width'),
+    canvasHeight: document.getElementById('design-canvas-height'),
+    bgColor: document.getElementById('design-bg-color'),
+    bgColorLabel: document.getElementById('design-bg-color-label'),
+    addTextBtn: document.getElementById('add-text-btn'),
+    addImageBtn: document.getElementById('add-image-btn'),
+    imageInput: document.getElementById('design-image-input'),
+    layersPanel: document.getElementById('layers-panel'),
+    elementProperties: document.getElementById('element-properties'),
+    textProperties: document.getElementById('text-properties'),
+    textFont: document.getElementById('text-font'),
+    textSize: document.getElementById('text-size'),
+    textColor: document.getElementById('text-color'),
+    deleteElementBtn: document.getElementById('delete-element-btn'),
+    sizeDisplay: document.getElementById('design-size-display'),
+    outputSize: document.getElementById('design-output-size'),
+    elementCount: document.getElementById('design-element-count'),
+    resetBtn: document.getElementById('design-reset-btn'),
+    downloadBtn: document.getElementById('design-download-btn'),
+  };
+
+  // Mode Switching
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.mode;
+      if (mode === currentMode) return;
+
+      currentMode = mode;
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      if (mode === 'tools') {
+        elements.uploadArea.classList.remove('hidden');
+        elements.editor.classList.remove('active');
+        designElements.editor.classList.remove('active');
+      } else {
+        elements.uploadArea.classList.add('hidden');
+        elements.editor.classList.remove('active');
+        designElements.editor.classList.add('active');
+        renderDesignCanvas();
+      }
+    });
+  });
 
   // Utility Functions
   function formatFileSize(bytes) {
@@ -1579,4 +2059,457 @@ const jsonLdSchema = [
   });
 
   elements.qualityGroup.style.display = 'block';
+
+  // ===== DESIGN MODE FUNCTIONALITY =====
+
+  // Render Design Canvas
+  function renderDesignCanvas() {
+    const container = designElements.canvasContainer;
+    const maxWidth = container.clientWidth - 40;
+    const maxHeight = container.clientHeight - 40;
+
+    // Calculate scale to fit canvas in container
+    const scaleX = maxWidth / designState.canvasWidth;
+    const scaleY = maxHeight / designState.canvasHeight;
+    designState.scale = Math.min(scaleX, scaleY, 1);
+
+    const displayWidth = designState.canvasWidth * designState.scale;
+    const displayHeight = designState.canvasHeight * designState.scale;
+
+    designElements.canvas.style.width = displayWidth + 'px';
+    designElements.canvas.style.height = displayHeight + 'px';
+    designElements.canvas.style.backgroundColor = designState.backgroundColor;
+
+    updateDesignInfo();
+    renderElements();
+    renderLayers();
+  }
+
+  // Update Design Info
+  function updateDesignInfo() {
+    const sizeText = `${designState.canvasWidth} × ${designState.canvasHeight}`;
+    designElements.sizeDisplay.textContent = sizeText;
+    designElements.outputSize.textContent = sizeText;
+    designElements.elementCount.textContent = designState.elements.length;
+    designElements.canvasWidth.value = designState.canvasWidth;
+    designElements.canvasHeight.value = designState.canvasHeight;
+  }
+
+  // Render Elements
+  function renderElements() {
+    designElements.canvas.innerHTML = '';
+    designState.elements.forEach(el => {
+      const div = document.createElement('div');
+      div.className = 'design-element' + (el.id === designState.selectedId ? ' selected' : '');
+      div.dataset.id = el.id;
+      div.style.left = (el.x * designState.scale) + 'px';
+      div.style.top = (el.y * designState.scale) + 'px';
+
+      if (el.type === 'text') {
+        div.classList.add('design-text');
+        div.style.fontSize = (el.fontSize * designState.scale) + 'px';
+        div.style.fontFamily = el.fontFamily;
+        div.style.color = el.color;
+        div.textContent = el.content;
+      } else if (el.type === 'image') {
+        div.classList.add('design-image');
+        div.style.width = (el.width * designState.scale) + 'px';
+        div.style.height = (el.height * designState.scale) + 'px';
+        const img = document.createElement('img');
+        img.src = el.src;
+        img.draggable = false;
+        div.appendChild(img);
+
+        // Add resize handle for images
+        if (el.id === designState.selectedId) {
+          const handle = document.createElement('div');
+          handle.className = 'resize-handle se';
+          handle.dataset.id = el.id;
+          div.appendChild(handle);
+        }
+      }
+
+      designElements.canvas.appendChild(div);
+    });
+  }
+
+  // Render Layers
+  function renderLayers() {
+    if (designState.elements.length === 0) {
+      designElements.layersPanel.innerHTML = '<div class="layer-empty">No elements yet</div>';
+      return;
+    }
+
+    designElements.layersPanel.innerHTML = '';
+    [...designState.elements].reverse().forEach(el => {
+      const item = document.createElement('div');
+      item.className = 'layer-item' + (el.id === designState.selectedId ? ' selected' : '');
+      item.dataset.id = el.id;
+
+      const icon = el.type === 'text'
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
+
+      const label = el.type === 'text' ? el.content.substring(0, 20) : 'Image';
+
+      item.innerHTML = `${icon}<span>${label}</span>`;
+      item.addEventListener('click', () => selectElement(el.id));
+      designElements.layersPanel.appendChild(item);
+    });
+  }
+
+  // Select Element (used by layers panel)
+  function selectElement(id) {
+    designState.selectedId = id;
+    renderElements();
+    renderLayers();
+    const el = designState.elements.find(e => e.id === id);
+    updatePropertiesPanel(el);
+  }
+
+  // Helper to update properties panel
+  function updatePropertiesPanel(el) {
+    if (el) {
+      designElements.elementProperties.style.display = 'block';
+      if (el.type === 'text') {
+        designElements.textProperties.style.display = 'block';
+        designElements.textFont.value = el.fontFamily;
+        designElements.textSize.value = el.fontSize;
+        designElements.textColor.value = el.color;
+      } else {
+        designElements.textProperties.style.display = 'none';
+      }
+    } else {
+      designElements.elementProperties.style.display = 'none';
+    }
+  }
+
+  // Drag Element - use event delegation like the crop box
+  let designIsDragging = false;
+  let designIsResizing = false;
+  let designDragEl = null;
+  let designResizeEl = null;
+  let designStartX = 0, designStartY = 0;
+  let designStartElX = 0, designStartElY = 0;
+  let designStartElW = 0, designStartElH = 0;
+
+  // Event delegation on canvas - similar to crop box pattern
+  designElements.canvas.addEventListener('mousedown', (e) => {
+    // Check for resize handle
+    if (e.target.classList.contains('resize-handle')) {
+      designIsResizing = true;
+      const id = parseInt(e.target.dataset.id);
+      designResizeEl = designState.elements.find(el => el.id === id);
+      if (!designResizeEl) return;
+      designStartElW = designResizeEl.width;
+      designStartElH = designResizeEl.height;
+      designStartX = e.clientX;
+      designStartY = e.clientY;
+      e.preventDefault();
+      return;
+    }
+
+    // Check for element
+    const elementDiv = e.target.closest('.design-element');
+    if (elementDiv) {
+      const id = parseInt(elementDiv.dataset.id);
+      designDragEl = designState.elements.find(el => el.id === id);
+      if (!designDragEl) return;
+
+      // Update selection visually without full re-render
+      designState.selectedId = id;
+      designElements.canvas.querySelectorAll('.design-element').forEach(el => {
+        el.classList.remove('selected');
+        // Remove old resize handles
+        const oldHandle = el.querySelector('.resize-handle');
+        if (oldHandle) oldHandle.remove();
+      });
+      elementDiv.classList.add('selected');
+
+      // Add resize handle for images
+      if (designDragEl.type === 'image') {
+        const handle = document.createElement('div');
+        handle.className = 'resize-handle se';
+        handle.dataset.id = id;
+        elementDiv.appendChild(handle);
+      }
+
+      // Update layers panel selection
+      designElements.layersPanel.querySelectorAll('.layer-item').forEach(item => {
+        item.classList.toggle('selected', parseInt(item.dataset.id) === id);
+      });
+
+      // Update properties panel
+      updatePropertiesPanel(designDragEl);
+
+      // Set drag state
+      designIsDragging = true;
+      designStartX = e.clientX;
+      designStartY = e.clientY;
+      designStartElX = designDragEl.x;
+      designStartElY = designDragEl.y;
+      e.preventDefault();
+    }
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (currentMode !== 'design') return;
+
+    if (designIsResizing && designResizeEl) {
+      const dx = (e.clientX - designStartX) / designState.scale;
+      const aspectRatio = designStartElW / designStartElH;
+      designResizeEl.width = Math.max(50, designStartElW + dx);
+      designResizeEl.height = designResizeEl.width / aspectRatio;
+
+      // Update DOM directly
+      const domEl = designElements.canvas.querySelector(`[data-id="${designResizeEl.id}"]`);
+      if (domEl) {
+        domEl.style.width = (designResizeEl.width * designState.scale) + 'px';
+        domEl.style.height = (designResizeEl.height * designState.scale) + 'px';
+      }
+    } else if (designIsDragging && designDragEl) {
+      const dx = (e.clientX - designStartX) / designState.scale;
+      const dy = (e.clientY - designStartY) / designState.scale;
+      designDragEl.x = Math.max(0, designStartElX + dx);
+      designDragEl.y = Math.max(0, designStartElY + dy);
+
+      // Update DOM directly
+      const domEl = designElements.canvas.querySelector(`[data-id="${designDragEl.id}"]`);
+      if (domEl) {
+        domEl.style.left = (designDragEl.x * designState.scale) + 'px';
+        domEl.style.top = (designDragEl.y * designState.scale) + 'px';
+      }
+    }
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (currentMode !== 'design') return;
+    if (designIsDragging || designIsResizing) {
+      renderElements();
+      renderLayers();
+    }
+    designIsDragging = false;
+    designIsResizing = false;
+    designDragEl = null;
+    designResizeEl = null;
+  });
+
+  // Canvas Size Buttons
+  document.querySelectorAll('.canvas-size-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.canvas-size-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      designState.canvasWidth = parseInt(btn.dataset.width);
+      designState.canvasHeight = parseInt(btn.dataset.height);
+      renderDesignCanvas();
+    });
+  });
+
+  // Custom Canvas Size
+  designElements.canvasWidth.addEventListener('change', () => {
+    designState.canvasWidth = parseInt(designElements.canvasWidth.value) || 1080;
+    document.querySelectorAll('.canvas-size-btn').forEach(b => b.classList.remove('active'));
+    renderDesignCanvas();
+  });
+  designElements.canvasHeight.addEventListener('change', () => {
+    designState.canvasHeight = parseInt(designElements.canvasHeight.value) || 1080;
+    document.querySelectorAll('.canvas-size-btn').forEach(b => b.classList.remove('active'));
+    renderDesignCanvas();
+  });
+
+  // Background Color
+  designElements.bgColor.addEventListener('input', () => {
+    designState.backgroundColor = designElements.bgColor.value;
+    designElements.bgColorLabel.textContent = designElements.bgColor.value;
+    designElements.canvas.style.backgroundColor = designState.backgroundColor;
+  });
+
+  // Add Text
+  designElements.addTextBtn.addEventListener('click', () => {
+    const newText = {
+      id: designState.nextId++,
+      type: 'text',
+      content: 'Your text here',
+      x: designState.canvasWidth / 2 - 100,
+      y: designState.canvasHeight / 2 - 30,
+      fontSize: 48,
+      fontFamily: 'Inter',
+      color: '#000000',
+    };
+    designState.elements.push(newText);
+    selectElement(newText.id);
+    renderDesignCanvas();
+  });
+
+  // Add Image
+  designElements.addImageBtn.addEventListener('click', () => {
+    designElements.imageInput.click();
+  });
+
+  designElements.imageInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        // Scale image to fit canvas
+        let width = img.naturalWidth;
+        let height = img.naturalHeight;
+        const maxSize = Math.min(designState.canvasWidth, designState.canvasHeight) * 0.6;
+        if (width > maxSize || height > maxSize) {
+          const scale = maxSize / Math.max(width, height);
+          width *= scale;
+          height *= scale;
+        }
+
+        const newImage = {
+          id: designState.nextId++,
+          type: 'image',
+          src: ev.target.result,
+          x: (designState.canvasWidth - width) / 2,
+          y: (designState.canvasHeight - height) / 2,
+          width: width,
+          height: height,
+        };
+        designState.elements.push(newImage);
+        selectElement(newImage.id);
+        renderDesignCanvas();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  });
+
+  // Text Properties
+  designElements.textFont.addEventListener('change', () => {
+    const el = designState.elements.find(e => e.id === designState.selectedId);
+    if (el && el.type === 'text') {
+      el.fontFamily = designElements.textFont.value;
+      renderElements();
+    }
+  });
+
+  designElements.textSize.addEventListener('input', () => {
+    const el = designState.elements.find(e => e.id === designState.selectedId);
+    if (el && el.type === 'text') {
+      el.fontSize = parseInt(designElements.textSize.value) || 48;
+      renderElements();
+    }
+  });
+
+  designElements.textColor.addEventListener('input', () => {
+    const el = designState.elements.find(e => e.id === designState.selectedId);
+    if (el && el.type === 'text') {
+      el.color = designElements.textColor.value;
+      renderElements();
+    }
+  });
+
+  // Delete Element
+  designElements.deleteElementBtn.addEventListener('click', () => {
+    if (designState.selectedId) {
+      designState.elements = designState.elements.filter(e => e.id !== designState.selectedId);
+      designState.selectedId = null;
+      designElements.elementProperties.style.display = 'none';
+      renderDesignCanvas();
+    }
+  });
+
+  // Double-click to edit text
+  designElements.canvas.addEventListener('dblclick', (e) => {
+    const target = e.target.closest('.design-text');
+    if (target) {
+      const id = parseInt(target.dataset.id);
+      const el = designState.elements.find(e => e.id === id);
+      if (el) {
+        const newText = prompt('Edit text:', el.content);
+        if (newText !== null) {
+          el.content = newText;
+          renderDesignCanvas();
+        }
+      }
+    }
+  });
+
+  // Click canvas to deselect
+  designElements.canvas.addEventListener('click', (e) => {
+    if (e.target === designElements.canvas) {
+      designState.selectedId = null;
+      designElements.elementProperties.style.display = 'none';
+      renderElements();
+      renderLayers();
+    }
+  });
+
+  // Clear All
+  designElements.resetBtn.addEventListener('click', () => {
+    if (confirm('Clear all elements?')) {
+      designState.elements = [];
+      designState.selectedId = null;
+      designState.nextId = 1;
+      designElements.elementProperties.style.display = 'none';
+      renderDesignCanvas();
+    }
+  });
+
+  // Download Design
+  designElements.downloadBtn.addEventListener('click', async () => {
+    elements.loading.classList.add('active');
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = designState.canvasWidth;
+      canvas.height = designState.canvasHeight;
+      const ctx = canvas.getContext('2d');
+
+      // Background
+      ctx.fillStyle = designState.backgroundColor;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Render elements in order
+      for (const el of designState.elements) {
+        if (el.type === 'text') {
+          ctx.font = `${el.fontSize}px ${el.fontFamily}`;
+          ctx.fillStyle = el.color;
+          ctx.fillText(el.content, el.x, el.y + el.fontSize);
+        } else if (el.type === 'image') {
+          const img = new Image();
+          img.src = el.src;
+          await new Promise(resolve => {
+            if (img.complete) resolve();
+            else img.onload = resolve;
+          });
+          ctx.drawImage(img, el.x, el.y, el.width, el.height);
+        }
+      }
+
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      const filename = `design_${designState.canvasWidth}x${designState.canvasHeight}.png`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting design:', error);
+      alert('Error exporting design. Please try again.');
+    } finally {
+      elements.loading.classList.remove('active');
+    }
+  });
+
+  // Delete key to remove selected element
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Delete' && designState.selectedId && currentMode === 'design') {
+      designState.elements = designState.elements.filter(el => el.id !== designState.selectedId);
+      designState.selectedId = null;
+      designElements.elementProperties.style.display = 'none';
+      renderDesignCanvas();
+    }
+  });
 </script>

@@ -84,7 +84,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
             if (avatarUrl) {
               html += '<img src="' + avatarUrl + '" alt="" class="w-7 h-7 rounded-full" />';
             }
-            html += '<a href="/api/auth/logout" class="text-ink-light hover:text-terracotta transition-colors">Logout</a>';
+            html += '<a href="/logout" class="text-ink-light hover:text-terracotta transition-colors">Logout</a>';
             html += '</div>';
             authContainer.innerHTML = html;
           }
