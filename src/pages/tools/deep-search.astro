@@ -711,27 +711,28 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
-      if (!session) {
-        // Not logged in - redirect to login
-        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
-        return;
-      }
-
-      currentUser = session.user;
-
-      // Fetch user's tier from profiles table
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('tier')
-        .eq('id', session.user.id)
-        .single();
-
-      const tier = profile?.tier || 'free';
-      currentTier = tier;
-
-      // Hide loading
+      // Hide loading, show content
       elements.authLoading.style.display = 'none';
       elements.toolContainer.style.display = 'block';
+
+      // If we got here, middleware already authenticated us
+      // If no client session, default to free tier
+      let tier = 'free';
+
+      if (session) {
+        currentUser = session.user;
+
+        // Fetch user's tier from profiles table
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('tier')
+          .eq('id', session.user.id)
+          .single();
+
+        tier = profile?.tier || 'free';
+      }
+
+      currentTier = tier;
 
       // Map tier to mode: pro/enterprise = maker (built-in API), free = guest (own API key)
       if (tier === 'pro' || tier === 'enterprise') {
@@ -750,8 +751,12 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
       }
     } catch (error) {
       console.error('Auth error:', error);
-      // On error, redirect to login
-      window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+      // On error, default to free tier (middleware already authenticated)
+      elements.authLoading.style.display = 'none';
+      elements.toolContainer.style.display = 'block';
+      accessMode = 'guest';
+      elements.authModal.classList.remove('hidden');
+      addTierBadge('free');
     }
   }
 
