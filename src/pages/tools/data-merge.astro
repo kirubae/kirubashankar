@@ -5,6 +5,8 @@ import { generateWebApplicationSchema } from '@components/seo/schemas/WebApplica
 import Breadcrumb from '@components/ui/Breadcrumb.astro';
 import '@styles/tools.css';
 
+export const prerender = false;
+
 const breadcrumbs = [
   { name: 'Home', url: '/' },
   { name: 'My Tools', url: '/tools' },
@@ -21,6 +23,9 @@ const jsonLdSchema = [
     featureList: ['CSV and Excel support', 'Left, Right, Inner, Full joins', 'Handle 500MB+ files', 'Multiple files per side'],
   }),
 ];
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || '';
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
 ---
 
 <BaseLayout
@@ -28,49 +33,10 @@ const jsonLdSchema = [
   description="Replace Excel VLOOKUP with powerful merge operations for large files. Support for CSV and Excel files up to 500MB, multiple join types, and handle multiple files at once."
   jsonLd={jsonLdSchema}
 >
-  <!-- Auth Modal -->
-  <div class="auth-modal" id="auth-modal">
-    <div class="auth-modal-content">
-      <h2>Choose your mode</h2>
-      <p class="auth-subtitle">Select how you want to use the merge tool</p>
-
-      <div class="auth-options">
-        <button class="auth-option" id="auth-guest">
-          <div class="auth-option-icon guest">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-          </div>
-          <div class="auth-option-text">
-            <span class="auth-option-title">Guest</span>
-            <span class="auth-option-desc">1 file per side, max 10MB each</span>
-          </div>
-        </button>
-
-        <button class="auth-option" id="auth-password">
-          <div class="auth-option-icon pro">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-          </div>
-          <div class="auth-option-text">
-            <span class="auth-option-title">Maker</span>
-            <span class="auth-option-desc">Multiple files, up to 500MB each</span>
-          </div>
-        </button>
-      </div>
-
-      <div class="auth-password-form" id="auth-password-form" style="display: none;">
-        <input type="password" id="auth-password-input" placeholder="Enter access password" />
-        <div class="auth-password-actions">
-          <button class="btn btn-secondary" id="auth-back">Back</button>
-          <button class="btn btn-primary" id="auth-submit">Unlock</button>
-        </div>
-        <p class="auth-error" id="auth-error" style="display: none;">Incorrect password</p>
-      </div>
-    </div>
+  <!-- Loading state while checking auth -->
+  <div class="auth-loading" id="auth-loading">
+    <div class="spinner"></div>
+    <p>Loading...</p>
   </div>
 
   <div class="merge-container">
@@ -1381,15 +1347,49 @@ const jsonLdSchema = [
       overflow-x: auto;
     }
   }
+
+  .auth-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh;
+    gap: 16px;
+  }
+
+  .auth-loading p {
+    color: var(--color-ink-light);
+    font-size: 14px;
+  }
+
+  .auth-loading .spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-ink);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
 </style>
 
 <!-- SheetJS for Excel parsing and export -->
 <script is:inline src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+<script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
-<script is:inline>
+<script is:inline define:vars={{ supabaseUrl, supabaseKey }}>
   // Auth state
-  let accessMode = null; // 'guest' or 'pro'
-  const ACCESS_PASSWORD = 'Florida'; // Simple password check
+  let accessMode = null; // 'guest' (free tier) or 'pro' (pro/enterprise tier)
+  let currentUser = null;
+  let currentTier = 'free';
+
+  // Initialize Supabase client
+  const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
   // Limits based on access mode
   const GUEST_FILE_SIZE_LIMIT = 10 * 1024 * 1024; // 10MB
@@ -2353,29 +2353,26 @@ const jsonLdSchema = [
   });
 
   // =====================
-  // Auth Modal Handling
+  // Auth Handling (Supabase)
   // =====================
 
-  const authModal = document.getElementById('auth-modal');
-  const authGuestBtn = document.getElementById('auth-guest');
-  const authPasswordBtn = document.getElementById('auth-password');
-  const authPasswordForm = document.getElementById('auth-password-form');
-  const authOptions = document.querySelector('.auth-options');
-  const authPasswordInput = document.getElementById('auth-password-input');
-  const authBackBtn = document.getElementById('auth-back');
-  const authSubmitBtn = document.getElementById('auth-submit');
-  const authError = document.getElementById('auth-error');
+  const authLoading = document.getElementById('auth-loading');
+  const mergeContainer = document.querySelector('.merge-container');
 
-  function setAccessMode(mode) {
+  function setAccessMode(mode, tier) {
     accessMode = mode;
-    authModal.classList.add('hidden');
+    currentTier = tier;
 
-    // Update UI to show access mode
+    // Hide loading, show content
+    authLoading.style.display = 'none';
+    mergeContainer.style.display = 'block';
+
+    // Update UI to show tier
     const badge = document.createElement('span');
     badge.className = `access-mode-badge ${mode}`;
     badge.innerHTML = mode === 'pro'
-      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Full Access'
-      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Guest';
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Pro'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Free';
 
     const pageTitle = document.querySelector('.page-header h1');
     if (pageTitle && !pageTitle.querySelector('.access-mode-badge')) {
@@ -2386,46 +2383,52 @@ const jsonLdSchema = [
     const helpText = document.querySelector('.help-text');
     if (helpText) {
       if (mode === 'guest') {
-        helpText.textContent = 'Guest mode: 1 file per side, max 10MB each. Enter password for full access.';
+        helpText.textContent = 'Free tier: 1 file per side, max 10MB each. Upgrade to Pro for full access.';
       } else {
         helpText.textContent = 'Supports CSV and Excel files up to 500MB each. All files on the same side must have matching column headers.';
       }
     }
+
+    // Show first step
+    showStep('upload', false);
   }
 
-  authGuestBtn.addEventListener('click', () => {
-    setAccessMode('guest');
-  });
+  // Check user tier and set access mode on page load
+  async function initializeAuth() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
 
-  authPasswordBtn.addEventListener('click', () => {
-    authOptions.style.display = 'none';
-    authPasswordForm.style.display = 'block';
-    authPasswordInput.focus();
-  });
+      if (!session) {
+        // Not logged in - redirect to login
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+        return;
+      }
 
-  authBackBtn.addEventListener('click', () => {
-    authOptions.style.display = 'flex';
-    authPasswordForm.style.display = 'none';
-    authPasswordInput.value = '';
-    authError.style.display = 'none';
-  });
+      currentUser = session.user;
 
-  authSubmitBtn.addEventListener('click', () => {
-    if (authPasswordInput.value === ACCESS_PASSWORD) {
-      setAccessMode('pro');
-    } else {
-      authError.style.display = 'block';
-      authPasswordInput.value = '';
-      authPasswordInput.focus();
+      // Fetch user's tier from profiles table
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tier')
+        .eq('id', session.user.id)
+        .single();
+
+      const tier = profile?.tier || 'free';
+      currentTier = tier;
+
+      // Map tier to mode: pro/enterprise = pro, free = guest
+      const mode = (tier === 'pro' || tier === 'enterprise') ? 'pro' : 'guest';
+      setAccessMode(mode, tier);
+    } catch (error) {
+      console.error('Auth error:', error);
+      // On error, redirect to login
+      window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
     }
-  });
+  }
 
-  authPasswordInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      authSubmitBtn.click();
-    }
-  });
+  // Hide content initially, show loading
+  mergeContainer.style.display = 'none';
 
-  // Initialize
-  showStep('upload', false);
+  // Initialize on page load
+  initializeAuth();
 </script>

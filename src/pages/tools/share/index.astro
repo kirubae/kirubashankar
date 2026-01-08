@@ -10,6 +10,9 @@ const breadcrumbs = [
   { name: 'My Tools', url: '/tools' },
   { name: 'File Share', url: '/tools/share' },
 ];
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || '';
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
 ---
 
 <BaseLayout
@@ -17,49 +20,10 @@ const breadcrumbs = [
   description="Share files securely with expiry dates and access controls"
   noindex={true}
 >
-  <!-- Auth Modal -->
-  <div class="auth-modal" id="auth-modal">
-    <div class="auth-modal-content">
-      <h2>Choose your mode</h2>
-      <p class="auth-subtitle">Select how you want to use File Share</p>
-
-      <div class="auth-options" id="auth-options">
-        <button class="auth-option" id="auth-guest">
-          <div class="auth-option-icon guest">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-          </div>
-          <div class="auth-option-text">
-            <span class="auth-option-title">Guest</span>
-            <span class="auth-option-desc">1 file, max 10MB</span>
-          </div>
-        </button>
-
-        <button class="auth-option" id="auth-password-btn">
-          <div class="auth-option-icon pro">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-          </div>
-          <div class="auth-option-text">
-            <span class="auth-option-title">Maker</span>
-            <span class="auth-option-desc">Multiple files, up to 100MB each</span>
-          </div>
-        </button>
-      </div>
-
-      <div class="auth-password-form" id="auth-password-form" style="display: none;">
-        <input type="password" id="auth-password-input" placeholder="Enter access password" />
-        <div class="auth-password-actions">
-          <button class="btn btn-secondary" id="auth-back">Back</button>
-          <button class="btn btn-primary" id="auth-submit">Unlock</button>
-        </div>
-        <p class="auth-error" id="auth-error" style="display: none;">Incorrect password</p>
-      </div>
-    </div>
+  <!-- Loading state while checking auth -->
+  <div class="auth-loading" id="auth-loading">
+    <div class="spinner"></div>
+    <p>Loading...</p>
   </div>
 
   <div class="tool-container">
@@ -70,14 +34,14 @@ const breadcrumbs = [
         <h1>File Share</h1>
         <p class="page-subtitle">Share files with controlled access</p>
       </div>
-      <button id="btn-logout" class="btn btn-secondary" style="display: none;">
+      <a href="/logout" id="btn-logout" class="btn btn-secondary" style="display: none;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
           <polyline points="16 17 21 12 16 7"></polyline>
           <line x1="21" y1="12" x2="9" y2="12"></line>
         </svg>
         Logout
-      </button>
+      </a>
     </header>
 
     <!-- Tab Navigation (only shown in admin mode) -->
@@ -1197,61 +1161,50 @@ const breadcrumbs = [
   .breadcrumbs .separator {
     color: var(--color-ink-light);
   }
-</style>
 
-<script is:inline>
-  // Session configuration
-  const SESSION_KEY = 'fileshare_session';
-  const SESSION_DURATION_MS = 60 * 60 * 1000; // 1 hour
-  const ACCESS_PASSWORD = 'Florida';
-  const MAX_FILE_SIZE_ADMIN = 100 * 1024 * 1024; // 100MB
-  const MAX_FILE_SIZE_GUEST = 10 * 1024 * 1024;  // 10MB
-
-  // Current mode: 'admin' or 'guest'
-  let currentMode = null;
-
-  // Generate session token
-  async function generateSessionToken(mode) {
-    const timestamp = Date.now();
-    const randomBytes = new Uint8Array(16);
-    crypto.getRandomValues(randomBytes);
-    const random = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
-    return { mode, timestamp, random };
+  .auth-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh;
+    gap: 16px;
   }
 
-  // Verify session token
-  function getValidSession() {
-    try {
-      const sessionData = localStorage.getItem(SESSION_KEY);
-      if (!sessionData) return null;
+  .auth-loading p {
+    color: var(--color-ink-light);
+    font-size: 14px;
+  }
 
-      const { mode, timestamp } = JSON.parse(sessionData);
-      if (!mode || !timestamp) return null;
+  .auth-loading .spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-ink);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
 
-      const now = Date.now();
-      if (now - timestamp > SESSION_DURATION_MS) {
-        localStorage.removeItem(SESSION_KEY);
-        return null;
-      }
-
-      return { mode };
-    } catch {
-      localStorage.removeItem(SESSION_KEY);
-      return null;
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
     }
   }
+</style>
 
-  // Save session
-  async function saveSession(mode) {
-    const session = await generateSessionToken(mode);
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  }
+<script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script is:inline define:vars={{ supabaseUrl, supabaseKey }}>
+  // File size limits
+  const MAX_FILE_SIZE_ADMIN = 100 * 1024 * 1024; // 100MB (Pro tier)
+  const MAX_FILE_SIZE_GUEST = 10 * 1024 * 1024;  // 10MB (Free tier)
 
-  // Clear session (logout)
-  function clearSession() {
-    localStorage.removeItem(SESSION_KEY);
-    currentMode = null;
-  }
+  // Current mode: 'admin' (pro tier) or 'guest' (free tier)
+  let currentMode = null;
+  let currentUser = null;
+  let currentTier = 'free';
+
+  // Initialize Supabase client
+  const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
   // Get current max file size
   function getMaxFileSize() {
@@ -1286,11 +1239,7 @@ const breadcrumbs = [
   let files = [];
 
   // DOM elements
-  const authModal = document.getElementById('auth-modal');
-  const authOptions = document.getElementById('auth-options');
-  const authPasswordForm = document.getElementById('auth-password-form');
-  const authPasswordInput = document.getElementById('auth-password-input');
-  const authError = document.getElementById('auth-error');
+  const authLoading = document.getElementById('auth-loading');
   const dashboard = document.getElementById('dashboard');
   const btnLogout = document.getElementById('btn-logout');
   const filesSection = document.getElementById('files-section');
@@ -1307,20 +1256,20 @@ const breadcrumbs = [
   const uploadProgress = document.getElementById('upload-progress');
   const uploadSuccess = document.getElementById('upload-success');
 
-  // Set access mode and show dashboard
-  function setAccessMode(mode) {
+  // Set access mode and show dashboard (mode based on user tier)
+  function setAccessMode(mode, tier) {
     currentMode = mode;
-    saveSession(mode);
-    authModal.classList.add('hidden');
+    currentTier = tier;
+    authLoading.style.display = 'none';
     dashboard.style.display = 'block';
     btnLogout.style.display = 'flex';
 
-    // Add mode badge to title
+    // Add tier badge to title
     const badge = document.createElement('span');
     badge.className = `access-mode-badge ${mode === 'admin' ? 'pro' : 'guest'}`;
     badge.innerHTML = mode === 'admin'
-      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Full Access'
-      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Guest';
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Pro'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Free';
 
     const pageTitle = document.querySelector('.page-header h1');
     if (pageTitle && !pageTitle.querySelector('.access-mode-badge')) {
@@ -1351,69 +1300,41 @@ const breadcrumbs = [
     }
   }
 
-  // Show auth modal
-  function showAuthModal() {
-    currentMode = null;
-    authModal.classList.remove('hidden');
-    dashboard.style.display = 'none';
-    btnLogout.style.display = 'none';
-    authOptions.style.display = 'flex';
-    authPasswordForm.style.display = 'none';
-    authPasswordInput.value = '';
-    authError.style.display = 'none';
-  }
+  // Check user tier and set access mode on page load
+  async function initializeAuth() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
 
-  // Check session on page load
-  const session = getValidSession();
-  if (session) {
-    setAccessMode(session.mode);
-  } else {
-    showAuthModal();
-  }
+      if (!session) {
+        // Not logged in - redirect to login
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+        return;
+      }
 
-  // Auth modal - Guest button
-  document.getElementById('auth-guest').addEventListener('click', () => {
-    setAccessMode('guest');
-  });
+      currentUser = session.user;
 
-  // Auth modal - Password button
-  document.getElementById('auth-password-btn').addEventListener('click', () => {
-    authOptions.style.display = 'none';
-    authPasswordForm.style.display = 'block';
-    authPasswordInput.focus();
-  });
+      // Fetch user's tier from profiles table
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tier')
+        .eq('id', session.user.id)
+        .single();
 
-  // Auth modal - Back button
-  document.getElementById('auth-back').addEventListener('click', () => {
-    authOptions.style.display = 'flex';
-    authPasswordForm.style.display = 'none';
-    authPasswordInput.value = '';
-    authError.style.display = 'none';
-  });
+      const tier = profile?.tier || 'free';
+      currentTier = tier;
 
-  // Auth modal - Submit password
-  document.getElementById('auth-submit').addEventListener('click', () => {
-    if (authPasswordInput.value === ACCESS_PASSWORD) {
-      setAccessMode('admin');
-    } else {
-      authError.style.display = 'block';
-      authPasswordInput.value = '';
-      authPasswordInput.focus();
+      // Map tier to mode: pro/enterprise = admin, free = guest
+      const mode = (tier === 'pro' || tier === 'enterprise') ? 'admin' : 'guest';
+      setAccessMode(mode, tier);
+    } catch (error) {
+      console.error('Auth error:', error);
+      // On error, redirect to login
+      window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
     }
-  });
+  }
 
-  authPasswordInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') document.getElementById('auth-submit').click();
-  });
-
-  // Logout
-  btnLogout.addEventListener('click', () => {
-    clearSession();
-    // Remove badge
-    const badge = document.querySelector('.access-mode-badge');
-    if (badge) badge.remove();
-    showAuthModal();
-  });
+  // Initialize on page load
+  initializeAuth();
 
   // Show/hide upload section
   document.getElementById('btn-show-upload').addEventListener('click', () => {
@@ -1544,9 +1465,9 @@ const breadcrumbs = [
     if (expiryDate) formData.append('expires_at', expiryDate);
     if (password) formData.append('password', password);
     if (allowedEmails.length > 0) formData.append('allowed_emails', JSON.stringify(allowedEmails));
-    // Add uploader info for guest mode
-    if (currentMode === 'guest') {
-      formData.append('uploader_email', 'Guest');
+    // Add uploader info (user's email from Supabase session)
+    if (currentUser && currentUser.email) {
+      formData.append('uploader_email', currentUser.email);
     }
 
     uploadOptions.style.display = 'none';

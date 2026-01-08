@@ -6,6 +6,8 @@ import Breadcrumb from '@components/ui/Breadcrumb.astro';
 import Icon from '@components/ui/Icon.astro';
 import '@styles/tools.css';
 
+export const prerender = false;
+
 const breadcrumbs = [
   { name: 'Home', url: '/' },
   { name: 'My Tools', url: '/tools' },
@@ -22,6 +24,9 @@ const jsonLdSchema = [
     featureList: ['AI-powered company research', 'Bulk research from CSV', 'Custom research fields', 'Export to CSV'],
   }),
 ];
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || '';
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
 ---
 
 <BaseLayout
@@ -29,57 +34,26 @@ const jsonLdSchema = [
   description="Research companies at scale using AI. Upload a CSV of company names, define custom research fields, and get detailed insights powered by Perplexity AI."
   jsonLd={jsonLdSchema}
 >
-  <!-- Auth Modal -->
-  <div class="auth-modal" id="auth-modal">
+  <!-- Loading state while checking auth -->
+  <div class="auth-loading" id="auth-loading">
+    <div class="spinner"></div>
+    <p>Loading...</p>
+  </div>
+
+  <!-- API Key Modal (for free users) -->
+  <div class="auth-modal hidden" id="auth-modal">
     <div class="auth-modal-content">
-      <h2>Choose your mode</h2>
-      <p class="auth-subtitle">Select how you want to use Research Companies</p>
+      <h2>Enter API Key</h2>
+      <p class="auth-subtitle">Free tier users need to provide their own Perplexity API key</p>
 
-      <div class="auth-options" id="auth-options">
-        <button class="auth-option" id="auth-guest">
-          <div class="auth-option-icon guest">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-          </div>
-          <div class="auth-option-text">
-            <span class="auth-option-title">Guest</span>
-            <span class="auth-option-desc">Use your own Perplexity API key</span>
-          </div>
-        </button>
-
-        <button class="auth-option" id="auth-password-btn">
-          <div class="auth-option-icon pro">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-          </div>
-          <div class="auth-option-text">
-            <span class="auth-option-title">Maker</span>
-            <span class="auth-option-desc">Use built-in API with password</span>
-          </div>
-        </button>
-      </div>
-
-      <div class="auth-password-form" id="auth-password-form" style="display: none;">
-        <input type="password" id="auth-password-input" placeholder="Enter access password" />
-        <div class="auth-password-actions">
-          <button class="btn btn-secondary" id="auth-back">Back</button>
-          <button class="btn btn-primary" id="auth-submit">Unlock</button>
-        </div>
-        <p class="auth-error" id="auth-error" style="display: none;">Incorrect password</p>
-      </div>
-
-      <div class="auth-api-form" id="auth-api-form" style="display: none;">
+      <div class="auth-api-form" id="auth-api-form">
         <input type="text" id="auth-api-input" placeholder="Enter your Perplexity API key (pplx-...)" />
         <p class="auth-hint">Get your API key from <a href="https://www.perplexity.ai/settings/api" target="_blank">perplexity.ai/settings/api</a></p>
         <div class="auth-password-actions">
-          <button class="btn btn-secondary" id="auth-api-back">Back</button>
           <button class="btn btn-primary" id="auth-api-submit">Continue</button>
         </div>
         <p class="auth-error" id="auth-api-error" style="display: none;">Invalid API key format</p>
+        <p class="upgrade-hint">Want to skip this? <a href="/login">Upgrade to Pro</a> for built-in API access.</p>
       </div>
     </div>
   </div>
@@ -620,19 +594,51 @@ const jsonLdSchema = [
   #results-table tr:hover td.new-field {
     background: #dcfce7;
   }
+
+  .auth-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh;
+    gap: 16px;
+  }
+
+  .auth-loading p {
+    color: var(--color-ink-light);
+    font-size: 14px;
+  }
+
+  .auth-loading .spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-ink);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .upgrade-hint {
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--color-ink-light);
+  }
+
+  .upgrade-hint a {
+    color: var(--color-terracotta);
+  }
 </style>
 
-<script is:inline>
-  // SHA-256 hash of the password "Florida"
-  const PASSWORD_HASH = '8e9e26c2ef86ecd02ba5c84da8a0859a39b4181b19f4c89312d6f1c1b78ccf15';
-
-  // Hash function using Web Crypto API
-  async function sha256(message) {
-    const msgBuffer = new TextEncoder().encode(message);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  }
+<script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script is:inline define:vars={{ supabaseUrl, supabaseKey }}>
+  // Initialize Supabase client
+  const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
   // State
   let csvData = [];
@@ -642,8 +648,10 @@ const jsonLdSchema = [
   let fields = [];
   let results = [];
   let isRunning = false;
-  let accessMode = null; // 'guest' or 'maker'
+  let accessMode = null; // 'guest' (free tier) or 'maker' (pro tier)
   let customApiKey = null;
+  let currentUser = null;
+  let currentTier = 'free';
 
   // Field data types
   const fieldTypes = {
@@ -655,20 +663,12 @@ const jsonLdSchema = [
 
   // DOM Elements
   const elements = {
+    authLoading: document.getElementById('auth-loading'),
     authModal: document.getElementById('auth-modal'),
-    authOptions: document.getElementById('auth-options'),
-    authGuest: document.getElementById('auth-guest'),
-    authPasswordBtn: document.getElementById('auth-password-btn'),
-    authPasswordForm: document.getElementById('auth-password-form'),
-    authPasswordInput: document.getElementById('auth-password-input'),
-    authBack: document.getElementById('auth-back'),
-    authSubmit: document.getElementById('auth-submit'),
-    authError: document.getElementById('auth-error'),
-    authApiForm: document.getElementById('auth-api-form'),
     authApiInput: document.getElementById('auth-api-input'),
-    authApiBack: document.getElementById('auth-api-back'),
     authApiSubmit: document.getElementById('auth-api-submit'),
     authApiError: document.getElementById('auth-api-error'),
+    toolContainer: document.querySelector('.tool-container'),
     researchContent: document.getElementById('research-content'),
     uploadArea: document.getElementById('upload-area'),
     fileInput: document.getElementById('file-input'),
@@ -700,21 +700,77 @@ const jsonLdSchema = [
     resultsBody: document.getElementById('results-body'),
   };
 
-  // Initialize
+  // Initialize - check auth and set up event listeners
   document.addEventListener('DOMContentLoaded', () => {
+    initializeAuth();
     setupEventListeners();
   });
 
+  // Check user tier and set access mode on page load
+  async function initializeAuth() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        // Not logged in - redirect to login
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+        return;
+      }
+
+      currentUser = session.user;
+
+      // Fetch user's tier from profiles table
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tier')
+        .eq('id', session.user.id)
+        .single();
+
+      const tier = profile?.tier || 'free';
+      currentTier = tier;
+
+      // Hide loading
+      elements.authLoading.style.display = 'none';
+      elements.toolContainer.style.display = 'block';
+
+      // Map tier to mode: pro/enterprise = maker (built-in API), free = guest (own API key)
+      if (tier === 'pro' || tier === 'enterprise') {
+        // Pro user - direct access with built-in API
+        accessMode = 'maker';
+        customApiKey = null;
+        elements.researchContent.style.display = 'block';
+        showStep('upload');
+        addField();
+        addTierBadge('pro');
+      } else {
+        // Free user - show API key form
+        accessMode = 'guest';
+        elements.authModal.classList.remove('hidden');
+        addTierBadge('free');
+      }
+    } catch (error) {
+      console.error('Auth error:', error);
+      // On error, redirect to login
+      window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+    }
+  }
+
+  // Add tier badge to page title
+  function addTierBadge(tier) {
+    const badge = document.createElement('span');
+    badge.className = `access-mode-badge ${tier === 'pro' ? 'pro' : 'guest'}`;
+    badge.innerHTML = tier === 'pro'
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Pro'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Free';
+
+    const pageTitle = document.querySelector('.page-header h1');
+    if (pageTitle && !pageTitle.querySelector('.access-mode-badge')) {
+      pageTitle.appendChild(badge);
+    }
+  }
+
   function setupEventListeners() {
-    // Auth modal
-    elements.authGuest.addEventListener('click', showApiKeyForm);
-    elements.authPasswordBtn.addEventListener('click', showPasswordForm);
-    elements.authBack.addEventListener('click', showAuthOptions);
-    elements.authSubmit.addEventListener('click', handlePasswordSubmit);
-    elements.authPasswordInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') handlePasswordSubmit();
-    });
-    elements.authApiBack.addEventListener('click', showAuthOptions);
+    // Auth - API key form for free users
     elements.authApiSubmit.addEventListener('click', handleApiKeySubmit);
     elements.authApiInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') handleApiKeySubmit();
@@ -756,52 +812,11 @@ const jsonLdSchema = [
     elements.btnNewResearch.addEventListener('click', () => location.reload());
   }
 
-  // Auth functions
-  function showPasswordForm() {
-    elements.authOptions.style.display = 'none';
-    elements.authPasswordForm.style.display = 'block';
-    elements.authApiForm.style.display = 'none';
-    elements.authPasswordInput.focus();
-  }
-
-  function showApiKeyForm() {
-    elements.authOptions.style.display = 'none';
-    elements.authPasswordForm.style.display = 'none';
-    elements.authApiForm.style.display = 'block';
-    elements.authApiInput.focus();
-  }
-
-  function showAuthOptions() {
-    elements.authOptions.style.display = 'flex';
-    elements.authPasswordForm.style.display = 'none';
-    elements.authApiForm.style.display = 'none';
-    elements.authError.style.display = 'none';
-    elements.authApiError.style.display = 'none';
-  }
-
-  async function handlePasswordSubmit() {
-    const password = elements.authPasswordInput.value;
-    const hash = await sha256(password);
-
-    if (hash === PASSWORD_HASH) {
-      accessMode = 'maker';
-      customApiKey = null; // Use built-in key
-      elements.authModal.classList.add('hidden');
-      elements.researchContent.style.display = 'block';
-      showStep('upload');
-      addField(); // Add first field
-    } else {
-      elements.authError.style.display = 'block';
-      elements.authPasswordInput.value = '';
-      elements.authPasswordInput.focus();
-    }
-  }
-
+  // API key submit handler (for free tier users)
   function handleApiKeySubmit() {
     const apiKey = elements.authApiInput.value.trim();
 
     if (apiKey.startsWith('pplx-')) {
-      accessMode = 'guest';
       customApiKey = apiKey;
       elements.authModal.classList.add('hidden');
       elements.researchContent.style.display = 'block';
