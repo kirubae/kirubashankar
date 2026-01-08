@@ -1,12 +1,7 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
-import { createSupabaseServerClient } from '@lib/supabase';
 
 export const prerender = false;
-
-// Clear server-side session (cookies)
-const supabase = createSupabaseServerClient(Astro.cookies);
-await supabase.auth.signOut();
 
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || '';
 const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
