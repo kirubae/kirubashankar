@@ -29,19 +29,9 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
   <div class="tool-container">
     <Breadcrumb items={breadcrumbs} />
 
-    <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
-      <div>
-        <h1>File Share</h1>
-        <p class="page-subtitle">Share files with controlled access</p>
-      </div>
-      <a href="/logout" id="btn-logout" class="btn btn-secondary" style="display: none;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-          <polyline points="16 17 21 12 16 7"></polyline>
-          <line x1="21" y1="12" x2="9" y2="12"></line>
-        </svg>
-        Logout
-      </a>
+    <header class="page-header">
+      <h1>File Share</h1>
+      <p class="page-subtitle">Share files with controlled access</p>
     </header>
 
     <!-- Tab Navigation (only shown in admin mode) -->
@@ -1241,7 +1231,6 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
   // DOM elements
   const authLoading = document.getElementById('auth-loading');
   const dashboard = document.getElementById('dashboard');
-  const btnLogout = document.getElementById('btn-logout');
   const filesSection = document.getElementById('files-section');
   const uploadSection = document.getElementById('upload-section');
   const uploadSubtitle = document.getElementById('upload-subtitle');
@@ -1262,7 +1251,6 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     currentTier = tier;
     authLoading.style.display = 'none';
     dashboard.style.display = 'block';
-    btnLogout.style.display = 'flex';
 
     // Add tier badge to title
     const badge = document.createElement('span');
