@@ -1,8 +1,8 @@
 import { defineMiddleware } from 'astro:middleware';
 import { createSupabaseServerClient } from './lib/supabase';
 
-// Routes that require authentication
-const PROTECTED_ROUTES = ['/tools/data-merge', '/tools/deep-search'];
+// Routes that require authentication (none for now - all tools are public)
+const PROTECTED_ROUTES: string[] = [];
 
 export const onRequest = defineMiddleware(async ({ cookies, url, redirect, locals }, next) => {
   // Skip auth for prerendering (no env vars available)
