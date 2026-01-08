@@ -12,9 +12,12 @@ const currentPath = Astro.url.pathname;
 <header class="border-b border-border">
   <div class="max-w-3xl mx-auto px-5 py-4">
     <nav class="flex items-center justify-between" aria-label="Main navigation">
-      <a href="/" class="text-lg font-semibold text-ink hover:text-terracotta transition-colors">
-        {SITE.name.split(' ')[0]}
-      </a>
+      <div class="flex items-center gap-2">
+        <a href="/" class="text-lg font-semibold text-ink hover:text-terracotta transition-colors">
+          {SITE.name.split(' ')[0]}
+        </a>
+        <span id="tier-badge" class="hidden text-xs px-1.5 py-0.5 rounded"></span>
+      </div>
       {showNav && (
         <ul class="flex items-center gap-6 text-sm">
           <li>

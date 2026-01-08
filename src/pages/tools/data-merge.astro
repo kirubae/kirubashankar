@@ -2383,7 +2383,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     const helpText = document.querySelector('.help-text');
     if (helpText) {
       if (mode === 'guest') {
-        helpText.textContent = 'Free tier: 1 file per side, max 10MB each. Upgrade to Pro for full access.';
+        helpText.textContent = 'Free tier: 1 file per side, max 10MB each.';
       } else {
         helpText.textContent = 'Supports CSV and Excel files up to 500MB each. All files on the same side must have matching column headers.';
       }
@@ -2398,32 +2398,31 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
-      // If we got here, middleware already authenticated us
-      // If no client session, default to free tier
-      if (session) {
-        currentUser = session.user;
-
-        // Fetch user's tier from profiles table
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('tier')
-          .eq('id', session.user.id)
-          .single();
-
-        const tier = profile?.tier || 'free';
-        currentTier = tier;
-
-        // Map tier to mode: pro/enterprise = pro, free = guest
-        const mode = (tier === 'pro' || tier === 'enterprise') ? 'pro' : 'guest';
-        setAccessMode(mode, tier);
-      } else {
-        // No client session but we passed middleware - default to free
-        setAccessMode('guest', 'free');
+      if (!session) {
+        // No session - redirect to login
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+        return;
       }
+
+      currentUser = session.user;
+
+      // Fetch user's tier from profiles table
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tier')
+        .eq('id', session.user.id)
+        .single();
+
+      const tier = profile?.tier || 'free';
+      currentTier = tier;
+
+      // Map tier to mode: pro/enterprise = pro, free = guest
+      const mode = (tier === 'pro' || tier === 'enterprise') ? 'pro' : 'guest';
+      setAccessMode(mode, tier);
     } catch (error) {
       console.error('Auth error:', error);
-      // On error, default to guest mode (middleware already authenticated)
-      setAccessMode('guest', 'free');
+      // On error, redirect to login
+      window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
     }
   }
 

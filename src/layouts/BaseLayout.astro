@@ -72,21 +72,52 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
         }
 
         // Update auth UI based on session
-        supabase.auth.getSession().then(function(result) {
+        supabase.auth.getSession().then(async function(result) {
           var authContainer = document.getElementById('auth-container');
-          if (!authContainer) return;
+          var tierBadge = document.getElementById('tier-badge');
 
           var session = result.data.session;
           if (session && session.user) {
             var user = session.user;
             var avatarUrl = user.user_metadata?.avatar_url || '';
-            var html = '<div class="flex items-center gap-3">';
-            if (avatarUrl) {
-              html += '<img src="' + avatarUrl + '" alt="" class="w-7 h-7 rounded-full" />';
+
+            // Fetch user tier from profiles
+            var tier = 'free';
+            try {
+              var profileResult = await supabase
+                .from('profiles')
+                .select('tier')
+                .eq('id', user.id)
+                .single();
+              if (profileResult.data?.tier) {
+                tier = profileResult.data.tier;
+              }
+            } catch (e) {
+              console.log('Could not fetch tier');
             }
-            html += '<a href="/logout" class="text-ink-light hover:text-terracotta transition-colors">Logout</a>';
-            html += '</div>';
-            authContainer.innerHTML = html;
+
+            // Show tier badge next to logo
+            if (tierBadge) {
+              var tierColors = {
+                free: 'bg-gray-100 text-gray-600',
+                pro: 'bg-amber-100 text-amber-700',
+                enterprise: 'bg-purple-100 text-purple-700'
+              };
+              var tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1);
+              tierBadge.className = 'text-xs px-1.5 py-0.5 rounded ' + tierColors[tier];
+              tierBadge.textContent = tierLabel;
+            }
+
+            // Update auth container with avatar and logout
+            if (authContainer) {
+              var html = '<div class="flex items-center gap-3">';
+              if (avatarUrl) {
+                html += '<img src="' + avatarUrl + '" alt="" class="w-7 h-7 rounded-full" />';
+              }
+              html += '<a href="/logout" class="text-ink-light hover:text-terracotta transition-colors">Logout</a>';
+              html += '</div>';
+              authContainer.innerHTML = html;
+            }
           }
         });
       })();

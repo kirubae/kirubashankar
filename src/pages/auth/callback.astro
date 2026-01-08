@@ -1,0 +1,120 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+
+export const prerender = false;
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || '';
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
+---
+
+<BaseLayout title="Authenticating...">
+  <div class="callback-container">
+    <div class="spinner"></div>
+    <p>Completing sign in...</p>
+  </div>
+</BaseLayout>
+
+<script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script is:inline define:vars={{ supabaseUrl, supabaseKey }}>
+  (async function() {
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    // Get redirect destination from localStorage (set by login page)
+    const next = localStorage.getItem('auth_redirect') || '/tools';
+    console.log('Redirect destination:', next);
+    // Clear it so it doesn't affect future logins
+    localStorage.removeItem('auth_redirect');
+
+    // Check for code in URL (PKCE flow)
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+
+    if (code) {
+      console.log('Found auth code, exchanging for session...');
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+      if (error) {
+        console.error('Auth error:', error);
+        window.location.href = '/login?error=' + encodeURIComponent(error.message);
+        return;
+      }
+
+      if (data.session) {
+        console.log('Session established, redirecting to:', next);
+        window.location.href = next;
+        return;
+      }
+    }
+
+    // Check for hash tokens (implicit flow)
+    if (window.location.hash && window.location.hash.includes('access_token')) {
+      console.log('Found hash tokens, setting session...');
+
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+
+      if (accessToken) {
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || ''
+        });
+
+        if (error) {
+          console.error('Auth error:', error);
+          window.location.href = '/login?error=' + encodeURIComponent(error.message);
+          return;
+        }
+
+        if (data.session) {
+          console.log('Session established, redirecting to:', next);
+          window.location.href = next;
+          return;
+        }
+      }
+    }
+
+    // Check if we already have a session
+    const { data: existingSession } = await supabase.auth.getSession();
+    if (existingSession.session) {
+      console.log('Found existing session, redirecting to:', next);
+      window.location.href = next;
+      return;
+    }
+
+    // No auth data found
+    console.log('No auth data found, redirecting to login');
+    window.location.href = '/login';
+  })();
+</script>
+
+<style>
+  .callback-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh;
+    gap: 16px;
+  }
+
+  .callback-container p {
+    color: var(--color-ink-light);
+    font-size: 14px;
+  }
+
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-ink);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+</style>

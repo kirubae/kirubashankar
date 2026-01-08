@@ -2,9 +2,10 @@ import { defineMiddleware } from 'astro:middleware';
 import { createSupabaseServerClient } from './lib/supabase';
 
 // Routes that require authentication
-const PROTECTED_ROUTES = ['/tools/share', '/tools/data-merge', '/tools/deep-search'];
+// Note: Auth is now handled client-side to avoid cookie sync issues
+const PROTECTED_ROUTES: string[] = [];
 
-export const onRequest = defineMiddleware(async ({ cookies, url, redirect, locals }, next) => {
+export const onRequest = defineMiddleware(async ({ cookies, url, redirect, locals, request }, next) => {
   // Skip auth for prerendering (no env vars available)
   const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
   const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
@@ -13,6 +14,10 @@ export const onRequest = defineMiddleware(async ({ cookies, url, redirect, local
     locals.user = null;
     return next();
   }
+
+  // Debug: log all cookies from request header
+  const cookieHeader = request.headers.get('cookie') || '';
+  console.log('[Middleware] Path:', url.pathname, 'Cookies:', cookieHeader.substring(0, 200));
 
   // Create Supabase client and attach to locals
   const supabase = createSupabaseServerClient(cookies);
@@ -24,7 +29,9 @@ export const onRequest = defineMiddleware(async ({ cookies, url, redirect, local
       data: { user },
     } = await supabase.auth.getUser();
     locals.user = user;
-  } catch {
+    console.log('[Middleware] User:', user?.email || 'none');
+  } catch (e) {
+    console.log('[Middleware] Auth error:', e);
     locals.user = null;
   }
 
@@ -32,6 +39,7 @@ export const onRequest = defineMiddleware(async ({ cookies, url, redirect, local
   const isProtected = PROTECTED_ROUTES.some((route) => url.pathname.startsWith(route));
 
   if (isProtected && !locals.user) {
+    console.log('[Middleware] Redirecting to login');
     return redirect(`/login?redirect=${encodeURIComponent(url.pathname)}`);
   }
 

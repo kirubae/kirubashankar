@@ -53,7 +53,6 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
           <button class="btn btn-primary" id="auth-api-submit">Continue</button>
         </div>
         <p class="auth-error" id="auth-api-error" style="display: none;">Invalid API key format</p>
-        <p class="upgrade-hint">Want to skip this? <a href="/login">Upgrade to Pro</a> for built-in API access.</p>
       </div>
     </div>
   </div>
@@ -624,15 +623,6 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     }
   }
 
-  .upgrade-hint {
-    margin-top: 16px;
-    font-size: 13px;
-    color: var(--color-ink-light);
-  }
-
-  .upgrade-hint a {
-    color: var(--color-terracotta);
-  }
 </style>
 
 <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -711,27 +701,26 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
+      if (!session) {
+        // No session - redirect to login
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+        return;
+      }
+
       // Hide loading, show content
       elements.authLoading.style.display = 'none';
       elements.toolContainer.style.display = 'block';
 
-      // If we got here, middleware already authenticated us
-      // If no client session, default to free tier
-      let tier = 'free';
+      currentUser = session.user;
 
-      if (session) {
-        currentUser = session.user;
+      // Fetch user's tier from profiles table
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tier')
+        .eq('id', session.user.id)
+        .single();
 
-        // Fetch user's tier from profiles table
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('tier')
-          .eq('id', session.user.id)
-          .single();
-
-        tier = profile?.tier || 'free';
-      }
-
+      const tier = profile?.tier || 'free';
       currentTier = tier;
 
       // Map tier to mode: pro/enterprise = maker (built-in API), free = guest (own API key)
@@ -751,12 +740,8 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
       }
     } catch (error) {
       console.error('Auth error:', error);
-      // On error, default to free tier (middleware already authenticated)
-      elements.authLoading.style.display = 'none';
-      elements.toolContainer.style.display = 'block';
-      accessMode = 'guest';
-      elements.authModal.classList.remove('hidden');
-      addTierBadge('free');
+      // On error, redirect to login
+      window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
     }
   }
 
