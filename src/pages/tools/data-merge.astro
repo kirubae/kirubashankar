@@ -33,12 +33,6 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
   description="Replace Excel VLOOKUP with powerful merge operations for large files. Support for CSV and Excel files up to 500MB, multiple join types, and handle multiple files at once."
   jsonLd={jsonLdSchema}
 >
-  <!-- Loading state while checking auth -->
-  <div class="auth-loading" id="auth-loading">
-    <div class="spinner"></div>
-    <p>Loading...</p>
-  </div>
-
   <div class="merge-container">
     <Breadcrumb items={breadcrumbs} />
 
@@ -47,6 +41,16 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
       <h1>Bulk VLookup</h1>
       <p class="page-subtitle">Merge and join large datasets with powerful operations</p>
     </header>
+
+    <!-- Loading state while checking auth - skeleton UI -->
+    <div class="auth-loading" id="auth-loading">
+      <div class="skeleton-container">
+        <div class="skeleton-header"></div>
+        <div class="skeleton-upload-area"></div>
+        <div class="skeleton-upload-area"></div>
+        <div class="skeleton-button"></div>
+      </div>
+    </div>
 
     <!-- Step 1: Upload Files -->
     <section id="step-upload" class="step" data-step="upload">
@@ -1353,22 +1357,45 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 50vh;
-    gap: 16px;
+    padding: 32px 0;
   }
 
-  .auth-loading p {
-    color: var(--color-ink-light);
-    font-size: 14px;
+  .skeleton-container {
+    width: 100%;
+    max-width: 800px;
   }
 
-  .auth-loading .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--color-border);
-    border-top-color: var(--color-ink);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+  .skeleton-header {
+    height: 24px;
+    width: 200px;
+    background: linear-gradient(90deg, #e5e5e5 25%, #f0f0f0 50%, #e5e5e5 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+    margin-bottom: 24px;
+  }
+
+  .skeleton-upload-area {
+    height: 120px;
+    background: linear-gradient(90deg, #e5e5e5 25%, #f0f0f0 50%, #e5e5e5 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 8px;
+    margin-bottom: 16px;
+  }
+
+  .skeleton-button {
+    height: 44px;
+    width: 140px;
+    background: linear-gradient(90deg, #e5e5e5 25%, #f0f0f0 50%, #e5e5e5 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 6px;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
   }
 
   @keyframes spin {
@@ -2367,18 +2394,6 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     authLoading.style.display = 'none';
     mergeContainer.style.display = 'block';
 
-    // Update UI to show tier
-    const badge = document.createElement('span');
-    badge.className = `access-mode-badge ${mode}`;
-    badge.innerHTML = mode === 'pro'
-      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Pro'
-      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Free';
-
-    const pageTitle = document.querySelector('.page-header h1');
-    if (pageTitle && !pageTitle.querySelector('.access-mode-badge')) {
-      pageTitle.appendChild(badge);
-    }
-
     // Update help text based on mode
     const helpText = document.querySelector('.help-text');
     if (helpText) {
@@ -2394,12 +2409,35 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
   }
 
   // Check user tier and set access mode on page load
-  async function initializeAuth() {
+  async function initializeAuth(retryCount = 0) {
     try {
+      // Check localStorage cache first for instant load
+      const cached = localStorage.getItem('userTier');
+      if (cached) {
+        try {
+          const cacheData = JSON.parse(cached);
+          // Cache valid for 5 minutes
+          if (Date.now() - cacheData.timestamp < 5 * 60 * 1000) {
+            const tier = cacheData.tier;
+            const mode = (tier === 'pro' || tier === 'enterprise') ? 'pro' : 'guest';
+            setAccessMode(mode, tier);
+            // Verify session in background (non-blocking)
+            verifySessionInBackground();
+            return;
+          }
+        } catch (e) {}
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
-        // No session - redirect to login
+        // On mobile, session might not be ready yet - retry once after delay
+        if (retryCount < 1) {
+          console.log('No session found, retrying in 250ms...');
+          await new Promise(resolve => setTimeout(resolve, 250));
+          return initializeAuth(retryCount + 1);
+        }
+        // No session after retries - redirect to login
         window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
         return;
       }
@@ -2416,6 +2454,13 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
       const tier = profile?.tier || 'free';
       currentTier = tier;
 
+      // Cache the tier for future visits
+      localStorage.setItem('userTier', JSON.stringify({
+        tier: tier,
+        userId: session.user.id,
+        timestamp: Date.now()
+      }));
+
       // Map tier to mode: pro/enterprise = pro, free = guest
       const mode = (tier === 'pro' || tier === 'enterprise') ? 'pro' : 'guest';
       setAccessMode(mode, tier);
@@ -2423,6 +2468,22 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
       console.error('Auth error:', error);
       // On error, redirect to login
       window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+    }
+  }
+
+  // Background session verification (doesn't block UI)
+  async function verifySessionInBackground() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        // Session expired - clear cache and redirect
+        localStorage.removeItem('userTier');
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+        return;
+      }
+      currentUser = session.user;
+    } catch (error) {
+      console.error('Background auth check error:', error);
     }
   }
 

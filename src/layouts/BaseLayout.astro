@@ -81,19 +81,41 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
             var user = session.user;
             var avatarUrl = user.user_metadata?.avatar_url || '';
 
-            // Fetch user tier from profiles
+            // Check localStorage cache for tier first
             var tier = 'free';
-            try {
-              var profileResult = await supabase
-                .from('profiles')
-                .select('tier')
-                .eq('id', user.id)
-                .single();
-              if (profileResult.data?.tier) {
-                tier = profileResult.data.tier;
+            var cached = localStorage.getItem('userTier');
+            var cacheValid = false;
+            if (cached) {
+              try {
+                var cacheData = JSON.parse(cached);
+                // Cache valid for 5 minutes and same user
+                if (cacheData.userId === user.id && Date.now() - cacheData.timestamp < 5 * 60 * 1000) {
+                  tier = cacheData.tier;
+                  cacheValid = true;
+                }
+              } catch (e) {}
+            }
+
+            // Fetch from DB if cache miss
+            if (!cacheValid) {
+              try {
+                var profileResult = await supabase
+                  .from('profiles')
+                  .select('tier')
+                  .eq('id', user.id)
+                  .single();
+                if (profileResult.data?.tier) {
+                  tier = profileResult.data.tier;
+                }
+                // Cache the tier
+                localStorage.setItem('userTier', JSON.stringify({
+                  tier: tier,
+                  userId: user.id,
+                  timestamp: Date.now()
+                }));
+              } catch (e) {
+                console.log('Could not fetch tier');
               }
-            } catch (e) {
-              console.log('Could not fetch tier');
             }
 
             // Show tier badge next to logo
@@ -117,7 +139,15 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
               html += '<a href="/logout" class="text-ink-light hover:text-terracotta transition-colors">Logout</a>';
               html += '</div>';
               authContainer.innerHTML = html;
+              authContainer.style.visibility = 'visible';
             }
+          } else {
+            // Not logged in - show login button
+            if (authContainer) {
+              authContainer.style.visibility = 'visible';
+            }
+            // Clear cached tier on logout
+            localStorage.removeItem('userTier');
           }
         });
       })();
