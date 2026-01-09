@@ -20,12 +20,6 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
   description="Share files securely with expiry dates and access controls"
   noindex={true}
 >
-  <!-- Loading state while checking auth -->
-  <div class="auth-loading" id="auth-loading">
-    <div class="spinner"></div>
-    <p>Loading...</p>
-  </div>
-
   <div class="tool-container">
     <Breadcrumb items={breadcrumbs} />
 
@@ -33,6 +27,12 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
       <h1>File Share</h1>
       <p class="page-subtitle">Share files with controlled access</p>
     </header>
+
+    <!-- Loading state while checking auth -->
+    <div class="auth-loading" id="auth-loading">
+      <div class="spinner"></div>
+      <p>Just a sec...</p>
+    </div>
 
     <!-- Tab Navigation (only shown in admin mode) -->
     <div id="tab-nav" class="tab-nav" style="display: none;">
@@ -84,7 +84,6 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
               <thead>
                 <tr>
                   <th>File</th>
-                  <th>Uploaded By</th>
                   <th>Created</th>
                   <th>Expires</th>
                   <th>Downloads</th>
@@ -1252,18 +1251,6 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     authLoading.style.display = 'none';
     dashboard.style.display = 'block';
 
-    // Add tier badge to title
-    const badge = document.createElement('span');
-    badge.className = `access-mode-badge ${mode === 'admin' ? 'pro' : 'guest'}`;
-    badge.innerHTML = mode === 'admin'
-      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Pro'
-      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Free';
-
-    const pageTitle = document.querySelector('.page-header h1');
-    if (pageTitle && !pageTitle.querySelector('.access-mode-badge')) {
-      pageTitle.appendChild(badge);
-    }
-
     // Update upload subtitle based on mode
     const maxSize = mode === 'guest' ? '10MB' : '100MB';
     uploadSubtitle.textContent = `Share a new file (max ${maxSize})`;
@@ -1289,12 +1276,18 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
   }
 
   // Check user tier and set access mode on page load
-  async function initializeAuth() {
+  async function initializeAuth(retryCount = 0) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
-        // No session - redirect to login
+        // On mobile, session might not be ready yet - retry once after delay
+        if (retryCount < 2) {
+          console.log('No session found, retrying in 500ms...');
+          await new Promise(resolve => setTimeout(resolve, 500));
+          return initializeAuth(retryCount + 1);
+        }
+        // No session after retries - redirect to login
         window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
         return;
       }
@@ -1453,9 +1446,9 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     if (expiryDate) formData.append('expires_at', expiryDate);
     if (password) formData.append('password', password);
     if (allowedEmails.length > 0) formData.append('allowed_emails', JSON.stringify(allowedEmails));
-    // Add uploader info (user's email from Supabase session)
-    if (currentUser && currentUser.email) {
-      formData.append('uploader_email', currentUser.email);
+    // Add user_id for ownership tracking
+    if (currentUser && currentUser.id) {
+      formData.append('user_id', currentUser.id);
     }
 
     uploadOptions.style.display = 'none';
@@ -1515,7 +1508,8 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     list.style.display = 'none';
 
     try {
-      const response = await fetch('/api/share/files');
+      const url = currentUser?.id ? `/api/share/files?user_id=${currentUser.id}` : '/api/share/files';
+      const response = await fetch(url);
       const data = await response.json();
       files = data.files || [];
 
@@ -1531,7 +1525,6 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
         const expired = isExpired(file.expires_at);
         const hasPassword = !!file.password_hash;
         const hasEmailRestriction = file.allowed_emails && JSON.parse(file.allowed_emails).length > 0;
-        const uploadedBy = file.uploader_email || 'Admin';
 
         let protectionBadges = '';
         if (hasPassword) protectionBadges += '<span class="status-badge protected">Password</span> ';
@@ -1544,7 +1537,6 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
               <strong>${file.filename}</strong>
               <br><span style="font-size: 12px; color: var(--color-ink-light);">${formatFileSize(file.file_size)}</span>
             </td>
-            <td style="font-size: 13px;">${uploadedBy}</td>
             <td>${formatDate(file.created_at)}</td>
             <td>${expired ? '<span style="color: #ef4444;">Expired</span>' : formatDate(file.expires_at)}</td>
             <td>${file.download_count}</td>
@@ -1837,7 +1829,8 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     list.style.display = 'none';
 
     try {
-      const response = await fetch('/api/share/collections');
+      const url = currentUser?.id ? `/api/share/collections?user_id=${currentUser.id}` : '/api/share/collections';
+      const response = await fetch(url);
       const data = await response.json();
       collections = data.collections || [];
 
@@ -2078,7 +2071,8 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
           subtitle: subtitle || null,
           expires_at: expiryDate,
           password: password || null,
-          allowed_emails: allowedEmails.length > 0 ? allowedEmails : null
+          allowed_emails: allowedEmails.length > 0 ? allowedEmails : null,
+          user_id: currentUser?.id || null
         })
       });
 

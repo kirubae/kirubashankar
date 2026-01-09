@@ -3,7 +3,6 @@ import {
   generateFileId,
   sha256,
   MAX_FILE_SIZE,
-  GUEST_MAX_FILE_SIZE,
   EXTENSION_MIME_MAP,
   ALLOWED_EXTENSIONS,
   validateFileMagicBytes
@@ -20,11 +19,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const expiresAt = formData.get('expires_at') as string | null;
     const password = formData.get('password') as string | null;
     const allowedEmailsJson = formData.get('allowed_emails') as string | null;
-    const uploaderEmail = formData.get('uploader_email') as string | null;
-
-    // Determine if this is a guest upload
-    const isGuest = !!uploaderEmail;
-    const maxFileSize = isGuest ? GUEST_MAX_FILE_SIZE : MAX_FILE_SIZE;
+    const userId = formData.get('user_id') as string | null;
 
     // Validation
     if (!file) {
@@ -56,26 +51,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // Get correct MIME type from extension
     const mimeType = EXTENSION_MIME_MAP[extension] || file.type;
 
-    if (file.size > maxFileSize) {
-      const limitMB = maxFileSize / (1024 * 1024);
+    if (file.size > MAX_FILE_SIZE) {
+      const limitMB = MAX_FILE_SIZE / (1024 * 1024);
       return new Response(JSON.stringify({ error: `File size exceeds ${limitMB}MB limit` }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
-    }
-
-    // For guests, check if they already have a file
-    if (isGuest) {
-      const existingFile = await FILE_SHARE_DB.prepare(`
-        SELECT id FROM files WHERE uploader_email = ? AND is_deleted = 0
-      `).bind(uploaderEmail.toLowerCase()).first();
-
-      if (existingFile) {
-        return new Response(JSON.stringify({ error: 'You already have a shared file. Delete it first to share a new one.' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
     }
 
     // Generate unique ID and R2 key
@@ -148,7 +129,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     // Create database record
     const stmt = FILE_SHARE_DB.prepare(`
-      INSERT INTO files (id, filename, original_filename, r2_key, file_size, mime_type, expires_at, password_hash, allowed_emails, uploader_email)
+      INSERT INTO files (id, filename, original_filename, r2_key, file_size, mime_type, expires_at, password_hash, allowed_emails, user_id)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
@@ -162,7 +143,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       expiresAt || null,
       passwordHash,
       allowedEmails.length > 0 ? JSON.stringify(allowedEmails) : null,
-      uploaderEmail ? uploaderEmail.toLowerCase() : null
+      userId || null
     ).run();
 
     return new Response(JSON.stringify({
