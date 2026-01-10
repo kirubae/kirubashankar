@@ -1225,6 +1225,20 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   }
 
+  // Security: Escape HTML to prevent XSS
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+  }
+
+  // Security: Escape string for use in JavaScript string literals
+  function escapeJs(text) {
+    if (!text) return '';
+    return String(text).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+  }
+
   function formatDate(dateStr) {
     if (!dateStr) return 'Never';
     const date = new Date(dateStr);
@@ -1559,7 +1573,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
         return `
           <tr style="${expired ? 'opacity: 0.5;' : ''}">
             <td>
-              <strong>${file.filename}</strong>
+              <strong>${escapeHtml(file.filename)}</strong>
               <br><span style="font-size: 12px; color: var(--color-ink-light);">${formatFileSize(file.file_size)}</span>
             </td>
             <td>${formatDate(file.created_at)}</td>
@@ -1568,10 +1582,10 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
             <td>${protectionBadges}</td>
             <td>
               <div class="file-actions">
-                <button class="btn btn-secondary btn-icon" onclick="copyFileUrl('${file.id}')" title="Copy URL">Copy</button>
-                <button class="btn btn-secondary btn-icon" onclick="viewLogs('${file.id}')" title="View Logs">Logs</button>
-                <button class="btn btn-secondary btn-icon" onclick="editFile('${file.id}')" title="Edit">Edit</button>
-                <button class="btn btn-danger btn-icon" onclick="deleteFile('${file.id}', '${file.filename}')" title="Delete">Del</button>
+                <button class="btn btn-secondary btn-icon" onclick="copyFileUrl('${escapeJs(file.id)}')" title="Copy URL">Copy</button>
+                <button class="btn btn-secondary btn-icon" onclick="viewLogs('${escapeJs(file.id)}')" title="View Logs">Logs</button>
+                <button class="btn btn-secondary btn-icon" onclick="editFile('${escapeJs(file.id)}')" title="Edit">Edit</button>
+                <button class="btn btn-danger btn-icon" onclick="deleteFile('${escapeJs(file.id)}', '${escapeJs(file.filename)}')" title="Delete">Del</button>
               </div>
             </td>
           </tr>
@@ -1618,13 +1632,13 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
       list.style.display = 'block';
       tbody.innerHTML = logs.map(log => `
         <tr>
-          <td>${log.email}</td>
+          <td>${escapeHtml(log.email)}</td>
           <td>${formatDate(log.accessed_at)}</td>
-          <td>${log.location || '-'}</td>
-          <td style="font-family: monospace; font-size: 12px;">${log.ip_address || '-'}</td>
+          <td>${escapeHtml(log.location || '-')}</td>
+          <td style="font-family: monospace; font-size: 12px;">${escapeHtml(log.ip_address || '-')}</td>
           <td>
             <span class="status-badge ${log.success ? 'success' : 'failed'}">
-              ${log.success ? 'Success' : log.failure_reason || 'Failed'}
+              ${log.success ? 'Success' : escapeHtml(log.failure_reason || 'Failed')}
             </span>
           </td>
         </tr>
@@ -1881,9 +1895,9 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
         return `
           <tr>
             <td>
-              <a href="javascript:void(0)" onclick="viewCollection('${c.id}')" style="text-decoration: none; color: inherit;">
-                <strong style="color: var(--color-terracotta);">${c.title}</strong>
-                ${c.subtitle ? `<br><span style="font-size: 12px; color: var(--color-ink-light);">${c.subtitle}</span>` : ''}
+              <a href="javascript:void(0)" onclick="viewCollection('${escapeJs(c.id)}')" style="text-decoration: none; color: inherit;">
+                <strong style="color: var(--color-terracotta);">${escapeHtml(c.title)}</strong>
+                ${c.subtitle ? `<br><span style="font-size: 12px; color: var(--color-ink-light);">${escapeHtml(c.subtitle)}</span>` : ''}
               </a>
             </td>
             <td>${c.item_count}</td>
@@ -1893,10 +1907,10 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
             <td>${protectionBadges}</td>
             <td>
               <div class="file-actions">
-                <button class="btn btn-secondary btn-icon" onclick="copyCollectionUrl('${c.id}')" title="Copy URL">Copy</button>
-                <button class="btn btn-secondary btn-icon" onclick="viewCollectionLogs('${c.id}')" title="View Logs">Logs</button>
-                <button class="btn btn-secondary btn-icon" onclick="editCollection('${c.id}')" title="Edit">Edit</button>
-                <button class="btn btn-danger btn-icon" onclick="deleteCollection('${c.id}', '${c.title}')" title="Delete">Del</button>
+                <button class="btn btn-secondary btn-icon" onclick="copyCollectionUrl('${escapeJs(c.id)}')" title="Copy URL">Copy</button>
+                <button class="btn btn-secondary btn-icon" onclick="viewCollectionLogs('${escapeJs(c.id)}')" title="View Logs">Logs</button>
+                <button class="btn btn-secondary btn-icon" onclick="editCollection('${escapeJs(c.id)}')" title="Edit">Edit</button>
+                <button class="btn btn-danger btn-icon" onclick="deleteCollection('${escapeJs(c.id)}', '${escapeJs(c.title)}')" title="Delete">Del</button>
               </div>
             </td>
           </tr>
@@ -1952,8 +1966,8 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
         ${breadcrumbs.map((b, i) => `
           <span class="separator">/</span>
           ${i === breadcrumbs.length - 1
-            ? `<span>${b.title}</span>`
-            : `<a href="javascript:viewCollection('${b.id}')">${b.title}</a>`
+            ? `<span>${escapeHtml(b.title)}</span>`
+            : `<a href="javascript:viewCollection('${escapeJs(b.id)}')">${escapeHtml(b.title)}</a>`
           }
         `).join('')}
       `;
@@ -1975,12 +1989,12 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
           return `
             <tr>
               <td>
-                <a href="javascript:void(0)" onclick="viewCollection('${child.id}')" style="text-decoration: none; color: inherit;">
+                <a href="javascript:void(0)" onclick="viewCollection('${escapeJs(child.id)}')" style="text-decoration: none; color: inherit;">
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" width="20" height="20">
                       <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
                     </svg>
-                    <strong style="color: var(--color-terracotta);">${child.title}</strong>
+                    <strong style="color: var(--color-terracotta);">${escapeHtml(child.title)}</strong>
                   </div>
                 </a>
               </td>
@@ -1988,9 +2002,9 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
               <td>${formatDate(child.created_at)}</td>
               <td>
                 <div class="file-actions">
-                  <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); copyCollectionUrl('${child.id}')">Copy</button>
-                  <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); viewCollectionLogs('${child.id}')">Logs</button>
-                  <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); deleteSubCollection('${child.id}', '${child.title.replace(/'/g, "\\'")}')">Del</button>
+                  <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); copyCollectionUrl('${escapeJs(child.id)}')">Copy</button>
+                  <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); viewCollectionLogs('${escapeJs(child.id)}')">Logs</button>
+                  <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); deleteSubCollection('${escapeJs(child.id)}', '${escapeJs(child.title)}')">Del</button>
                 </div>
               </td>
             </tr>
@@ -2004,16 +2018,16 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
                   </svg>
-                  ${child.filename}
+                  ${escapeHtml(child.filename)}
                 </div>
               </td>
               <td>${formatFileSize(child.file_size)}</td>
               <td>${formatDate(child.created_at)}</td>
               <td>
                 <div class="file-actions">
-                  <button class="btn btn-secondary btn-sm" onclick="copyFileUrl('${child.id}')">Copy</button>
-                  <button class="btn btn-secondary btn-sm" onclick="viewLogs('${child.id}')">Logs</button>
-                  <button class="btn btn-secondary btn-sm" onclick="deleteFileFromCollection('${child.id}', '${child.filename.replace(/'/g, "\\'")}')">Del</button>
+                  <button class="btn btn-secondary btn-sm" onclick="copyFileUrl('${escapeJs(child.id)}')">Copy</button>
+                  <button class="btn btn-secondary btn-sm" onclick="viewLogs('${escapeJs(child.id)}')">Logs</button>
+                  <button class="btn btn-secondary btn-sm" onclick="deleteFileFromCollection('${escapeJs(child.id)}', '${escapeJs(child.filename)}')">Del</button>
                 </div>
               </td>
             </tr>
@@ -2144,13 +2158,13 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
       list.style.display = 'block';
       tbody.innerHTML = logs.map(log => `
         <tr>
-          <td>${log.email}</td>
+          <td>${escapeHtml(log.email)}</td>
           <td>${formatDate(log.accessed_at)}</td>
-          <td>${log.location || '-'}</td>
-          <td style="font-family: monospace; font-size: 12px;">${log.ip_address || '-'}</td>
+          <td>${escapeHtml(log.location || '-')}</td>
+          <td style="font-family: monospace; font-size: 12px;">${escapeHtml(log.ip_address || '-')}</td>
           <td>
             <span class="status-badge ${log.success ? 'success' : 'failed'}">
-              ${log.success ? (log.action === 'download_file' ? 'Download' : 'View') : log.failure_reason || 'Failed'}
+              ${log.success ? (log.action === 'download_file' ? 'Download' : 'View') : escapeHtml(log.failure_reason || 'Failed')}
             </span>
           </td>
         </tr>

@@ -93,13 +93,40 @@ export const GET: APIRoute = async ({ params, locals, url }) => {
   }
 };
 
-// PUT: Update collection settings
+// PUT: Update collection settings (requires authentication + ownership)
 export const PUT: APIRoute = async ({ params, request, locals }) => {
   try {
+    // Security: Require authentication
+    if (!locals.user) {
+      return new Response(JSON.stringify({ error: 'Authentication required' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     const { FILE_SHARE_DB } = locals.runtime.env;
     const { id } = params;
-    const body = await request.json();
 
+    // Security: Verify collection ownership before allowing update
+    const existingCollection = await FILE_SHARE_DB.prepare(`
+      SELECT user_id FROM collections WHERE id = ? AND is_deleted = 0
+    `).bind(id).first<{ user_id: string }>();
+
+    if (!existingCollection) {
+      return new Response(JSON.stringify({ error: 'Collection not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (existingCollection.user_id !== locals.user.id) {
+      return new Response(JSON.stringify({ error: 'Access denied' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const body = await request.json();
     const { title, subtitle, expires_at, password, remove_password, allowed_emails } = body;
 
     // Build update query dynamically
@@ -164,20 +191,36 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
   }
 };
 
-// DELETE: Soft delete collection and cascade to children
+// DELETE: Soft delete collection and cascade to children (requires authentication + ownership)
 export const DELETE: APIRoute = async ({ params, locals }) => {
   try {
+    // Security: Require authentication
+    if (!locals.user) {
+      return new Response(JSON.stringify({ error: 'Authentication required' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     const { FILE_SHARE_DB } = locals.runtime.env;
     const { id } = params;
 
-    // Check if collection exists
+    // Check if collection exists and verify ownership
     const collection = await FILE_SHARE_DB.prepare(`
-      SELECT id FROM collections WHERE id = ? AND is_deleted = 0
-    `).bind(id).first();
+      SELECT id, user_id FROM collections WHERE id = ? AND is_deleted = 0
+    `).bind(id).first<{ id: string; user_id: string }>();
 
     if (!collection) {
       return new Response(JSON.stringify({ error: 'Collection not found' }), {
         status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Security: Verify collection ownership before allowing delete
+    if (collection.user_id !== locals.user.id) {
+      return new Response(JSON.stringify({ error: 'Access denied' }), {
+        status: 403,
         headers: { 'Content-Type': 'application/json' }
       });
     }

@@ -63,8 +63,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('[email/jobs] DO API error:', errorText);
+      // Security: Don't leak internal error details to client
       return new Response(
-        JSON.stringify({ error: 'Processing failed', details: errorText }),
+        JSON.stringify({ error: 'Processing failed' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -77,8 +78,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
   } catch (error) {
     console.error('[email/jobs] Error:', error);
+    // Security: Don't leak internal error details to client
     return new Response(
-      JSON.stringify({ error: 'Failed to create job', details: String(error) }),
+      JSON.stringify({ error: 'Failed to create job' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

@@ -48,13 +48,40 @@ export const GET: APIRoute = async ({ params, locals, url }) => {
   }
 };
 
-// PUT: Update file settings
+// PUT: Update file settings (requires authentication + ownership)
 export const PUT: APIRoute = async ({ params, request, locals }) => {
   try {
+    // Security: Require authentication
+    if (!locals.user) {
+      return new Response(JSON.stringify({ error: 'Authentication required' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     const { FILE_SHARE_DB } = locals.runtime.env;
     const { id } = params;
-    const body = await request.json();
 
+    // Security: Verify file ownership before allowing update
+    const existingFile = await FILE_SHARE_DB.prepare(`
+      SELECT user_id FROM files WHERE id = ? AND is_deleted = 0
+    `).bind(id).first<{ user_id: string }>();
+
+    if (!existingFile) {
+      return new Response(JSON.stringify({ error: 'File not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (existingFile.user_id !== locals.user.id) {
+      return new Response(JSON.stringify({ error: 'Access denied' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const body = await request.json();
     const { expires_at, password, remove_password, allowed_emails } = body;
 
     // Build update query dynamically
@@ -103,9 +130,17 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
   }
 };
 
-// DELETE: Soft delete file and remove from R2
+// DELETE: Soft delete file and remove from R2 (requires authentication + ownership)
 export const DELETE: APIRoute = async ({ params, locals, request }) => {
   try {
+    // Security: Require authentication
+    if (!locals.user) {
+      return new Response(JSON.stringify({ error: 'Authentication required' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     const { FILE_SHARE_DB, FILE_SHARE_BUCKET } = locals.runtime.env;
     const { id } = params;
 
@@ -113,14 +148,22 @@ export const DELETE: APIRoute = async ({ params, locals, request }) => {
     const ipAddress = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || 'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
 
-    // Get file to find R2 key and collection_id
+    // Get file to find R2 key and collection_id, and verify ownership
     const file = await FILE_SHARE_DB.prepare(`
-      SELECT r2_key, collection_id, file_size FROM files WHERE id = ? AND is_deleted = 0
-    `).bind(id).first<{ r2_key: string; collection_id: string | null; file_size: number }>();
+      SELECT r2_key, collection_id, file_size, user_id FROM files WHERE id = ? AND is_deleted = 0
+    `).bind(id).first<{ r2_key: string; collection_id: string | null; file_size: number; user_id: string }>();
 
     if (!file) {
       return new Response(JSON.stringify({ error: 'File not found' }), {
         status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Security: Verify file ownership before allowing delete
+    if (file.user_id !== locals.user.id) {
+      return new Response(JSON.stringify({ error: 'Access denied' }), {
+        status: 403,
         headers: { 'Content-Type': 'application/json' }
       });
     }

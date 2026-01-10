@@ -61,8 +61,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if (!doResponse.ok) {
       const errorText = await doResponse.text();
       console.error('DO API error:', errorText);
+      // Security: Don't leak internal error details to client
       return new Response(
-        JSON.stringify({ error: 'Processing failed', details: errorText }),
+        JSON.stringify({ error: 'Processing failed' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -76,8 +77,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
   } catch (error) {
     console.error('Process error:', error);
+    // Security: Don't leak internal error details to client
     return new Response(
-      JSON.stringify({ error: 'Processing failed', details: String(error) }),
+      JSON.stringify({ error: 'Processing failed' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
