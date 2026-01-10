@@ -3,20 +3,19 @@ import BaseLayout from '@layouts/BaseLayout.astro';
 
 export const prerender = false;
 
-// If already logged in, redirect to tools
-if (Astro.locals.user) {
-  return Astro.redirect('/tools');
-}
-
 const redirectTo = Astro.url.searchParams.get('redirect') || '/tools';
+
+// If already logged in, redirect to intended destination
+if (Astro.locals.user) {
+  return Astro.redirect(redirectTo);
+}
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || '';
 const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
 ---
 
 <BaseLayout title="Login">
   <div class="login-container">
-    <h1>Sign in to continue</h1>
-    <p class="login-subtitle">Access premium tools and track your usage</p>
+    <h1>Sign in or sign up to continue</h1>
 
     <button id="google-login" class="btn btn-primary google-btn">
       <svg class="google-icon" viewBox="0 0 24 24">
@@ -88,13 +87,8 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
   h1 {
     font-size: 24px;
     font-weight: 600;
-    margin-bottom: 8px;
-    color: var(--color-ink);
-  }
-
-  .login-subtitle {
-    color: var(--color-ink-light);
     margin-bottom: 32px;
+    color: var(--color-ink);
   }
 
   .google-btn {

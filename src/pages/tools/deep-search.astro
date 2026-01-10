@@ -51,11 +51,31 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     </div>
   </div>
 
-  <div class="tool-container">
+  <div class="tool-container" id="tool-container">
     <Breadcrumb items={breadcrumbs} />
 
-    <!-- Page Heading -->
-    <header class="page-header">
+    <!-- Landing page for unauthenticated users -->
+    <div id="tool-landing" class="tool-landing" style="display: none;">
+      <div class="landing-hero">
+        <h1>Research Companies</h1>
+        <p>AI-powered company research using Perplexity</p>
+      </div>
+
+      <div class="feature-list">
+        <h2>What you can do</h2>
+        <ul>
+          <li>AI-powered company research using Perplexity</li>
+          <li>Bulk research from CSV uploads</li>
+          <li>Define custom research fields</li>
+          <li>Export results to CSV</li>
+          <li>Pro tier: Uses built-in API (no key needed)</li>
+        </ul>
+        <a href="/login?redirect=/tools/deep-search" class="btn btn-primary landing-cta">Continue</a>
+      </div>
+    </div>
+
+    <!-- Page Heading (shown when authenticated) -->
+    <header class="page-header" id="page-header" style="display: none;">
       <h1>Research Companies</h1>
       <p class="page-subtitle">AI-powered company research using Perplexity</p>
     </header>
@@ -638,17 +658,6 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     border-radius: 6px;
   }
 
-  @keyframes shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
 </style>
 
 <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -684,7 +693,9 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     authApiInput: document.getElementById('auth-api-input'),
     authApiSubmit: document.getElementById('auth-api-submit'),
     authApiError: document.getElementById('auth-api-error'),
-    toolContainer: document.querySelector('.tool-container'),
+    toolContainer: document.getElementById('tool-container'),
+    toolLanding: document.getElementById('tool-landing'),
+    pageHeader: document.getElementById('page-header'),
     researchContent: document.getElementById('research-content'),
     uploadArea: document.getElementById('upload-area'),
     fileInput: document.getElementById('file-input'),
@@ -722,6 +733,11 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     setupEventListeners();
   });
 
+  function showLandingPage() {
+    elements.authLoading.style.display = 'none';
+    elements.toolLanding.style.display = 'block';
+  }
+
   // Check user tier and set access mode on page load
   async function initializeAuth(retryCount = 0) {
     try {
@@ -735,8 +751,9 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
             const tier = cacheData.tier;
             currentTier = tier;
 
-            // Hide loading, show content immediately
+            // Hide loading, show page header and content immediately
             elements.authLoading.style.display = 'none';
+            elements.pageHeader.style.display = 'block';
             elements.toolContainer.style.display = 'block';
 
             // Map tier to mode: pro/enterprise = maker (built-in API), free = guest (own API key)
@@ -766,13 +783,14 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
           await new Promise(resolve => setTimeout(resolve, 250));
           return initializeAuth(retryCount + 1);
         }
-        // No session after retries - redirect to login
-        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+        // No session after retries - show landing page
+        showLandingPage();
         return;
       }
 
-      // Hide loading, show content
+      // Hide loading, show page header and content
       elements.authLoading.style.display = 'none';
+      elements.pageHeader.style.display = 'block';
       elements.toolContainer.style.display = 'block';
 
       currentUser = session.user;
@@ -809,8 +827,8 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
       }
     } catch (error) {
       console.error('Auth error:', error);
-      // On error, redirect to login
-      window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+      // On error, show landing page
+      showLandingPage();
     }
   }
 

@@ -1,4 +1,8 @@
 import type { BreadcrumbItem } from '@/types/share';
+import { formatFileSize } from './index';
+
+// Re-export for backward compatibility
+export { formatFileSize };
 
 // Generate URL-safe unique ID (12 characters)
 export function generateFileId(): string {
@@ -91,12 +95,6 @@ export function isFileExpired(expiresAt: string | null): boolean {
   return new Date(expiresAt) < new Date();
 }
 
-// Format file size for display
-export function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-}
 
 // Parse allowed emails JSON
 export function parseAllowedEmails(json: string | null): string[] {
@@ -111,9 +109,8 @@ export function parseAllowedEmails(json: string | null): string[] {
 // Dashboard password hash (same as deep-search tool)
 export const DASHBOARD_PASSWORD_HASH = '8e9e26c2ef86ecd02ba5c84da8a0859a39b4181b19f4c89312d6f1c1b78ccf15';
 
-// Max file size: 100MB for authenticated, 10MB for guests
+// Max file size: 100MB
 export const MAX_FILE_SIZE = 100 * 1024 * 1024;
-export const GUEST_MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 // Allowed MIME types (expanded from PDF-only)
 export const ALLOWED_MIME_TYPES = [

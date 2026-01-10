@@ -4,7 +4,9 @@ import { getAllTools, getToolBySlug } from '@data/tools';
 import { generateBreadcrumbSchema } from '@components/seo/schemas/BreadcrumbSchema';
 
 export function getStaticPaths() {
-  const tools = getAllTools();
+  // Tools with dedicated SSR pages - exclude from static generation
+  const ssrTools = ['data-merge', 'deep-search'];
+  const tools = getAllTools().filter(tool => !ssrTools.includes(tool.slug));
   return tools.map((tool) => ({
     params: { slug: tool.slug },
   }));

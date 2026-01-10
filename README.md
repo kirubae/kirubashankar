@@ -14,7 +14,6 @@ Personal website and tools suite built with Astro, deployed on Cloudflare Pages 
 - Company research automation using AI APIs
 
 **What it does NOT do:**
-- No user accounts or persistent user data
 - No payment processing
 - No direct database writes from frontend (all through API)
 - AI must not modify infrastructure, deployment configs, or secrets
@@ -179,6 +178,28 @@ These are **hard constraints**, not suggestions.
 
 ---
 
+## Authentication
+
+### Supabase Auth
+The site uses Supabase Auth with Google OAuth for protected tools (File Share, Bulk VLookup, Research Companies).
+
+| Property | Value |
+|----------|-------|
+| Provider | Supabase (Google OAuth) |
+| Flow | Client-side implicit |
+| Callback | `/auth/callback` |
+| Logout | `/logout` |
+
+### User Tiers
+User tiers (Free, Pro, Enterprise) are stored in `profiles.tier` in Supabase and displayed as a badge next to the logo. Tiers are cached in localStorage (5-minute TTL) to speed up tool page loads.
+
+### Protected Tools
+- `/tools/share` - File Share (requires login, shows only user's files)
+- `/tools/data-merge` - Bulk VLookup (requires login)
+- `/tools/deep-search` - Research Companies (requires login)
+
+---
+
 ## Hosting Details
 
 ### Frontend (Cloudflare Pages)
@@ -221,7 +242,8 @@ These are **hard constraints**, not suggestions.
 
 **Frontend (`.dev.vars`):**
 ```
-# No secrets needed for local dev
+PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+PUBLIC_SUPABASE_ANON_KEY=xxx
 ```
 
 **Backend (`api/.env`):**

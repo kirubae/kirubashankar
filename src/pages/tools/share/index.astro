@@ -20,18 +20,42 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
   description="Share files securely with expiry dates and access controls"
   noindex={true}
 >
-  <div class="tool-container">
+  <div class="tool-container" id="tool-container">
     <Breadcrumb items={breadcrumbs} />
 
-    <header class="page-header">
+    <!-- Landing page for unauthenticated users -->
+    <div id="tool-landing" class="tool-landing" style="display: none;">
+      <div class="landing-hero">
+        <h1>File Share</h1>
+        <p>Secure file sharing with controlled access</p>
+      </div>
+
+      <div class="feature-list">
+        <h2>What you can do</h2>
+        <ul>
+          <li>Secure file sharing with password protection</li>
+          <li>Email whitelist for access control</li>
+          <li>Set expiry dates for time-limited sharing</li>
+          <li>Track downloads and access logs</li>
+          <li>Organize files into collections</li>
+        </ul>
+        <a href="/login?redirect=/tools/share" class="btn btn-primary landing-cta">Continue</a>
+      </div>
+    </div>
+
+    <!-- Page Heading (shown when authenticated) -->
+    <header class="page-header" id="page-header" style="display: none;">
       <h1>File Share</h1>
       <p class="page-subtitle">Share files with controlled access</p>
     </header>
 
     <!-- Loading state while checking auth -->
     <div class="auth-loading" id="auth-loading">
-      <div class="spinner"></div>
-      <p>Just a sec...</p>
+      <div class="skeleton-container">
+        <div class="skeleton-header"></div>
+        <div class="skeleton-upload-area"></div>
+        <div class="skeleton-button"></div>
+      </div>
     </div>
 
     <!-- Tab Navigation (only shown in admin mode) -->
@@ -1174,11 +1198,6 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     animation: spin 0.8s linear infinite;
   }
 
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
 </style>
 
 <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -1249,6 +1268,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     currentMode = mode;
     currentTier = tier;
     authLoading.style.display = 'none';
+    document.getElementById('page-header').style.display = 'block';
     dashboard.style.display = 'block';
 
     // Update upload subtitle based on mode
@@ -1275,6 +1295,11 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     }
   }
 
+  function showLandingPage() {
+    authLoading.style.display = 'none';
+    document.getElementById('tool-landing').style.display = 'block';
+  }
+
   // Check user tier and set access mode on page load
   async function initializeAuth(retryCount = 0) {
     try {
@@ -1282,13 +1307,13 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
 
       if (!session) {
         // On mobile, session might not be ready yet - retry once after delay
-        if (retryCount < 2) {
-          console.log('No session found, retrying in 500ms...');
-          await new Promise(resolve => setTimeout(resolve, 500));
+        if (retryCount < 1) {
+          console.log('No session found, retrying in 250ms...');
+          await new Promise(resolve => setTimeout(resolve, 250));
           return initializeAuth(retryCount + 1);
         }
-        // No session after retries - redirect to login
-        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+        // No session after retries - show landing page
+        showLandingPage();
         return;
       }
 
@@ -1309,8 +1334,8 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
       setAccessMode(mode, tier);
     } catch (error) {
       console.error('Auth error:', error);
-      // On error, redirect to login
-      window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+      // On error, show landing page
+      showLandingPage();
     }
   }
 

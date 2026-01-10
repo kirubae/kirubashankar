@@ -36,8 +36,28 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
   <div class="merge-container">
     <Breadcrumb items={breadcrumbs} />
 
-    <!-- Page Heading -->
-    <header class="page-header">
+    <!-- Landing page for unauthenticated users -->
+    <div id="tool-landing" class="tool-landing" style="display: none;">
+      <div class="landing-hero">
+        <h1>Bulk VLookup</h1>
+        <p>Merge and join large datasets with powerful VLOOKUP-style operations</p>
+      </div>
+
+      <div class="feature-list">
+        <h2>What you can do</h2>
+        <ul>
+          <li>Merge CSV and Excel files with VLOOKUP-style joins</li>
+          <li>Support for multiple files per side (Pro tier)</li>
+          <li>Left, Right, Inner, and Full join operations</li>
+          <li>Preview data and select output columns</li>
+          <li>Handle files up to 500MB (Pro tier)</li>
+        </ul>
+        <a href="/login?redirect=/tools/data-merge" class="btn btn-primary landing-cta">Continue</a>
+      </div>
+    </div>
+
+    <!-- Page Heading (shown when authenticated) -->
+    <header class="page-header" id="page-header" style="display: none;">
       <h1>Bulk VLookup</h1>
       <p class="page-subtitle">Merge and join large datasets with powerful operations</p>
     </header>
@@ -53,7 +73,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     </div>
 
     <!-- Step 1: Upload Files -->
-    <section id="step-upload" class="step" data-step="upload">
+    <section id="step-upload" class="step" data-step="upload" style="display: none;">
       <div class="step-header">
         <div class="step-badge">1</div>
         <div>
@@ -1393,16 +1413,6 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     border-radius: 6px;
   }
 
-  @keyframes shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
 </style>
 
 <!-- SheetJS for Excel parsing and export -->
@@ -2390,8 +2400,9 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     accessMode = mode;
     currentTier = tier;
 
-    // Hide loading, show content
+    // Hide loading, show content and page header
     authLoading.style.display = 'none';
+    document.getElementById('page-header').style.display = 'block';
     mergeContainer.style.display = 'block';
 
     // Update help text based on mode
@@ -2406,6 +2417,12 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
 
     // Show first step
     showStep('upload', false);
+  }
+
+  function showLandingPage() {
+    authLoading.style.display = 'none';
+    mergeContainer.style.display = 'block';
+    document.getElementById('tool-landing').style.display = 'block';
   }
 
   // Check user tier and set access mode on page load
@@ -2437,8 +2454,8 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
           await new Promise(resolve => setTimeout(resolve, 250));
           return initializeAuth(retryCount + 1);
         }
-        // No session after retries - redirect to login
-        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+        // No session after retries - show landing page
+        showLandingPage();
         return;
       }
 
@@ -2466,8 +2483,8 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
       setAccessMode(mode, tier);
     } catch (error) {
       console.error('Auth error:', error);
-      // On error, redirect to login
-      window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+      // On error, show landing page
+      showLandingPage();
     }
   }
 

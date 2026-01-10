@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
+import '@styles/tools.css';
 
 export const prerender = false;
 
@@ -40,7 +41,10 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
       }
 
       if (data.session) {
-        console.log('Session established, redirecting to:', next);
+        console.log('Session established, waiting for persistence...');
+        // Small delay to ensure session is persisted to localStorage (mobile fix)
+        await new Promise(resolve => setTimeout(resolve, 500));
+        console.log('Redirecting to:', next);
         window.location.href = next;
         return;
       }
@@ -67,7 +71,10 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
         }
 
         if (data.session) {
-          console.log('Session established, redirecting to:', next);
+          console.log('Session established, waiting for persistence...');
+          // Small delay to ensure session is persisted to localStorage (mobile fix)
+          await new Promise(resolve => setTimeout(resolve, 500));
+          console.log('Redirecting to:', next);
           window.location.href = next;
           return;
         }
@@ -112,9 +119,4 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     animation: spin 0.8s linear infinite;
   }
 
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
 </style>

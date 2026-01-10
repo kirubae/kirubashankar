@@ -51,6 +51,13 @@ Loaded via `<link>` in `BaseLayout.astro` with `preconnect` for performance.
 | `Breadcrumb` | `src/components/ui/Breadcrumb.astro` | Breadcrumb navigation |
 | `ToolCard` | `src/components/ui/ToolCard.astro` | Tool listing cards |
 
+### Header Components
+
+**Tier Badge**: Displays user tier (Free, Pro, Enterprise) next to logo when logged in.
+- Element ID: `#tier-badge`
+- Colors: Free (gray-100/gray-600), Pro (amber-100/amber-700), Enterprise (purple-100/purple-700)
+- Logic in: `src/layouts/BaseLayout.astro` (fetches tier from Supabase profiles, cached in localStorage)
+
 ### SEO Components
 
 | Component | Location | Usage |
@@ -132,6 +139,11 @@ Located in `src/styles/tools.css`:
 | `.info-card` | Information card |
 | `.help-text` | Helper text below inputs |
 | `.action-bar` | Button group container |
+| `.auth-loading` | Auth check loading container |
+| `.skeleton-container` | Skeleton UI wrapper |
+| `.skeleton-header` | Skeleton placeholder for headers |
+| `.skeleton-upload-area` | Skeleton placeholder for upload zones |
+| `.skeleton-button` | Skeleton placeholder for buttons |
 
 ## Utilities
 
@@ -277,23 +289,49 @@ src/
 │   └── tools.ts
 ├── layouts/
 │   └── BaseLayout.astro
+├── lib/
+│   └── auth-tier.ts            # Auth tier utilities
 ├── pages/
 │   ├── api/
 │   │   ├── research.ts
-│   │   └── validate-emails.ts
+│   │   ├── validate-emails.ts
+│   │   └── share/              # File Share API endpoints
+│   │       ├── upload.ts
+│   │       ├── files.ts
+│   │       ├── files/[id].ts
+│   │       ├── access.ts
+│   │       ├── download/[id].ts
+│   │       └── collections/
+│   │           ├── index.ts
+│   │           └── [id].ts
+│   ├── auth/
+│   │   └── callback.astro      # OAuth callback handler
+│   ├── s/
+│   │   └── [id].astro          # Short URL file download
 │   ├── tools/
 │   │   ├── index.astro
-│   │   ├── deep-search.astro
+│   │   ├── [slug].astro        # Dynamic tool pages
+│   │   ├── data-merge.astro    # Bulk VLookup tool
+│   │   ├── deep-search.astro   # Research Companies tool
 │   │   ├── email-validator.astro
-│   │   └── image-resizer.astro
+│   │   ├── image-canvas.astro
+│   │   └── share/
+│   │       └── index.astro     # File Share dashboard
 │   ├── 404.astro
 │   ├── index.astro
+│   ├── login.astro             # Login page
+│   ├── logout.astro            # Logout handler
+│   ├── privacy.astro
+│   ├── terms.astro
 │   └── sitemap.xml.ts
 ├── styles/
 │   ├── global.css
 │   └── tools.css
 ├── types/
-│   └── index.ts
-└── utils/
-    └── index.ts
+│   ├── index.ts
+│   └── share.ts                # File Share types
+├── utils/
+│   ├── index.ts
+│   └── share.ts                # File Share utilities
+└── middleware.ts               # Request middleware
 ```
