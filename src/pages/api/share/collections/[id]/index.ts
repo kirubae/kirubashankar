@@ -1,11 +1,25 @@
 import type { APIRoute } from 'astro';
 import { sha256, getCollectionBreadcrumbs } from '@utils/share';
+import { createSupabaseServerClient } from '@lib/supabase';
 import type { Collection, CollectionChild, FileChild, CollectionAccessLog } from '@/types/share';
 
 export const prerender = false;
 
+// Helper to validate JWT token and get user
+async function validateToken(request: Request, cookies: import('astro').AstroCookies) {
+  const authHeader = request.headers.get('Authorization');
+  const token = authHeader?.replace('Bearer ', '');
+
+  if (!token) return null;
+
+  const supabase = createSupabaseServerClient(cookies);
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+
+  return error ? null : user;
+}
+
 // GET: Get collection details with children and breadcrumbs
-export const GET: APIRoute = async ({ params, locals, url }) => {
+export const GET: APIRoute = async ({ params, locals, url, request, cookies }) => {
   try {
     const { FILE_SHARE_DB } = locals.runtime.env;
     const { id } = params;
@@ -94,10 +108,11 @@ export const GET: APIRoute = async ({ params, locals, url }) => {
 };
 
 // PUT: Update collection settings (requires authentication + ownership)
-export const PUT: APIRoute = async ({ params, request, locals }) => {
+export const PUT: APIRoute = async ({ params, request, locals, cookies }) => {
   try {
-    // Security: Require authentication
-    if (!locals.user) {
+    // Security: Validate JWT token
+    const user = await validateToken(request, cookies);
+    if (!user) {
       return new Response(JSON.stringify({ error: 'Authentication required' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' }
@@ -119,7 +134,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
       });
     }
 
-    if (existingCollection.user_id !== locals.user.id) {
+    if (existingCollection.user_id !== user.id) {
       return new Response(JSON.stringify({ error: 'Access denied' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' }
@@ -192,10 +207,11 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
 };
 
 // DELETE: Soft delete collection and cascade to children (requires authentication + ownership)
-export const DELETE: APIRoute = async ({ params, locals }) => {
+export const DELETE: APIRoute = async ({ params, locals, request, cookies }) => {
   try {
-    // Security: Require authentication
-    if (!locals.user) {
+    // Security: Validate JWT token
+    const user = await validateToken(request, cookies);
+    if (!user) {
       return new Response(JSON.stringify({ error: 'Authentication required' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' }
@@ -218,7 +234,7 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
     }
 
     // Security: Verify collection ownership before allowing delete
-    if (collection.user_id !== locals.user.id) {
+    if (collection.user_id !== user.id) {
       return new Response(JSON.stringify({ error: 'Access denied' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' }

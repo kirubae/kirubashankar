@@ -1210,6 +1210,18 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
   let currentMode = null;
   let currentUser = null;
   let currentTier = 'free';
+  let accessToken = null;
+
+  // Helper for authenticated API calls
+  function authFetch(url, options = {}) {
+    if (accessToken) {
+      options.headers = {
+        ...options.headers,
+        'Authorization': `Bearer ${accessToken}`
+      };
+    }
+    return fetch(url, options);
+  }
 
   // Initialize Supabase client
   const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -1332,6 +1344,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
       }
 
       currentUser = session.user;
+      accessToken = session.access_token;
 
       // Fetch user's tier from profiles table
       const { data: profile } = await supabase
@@ -1547,8 +1560,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     list.style.display = 'none';
 
     try {
-      const url = currentUser?.id ? `/api/share/files?user_id=${currentUser.id}` : '/api/share/files';
-      const response = await fetch(url);
+      const response = await authFetch('/api/share/files');
       const data = await response.json();
       files = data.files || [];
 
@@ -1618,7 +1630,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     list.style.display = 'none';
 
     try {
-      const response = await fetch(`/api/share/files/${id}?logs=true`);
+      const response = await authFetch(`/api/share/files/${id}?logs=true`);
       const data = await response.json();
       const logs = data.access_logs || [];
 
@@ -1721,7 +1733,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     }
 
     try {
-      const response = await fetch(`/api/share/files/${id}`, {
+      const response = await authFetch(`/api/share/files/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -1769,7 +1781,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     const id = document.getElementById('delete-file-id').value;
 
     try {
-      const response = await fetch(`/api/share/files/${id}`, {
+      const response = await authFetch(`/api/share/files/${id}`, {
         method: 'DELETE'
       });
 
@@ -1868,8 +1880,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     list.style.display = 'none';
 
     try {
-      const url = currentUser?.id ? `/api/share/collections?user_id=${currentUser.id}` : '/api/share/collections';
-      const response = await fetch(url);
+      const response = await authFetch('/api/share/collections');
       const data = await response.json();
       collections = data.collections || [];
 
@@ -1949,7 +1960,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     contents.style.display = 'none';
 
     try {
-      const response = await fetch(`/api/share/collections/${id}`);
+      const response = await authFetch(`/api/share/collections/${id}`);
       const data = await response.json();
       currentCollectionData = data.collection;
       const children = data.children || [];
@@ -2102,7 +2113,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     const allowedEmails = allowedEmailsText.split('\n').map(e => e.trim()).filter(e => e.length > 0);
 
     try {
-      const response = await fetch('/api/share/collections', {
+      const response = await authFetch('/api/share/collections', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2110,8 +2121,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
           subtitle: subtitle || null,
           expires_at: expiryDate,
           password: password || null,
-          allowed_emails: allowedEmails.length > 0 ? allowedEmails : null,
-          user_id: currentUser?.id || null
+          allowed_emails: allowedEmails.length > 0 ? allowedEmails : null
         })
       });
 
@@ -2144,7 +2154,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     list.style.display = 'none';
 
     try {
-      const response = await fetch(`/api/share/collections/${id}/logs`);
+      const response = await authFetch(`/api/share/collections/${id}/logs`);
       const data = await response.json();
       const logs = data.logs || [];
 
@@ -2244,7 +2254,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     }
 
     try {
-      const response = await fetch(`/api/share/collections/${id}`, {
+      const response = await authFetch(`/api/share/collections/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -2292,7 +2302,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     const id = document.getElementById('delete-collection-id').value;
 
     try {
-      const response = await fetch(`/api/share/collections/${id}`, { method: 'DELETE' });
+      const response = await authFetch(`/api/share/collections/${id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Failed to delete collection');
 
       document.getElementById('delete-collection-modal').style.display = 'none';
@@ -2335,7 +2345,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     const subtitle = document.getElementById('subfolder-subtitle').value.trim();
 
     try {
-      const response = await fetch(`/api/share/collections/${parentId}/add-subcollection`, {
+      const response = await authFetch(`/api/share/collections/${parentId}/add-subcollection`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, subtitle: subtitle || null })
@@ -2431,7 +2441,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
     formData.append('file', collectionFileToUpload);
 
     try {
-      const response = await fetch(`/api/share/collections/${collectionId}/add-file`, {
+      const response = await authFetch(`/api/share/collections/${collectionId}/add-file`, {
         method: 'POST',
         body: formData
       });

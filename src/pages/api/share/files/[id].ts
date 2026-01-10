@@ -1,7 +1,21 @@
 import type { APIRoute } from 'astro';
 import { sha256 } from '@utils/share';
+import { createSupabaseServerClient } from '@lib/supabase';
 
 export const prerender = false;
+
+// Helper to validate JWT token and get user
+async function validateToken(request: Request, cookies: import('astro').AstroCookies) {
+  const authHeader = request.headers.get('Authorization');
+  const token = authHeader?.replace('Bearer ', '');
+
+  if (!token) return null;
+
+  const supabase = createSupabaseServerClient(cookies);
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+
+  return error ? null : user;
+}
 
 // GET: Get file metadata with optional access logs
 export const GET: APIRoute = async ({ params, locals, url }) => {
@@ -49,10 +63,11 @@ export const GET: APIRoute = async ({ params, locals, url }) => {
 };
 
 // PUT: Update file settings (requires authentication + ownership)
-export const PUT: APIRoute = async ({ params, request, locals }) => {
+export const PUT: APIRoute = async ({ params, request, locals, cookies }) => {
   try {
-    // Security: Require authentication
-    if (!locals.user) {
+    // Security: Validate JWT token
+    const user = await validateToken(request, cookies);
+    if (!user) {
       return new Response(JSON.stringify({ error: 'Authentication required' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' }
@@ -74,7 +89,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
       });
     }
 
-    if (existingFile.user_id !== locals.user.id) {
+    if (existingFile.user_id !== user.id) {
       return new Response(JSON.stringify({ error: 'Access denied' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' }
@@ -131,10 +146,11 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
 };
 
 // DELETE: Soft delete file and remove from R2 (requires authentication + ownership)
-export const DELETE: APIRoute = async ({ params, locals, request }) => {
+export const DELETE: APIRoute = async ({ params, locals, request, cookies }) => {
   try {
-    // Security: Require authentication
-    if (!locals.user) {
+    // Security: Validate JWT token
+    const user = await validateToken(request, cookies);
+    if (!user) {
       return new Response(JSON.stringify({ error: 'Authentication required' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' }
@@ -161,7 +177,7 @@ export const DELETE: APIRoute = async ({ params, locals, request }) => {
     }
 
     // Security: Verify file ownership before allowing delete
-    if (file.user_id !== locals.user.id) {
+    if (file.user_id !== user.id) {
       return new Response(JSON.stringify({ error: 'Access denied' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' }
